@@ -2,6 +2,7 @@
 
 pragma solidity ^0.8.20;
 import "./Enums.sol";
+
 struct Institution {
     string name;
     string institutionID;  
@@ -28,4 +29,16 @@ struct Certificate {
     bool isRevoked;
     uint256 revocationDate;
     string revocationReason;
+}
+
+struct CertificateData {
+    address studentWallet;
+    string studentName;
+    string studentID;
+    string degreeTitle;
+    Classification grade;
+    string duration;
+    string cgpa;
+    Faculty faculty;
+    string tokenURI;
 }

@@ -2,7 +2,6 @@
 pragma solidity ^0.8.20;
 
 import "@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol";
-import "@openzeppelin/contracts/utils/Counters.sol";
 import "../types/Enums.sol";
 import "../types/Structs.sol";
 import "../events/Events.sol";
@@ -10,10 +9,8 @@ import "../errors/Errors.sol";
 
 contract CertificateNFT is ERC721URIStorage {
     
-    using Counters for Counters.Counter;
-    
     address public owner;
-    Counters.Counter private _tokenIds;
+    uint256 private _tokenIdCounter;
     
     
     mapping(address => Institution) public institutions;
@@ -54,8 +51,6 @@ contract CertificateNFT is ERC721URIStorage {
         if (bytes(_name).length == 0) revert EmptyString();
         if (bytes(_institutionID).length == 0) revert InvalidInstitutionID();
         
-        institutions[msg.sender].isAuthorized = true; 
-        
         institutions[msg.sender] = Institution({
             name: _name,
             institutionID: _institutionID,
@@ -94,62 +89,49 @@ contract CertificateNFT is ERC721URIStorage {
         
         emit InstitutionDeauthorized(_institution, block.timestamp);
     }
-    
-    /**
-     * @dev Issue a certificate (mint NFT)
-     */
+   
     function issueCertificate(
-        address studentWallet,
-        string memory studentName,
-        string memory studentID,
-        string memory degreeTitle,
-        Classification grade,
-        string memory duration,
-        string memory cgpa,
-        Faculty faculty,
-        string memory tokenURI
+        CertificateData memory data
     ) external onlyAuthorizedInstitution returns (uint256) {
-        if (studentWallet == address(0)) revert InvalidStudentAddress();
-        if (bytes(studentName).length == 0) revert EmptyString();
-        if (bytes(tokenURI).length == 0) revert InvalidTokenURI();
+        if (data.studentWallet == address(0)) revert InvalidStudentAddress();
+        if (bytes(data.studentName).length == 0) revert EmptyString();
+        if (bytes(data.tokenURI).length == 0) revert InvalidTokenURI();
         
-        _tokenIds.increment();
-        uint256 newTokenId = _tokenIds.current();
+        _tokenIdCounter++;
+        uint256 newTokenId = _tokenIdCounter;
         
         // Mint NFT to student
-        _safeMint(studentWallet, newTokenId);
-        _setTokenURI(newTokenId, tokenURI);
+        _safeMint(data.studentWallet, newTokenId);
+        _setTokenURI(newTokenId, data.tokenURI);
         
         // Create certificate record
         certificates[newTokenId] = Certificate({
-            studentName: studentName,
-            studentID: studentID,
-            studentWallet: studentWallet,
-            degreeTitle: degreeTitle,
+            studentName: data.studentName,
+            studentID: data.studentID,
+            studentWallet: data.studentWallet,
+            degreeTitle: data.degreeTitle,
             issueDate: block.timestamp,
-            grade: grade,
-            duration: duration,
-            cgpa: cgpa,
-            faculty: faculty,
+            grade: data.grade,
+            duration: data.duration,
+            cgpa: data.cgpa,
+            faculty: data.faculty,
             issuingInstitution: msg.sender,
             isRevoked: false,
             revocationDate: 0,
             revocationReason: ""
         });
         
-        // Update mappings
-        studentCertificates[studentWallet].push(newTokenId);
+
+        studentCertificates[data.studentWallet].push(newTokenId);
         institutionCertificates[msg.sender].push(newTokenId);
         institutions[msg.sender].totalCertificatesIssued++;
         
-        emit CertificateIssued(newTokenId, studentWallet, msg.sender, degreeTitle, block.timestamp);
+        emit CertificateIssued(newTokenId, data.studentWallet, msg.sender, data.degreeTitle, block.timestamp);
         
         return newTokenId;
     }
     
-    /**
-     * @dev Revoke a certificate
-     */
+
     function revokeCertificate(
         uint256 tokenId,
         string memory reason
@@ -169,16 +151,10 @@ contract CertificateNFT is ERC721URIStorage {
         emit CertificateRevoked(tokenId, msg.sender, reason, block.timestamp);
     }
     
-    /**
-     * @dev Check if certificate is revoked
-     */
     function isRevoked(uint256 tokenId) external view certificateExists(tokenId) returns (bool) {
         return certificates[tokenId].isRevoked;
     }
-    
-    /**
-     * @dev Verify certificate and get details
-     */
+
     function verifyCertificate(uint256 tokenId) 
         external 
         view 
@@ -190,9 +166,6 @@ contract CertificateNFT is ERC721URIStorage {
         return (cert, valid);
     }
     
-    /**
-     * @dev Get all certificates of a student
-     */
     function getCertificatesByStudent(address student) 
         external 
         view 
@@ -201,9 +174,6 @@ contract CertificateNFT is ERC721URIStorage {
         return studentCertificates[student];
     }
     
-    /**
-     * @dev Get all certificates issued by an institution
-     */
     function getCertificatesByInstitution(address institution) 
         external 
         view 
@@ -212,9 +182,6 @@ contract CertificateNFT is ERC721URIStorage {
         return institutionCertificates[institution];
     }
     
-    /**
-     * @dev Get institution details
-     */
     function getInstitution(address _addr) 
         external 
         view 
@@ -223,10 +190,7 @@ contract CertificateNFT is ERC721URIStorage {
         if (!registeredInstitutions[_addr]) revert InstitutionNotRegistered();
         return institutions[_addr];
     }
-    
-    /**
-     * @dev Get certificate details
-     */
+
     function getCertificate(uint256 tokenId) 
         external 
         view 
@@ -235,46 +199,34 @@ contract CertificateNFT is ERC721URIStorage {
     {
         return certificates[tokenId];
     }
-    
-    /**
-     * @dev Get total number of certificates issued
-     */
+
     function getTotalCertificatesIssued() external view returns (uint256) {
-        return _tokenIds.current();
+        return _tokenIdCounter;
     }
     
-    /**
-     * @dev Transfer ownership
-     */
     function transferOwnership(address newOwner) external onlyOwner {
         if (newOwner == address(0)) revert InvalidAddress();
         address oldOwner = owner;
         owner = newOwner;
         emit OwnershipTransferred(oldOwner, newOwner);
     }
-    
-    /**
-     * @dev Check if token exists
-     */
-    function _exists(uint256 tokenId) internal view returns (bool) {
+  
+    function _exists(uint256 tokenId) internal view override returns (bool) {
         return _ownerOf(tokenId) != address(0);
     }
     
-    /**
-     * @dev Override transfer functions to prevent transfer of revoked certificates
-     */
+  
     function _beforeTokenTransfer(
         address from,
         address to,
-        uint256 tokenId,
+        uint256 firstTokenId,
         uint256 batchSize
-    ) internal virtual {
-        super._beforeTokenTransfer(from, to, tokenId, batchSize);
+    ) internal virtual override {
+        super._beforeTokenTransfer(from, to, firstTokenId, batchSize);
         
-        // Allow minting (from == address(0))
+   
         if (from != address(0)) {
-            // Prevent transfer of revoked certificates
-            if (certificates[tokenId].isRevoked) revert CertificateAlreadyRevoked();
+            if (certificates[firstTokenId].isRevoked) revert CertificateAlreadyRevoked();
         }
     }
 }
