@@ -1,15 +1,13 @@
-# Remix compiler artifacts
-**/artifacts/
-**/artifacts/**
+# Next.js
+frontend/node_modules/
+frontend/.next/
+frontend/out/
+frontend/.env*.local
 
-# Remix plugin state folders
-deps/
-states/
+# Dependencies
+node_modules/
 
-# Debug info
-*.dbg.json
-*.tsbuildinfo
-
-# Optional
-.env
-.env.local
+# Logs & OS
+*.log
+.DS_Store
+Thumbs.db
