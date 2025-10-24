@@ -1,4 +1,6 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import React from 'react';
+import Link from 'next/link';
 import { ArrowUpRight, Menu } from 'lucide-react';
 import { ConnectButton } from '@rainbow-me/rainbowkit';
 const Navbar = () => {
@@ -17,9 +19,9 @@ const Navbar = () => {
 
         {/* Navigation Links */}
         <div className="hidden lg:flex items-center gap-8 xl:gap-10">
-          <a href="/" className="text-green-400 text-sm font-medium hover:text-green-300 transition-colors">
+          <Link href="/" className="text-green-400 text-sm font-medium hover:text-green-300 transition-colors">
             Home
-          </a>
+          </Link>
           <a href="#" className="text-gray-300 text-sm font-medium hover:text-white transition-colors">
             About Us
           </a>
