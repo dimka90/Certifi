@@ -1,7 +1,19 @@
+"use client";
 import React from 'react';
+import { useRouter } from 'next/navigation';
 import { ArrowUpRight } from 'lucide-react';
 
 const Hero = () => {
+  const router = useRouter();
+
+  const handleGetStarted = () => {
+    router.push('/institution/register');
+  };
+
+  const handleExploreSolution = () => {
+    router.push('/institution/register');
+  };
+
   return (
     <section className="relative min-h-screen bg-black overflow-hidden">
       <div className="absolute inset-0 overflow-hidden">
@@ -39,11 +51,17 @@ const Hero = () => {
           No more weeks of waiting. Just instant, immutable proof.  
           </p>
         </div>
-        <div className="flex flex-col sm:flex-row items-center justify-center gap-4 sm:gap-6 pb-12 sm:pb-16 lg:pb-20 w-full max-w-4xl mx-auto">
-          <button className="w-full sm:w-auto px-8 sm:px-10 md:px-12 lg:px-16 py-4 sm:py-5 md:py-6 bg-black border-2 border-green-500 rounded-full text-white font-semibold text-base sm:text-lg hover:bg-green-500/5 transition-all duration-300 shadow-lg shadow-green-500/10 hover:shadow-green-500/30">
+        <div className="flex flex-col sm:flex-row items-center justify-center gap-4 sm:gap-6 pb-12 sm:pb-16 lg:pb-20 w-full max-w-4xl mx-auto "  style={{ paddingBottom: '150px' }} >
+          <button 
+            onClick={handleGetStarted}
+            className="w-full sm:w-auto px-8 sm:px-10 md:px-12 lg:px-16 py-10 sm:py-5 md:py-6 lg:py-16 lg:px-16 bg-black border-2 border-green-500 rounded-full text-white font-semibold text-2xl sm:text-2xl lg:text-5xl hover:bg-green-500/5 transition-all duration-300 shadow-lg shadow-green-500/10 hover:shadow-green-500/30 cursor-pointer"
+          >
             Get Started
           </button>
-          <button className="w-full sm:w-auto px-8 sm:px-10 md:px-12 lg:px-16 py-4 sm:py-5 md:py-6 bg-black border-2 border-green-500 rounded-full text-white font-semibold text-base sm:text-lg hover:bg-green-500/5 transition-all duration-300 flex items-center justify-center gap-2 shadow-lg shadow-green-500/10 hover:shadow-green-500/30">
+          <button 
+            onClick={handleExploreSolution}
+            className="w-full sm:w-auto px-8 sm:px-10 md:px-12 lg:px-16 py-4 sm:py-5 md:py-6 bg-black border-2 border-green-500 rounded-full text-white font-semibold text-2xl sm:text-2xl lg:text-5xl hover:bg-green-500/5 transition-all duration-300 flex items-center justify-center gap-2 shadow-lg shadow-green-500/10 hover:shadow-green-500/30 cursor-pointer"
+          >
             Explore Our Solution
             <ArrowUpRight className="w-4 h-4 sm:w-5 sm:h-5" />
           </button>

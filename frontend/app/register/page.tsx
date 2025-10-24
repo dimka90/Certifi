@@ -2,39 +2,93 @@
 
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Upload, Building2, MapPin, FileText, ArrowRight } from 'lucide-react';
+import { useAccount } from 'wagmi';
+import { Upload, Building2, MapPin, FileText, ArrowRight, X } from 'lucide-react';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import Layout from '../components/Layout';
+import { useCertificateContract } from '../../lib/contracts';
+import { InstitutionType, INSTITUTION_TYPES } from '../../lib/contracts/types';
+import { useIPFSUpload } from '../hooks/useIPFSUpload';
+import { toast } from 'react-hot-toast';
 
 const Register = () => {
   const router = useRouter();
+  const { address } = useAccount();
+  const { registerInstitution, useCheckInstitutionRegistration, isPending, isConfirming, isConfirmed } = useCertificateContract();
+  const { uploadFile, isUploading, uploadError, uploadedFiles } = useIPFSUpload({
+    maxFileSize: 10 * 1024 * 1024, // 10MB
+    allowedTypes: ['image/png', 'image/jpeg', 'image/jpg', 'application/pdf']
+  });
+  
   const [formData, setFormData] = useState({
     institutionName: '',
-    address: '',
-    contactEmail: '',
-    contactPhone: '',
-    website: '',
-    registrationNumber: '',
-    description: ''
+    institutionID: '',
+    email: '',
+    country: '',
+    institutionType: InstitutionType.UNIVERSITY
   });
-  const [uploadedFile, setUploadedFile] = useState<File | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [isDragOver, setIsDragOver] = useState(false);
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+  // Check if current wallet is already registered
+  const { data: isAlreadyRegistered, isLoading: isCheckingRegistration } = useCheckInstitutionRegistration(address || '');
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
+    setFormData(prev => ({ 
+      ...prev, 
+      [name]: name === 'institutionType' ? parseInt(value) : value 
+    }));
   
     if (errors[name]) {
       setErrors(prev => ({ ...prev, [name]: '' }));
     }
   };
 
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      setUploadedFile(file);
+      setSelectedFile(file);
+      setErrors(prev => ({ ...prev, document: '' }));
+    }
+  };
+
+  const handleFileUpload = async () => {
+    if (!selectedFile) return;
+    
+    try {
+      await uploadFile(selectedFile);
+      toast.success('Document uploaded successfully!');
+    } catch (error) {
+      console.error('Upload failed:', error);
+      toast.error('Failed to upload document');
+    }
+  };
+
+  const removeFile = () => {
+    setSelectedFile(null);
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragOver(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragOver(false);
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragOver(false);
+    const file = e.dataTransfer.files[0];
+    if (file) {
+      setSelectedFile(file);
+      setErrors(prev => ({ ...prev, document: '' }));
     }
   };
 
@@ -45,26 +99,18 @@ const Register = () => {
       newErrors.institutionName = 'Institution name is required';
     }
 
-    if (!formData.address.trim()) {
-      newErrors.address = 'Address is required';
+    if (!formData.institutionID.trim()) {
+      newErrors.institutionID = 'Institution ID is required';
     }
 
-    if (!formData.contactEmail.trim()) {
-      newErrors.contactEmail = 'Contact email is required';
-    } else if (!/\S+@\S+\.\S+/.test(formData.contactEmail)) {
-      newErrors.contactEmail = 'Please enter a valid email address';
+    if (!formData.email.trim()) {
+      newErrors.email = 'Email is required';
+    } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
+      newErrors.email = 'Please enter a valid email address';
     }
 
-    if (!formData.contactPhone.trim()) {
-      newErrors.contactPhone = 'Contact phone is required';
-    }
-
-    if (!formData.registrationNumber.trim()) {
-      newErrors.registrationNumber = 'Registration number is required';
-    }
-
-    if (!uploadedFile) {
-      newErrors.registrationDocument = 'Registration document is required';
+    if (!formData.country.trim()) {
+      newErrors.country = 'Country is required';
     }
 
     setErrors(newErrors);
@@ -78,20 +124,42 @@ const Register = () => {
       return;
     }
 
+    if (!address) {
+      toast.error('Please connect your wallet first');
+      return;
+    }
+
+    // Check if institution is already registered
+    if (isAlreadyRegistered) {
+      toast.error('This wallet address is already registered as an institution. Please use a different wallet or contact support.');
+      return;
+    }
+
     setIsSubmitting(true);
 
     try {
-     
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
-    
-      router.push('/institution/dashboard');
+      await registerInstitution({
+        name: formData.institutionName,
+        institutionID: formData.institutionID,
+        email: formData.email,
+        country: formData.country,
+        institutionType: formData.institutionType,
+      });
     } catch (error) {
       console.error('Registration failed:', error);
-    } finally {
+      toast.error('Failed to register institution');
       setIsSubmitting(false);
     }
   };
+
+  // Handle successful transaction confirmation
+  React.useEffect(() => {
+    if (isConfirmed && isSubmitting) {
+      toast.success('Institution registered successfully!');
+      setIsSubmitting(false);
+      router.push('/institution/dashboard');
+    }
+  }, [isConfirmed, isSubmitting, router]);
 
   return (
     <Layout>
@@ -111,6 +179,18 @@ const Register = () => {
           <p className="text-gray-600">
             Join thousands of institutions using Certifi for blockchain-verified certificates.
           </p>
+          
+          {/* Registration Status Warning */}
+          {isCheckingRegistration ? (
+            <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+              <p className="text-blue-800 text-sm">Checking registration status...</p>
+            </div>
+          ) : isAlreadyRegistered ? (
+            <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+              <p className="text-red-800 text-sm font-medium">⚠️ This wallet is already registered as an institution.</p>
+              <p className="text-red-600 text-xs mt-1">Please connect a different wallet to register a new institution.</p>
+            </div>
+          ) : null}
         </div>
 
         <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-8">
@@ -136,116 +216,148 @@ const Register = () => {
                 
                 <div>
                   <Input
-                    label="Registration Number *"
-                    name="registrationNumber"
-                    value={formData.registrationNumber}
+                    label="Institution ID *"
+                    name="institutionID"
+                    value={formData.institutionID}
                     onChange={handleInputChange}
-                    error={errors.registrationNumber}
-                    placeholder="Enter registration number"
+                    error={errors.institutionID}
+                    placeholder="Enter institution ID"
                   />
                 </div>
               </div>
 
               <div className="mt-4">
                 <Input
-                  label="Address *"
-                  name="address"
-                  value={formData.address}
+                  label="Email *"
+                  name="email"
+                  type="email"
+                  value={formData.email}
                   onChange={handleInputChange}
-                  error={errors.address}
-                  placeholder="Enter full address"
+                  error={errors.email}
+                  placeholder="Enter institution email"
+                />
+              </div>
+
+              <div className="mt-4">
+                <Input
+                  label="Country *"
+                  name="country"
+                  value={formData.country}
+                  onChange={handleInputChange}
+                  error={errors.country}
+                  placeholder="Enter country"
                 />
               </div>
 
               <div className="mt-4">
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Description
+                  Institution Type *
                 </label>
-                <textarea
-                  name="description"
-                  value={formData.description}
+                <select
+                  name="institutionType"
+                  value={formData.institutionType}
                   onChange={handleInputChange}
-                  rows={3}
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-colors"
-                  placeholder="Brief description of your institution"
-                />
+                >
+                  {Object.entries(INSTITUTION_TYPES).map(([key, label]) => (
+                    <option key={key} value={key}>
+                      {label}
+                    </option>
+                  ))}
+                </select>
               </div>
             </div>
 
-      
-            <div>
-              <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-                <MapPin className="w-5 h-5 mr-2 text-green-500" />
-                Contact Information
-              </h2>
-              
-              <div className="grid md:grid-cols-2 gap-4">
-                <div>
-                  <Input
-                    label="Contact Email *"
-                    name="contactEmail"
-                    type="email"
-                    value={formData.contactEmail}
-                    onChange={handleInputChange}
-                    error={errors.contactEmail}
-                    placeholder="Enter contact email"
-                  />
-                </div>
-                
-                <div>
-                  <Input
-                    label="Contact Phone *"
-                    name="contactPhone"
-                    value={formData.contactPhone}
-                    onChange={handleInputChange}
-                    error={errors.contactPhone}
-                    placeholder="Enter contact phone"
-                  />
-                </div>
-              </div>
-
-              <div className="mt-4">
-                <Input
-                  label="Website"
-                  name="website"
-                  value={formData.website}
-                  onChange={handleInputChange}
-                  placeholder="https://your-institution.com"
-                />
-              </div>
-            </div>
-
-            {/* Document Upload */}
+            {/* Registration Documents Section */}
             <div>
               <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
                 <FileText className="w-5 h-5 mr-2 text-green-500" />
-                Registration Documents
+                Registration Documents (Optional)
               </h2>
               
-              <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-green-400 transition-colors">
+              <div 
+                className={`border-2 border-dashed rounded-lg p-6 text-center transition-colors ${
+                  isDragOver 
+                    ? 'border-green-400 bg-green-50' 
+                    : 'border-gray-300 hover:border-green-400'
+                }`}
+                onDragOver={handleDragOver}
+                onDragLeave={handleDragLeave}
+                onDrop={handleDrop}
+              >
                 <input
                   type="file"
-                  id="registrationDocument"
-                  onChange={handleFileUpload}
-                  accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
+                  id="document"
+                  accept=".png,.jpg,.jpeg,.pdf"
+                  onChange={handleFileSelect}
                   className="hidden"
                 />
-                <label htmlFor="registrationDocument" className="cursor-pointer">
-                  <Upload className="w-8 h-8 text-gray-400 mx-auto mb-3" />
-                  <div className="font-medium text-gray-900 mb-2">
-                    {uploadedFile ? uploadedFile.name : 'Upload Registration Document'}
-                  </div>
-                  <p className="text-sm text-gray-500 mb-3">
-                    PDF, DOC, DOCX, JPG, PNG up to 10MB
+                <label htmlFor="document" className="cursor-pointer">
+                  <Upload className="w-8 h-8 text-gray-400 mx-auto mb-4" />
+                  <p className="text-gray-600 mb-2">
+                    Click to upload or drag and drop
                   </p>
-                  <Button type="button" variant="outline" size="sm">
-                    Choose File
-                  </Button>
+                  <p className="text-sm text-gray-500">Max 10 MB • PNG, JPG, PDF</p>
                 </label>
-                {errors.registrationDocument && (
-                  <p className="text-red-500 text-sm mt-2">{errors.registrationDocument}</p>
-                )}
               </div>
+
+              {selectedFile && (
+                <div className="mt-4 p-4 bg-gray-50 rounded-lg">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-3">
+                      <FileText className="w-5 h-5 text-gray-500" />
+                      <div>
+                        <p className="text-sm font-medium text-gray-900">{selectedFile.name}</p>
+                        <p className="text-xs text-gray-500">
+                          {(selectedFile.size / (1024 * 1024)).toFixed(2)} MB
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <Button
+                        type="button"
+                        size="sm"
+                        onClick={handleFileUpload}
+                        disabled={isUploading}
+                        className="bg-green-600 hover:bg-green-700"
+                      >
+                        {isUploading ? (
+                          <div className="flex items-center">
+                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                            Uploading...
+                          </div>
+                        ) : (
+                          'Upload to IPFS'
+                        )}
+                      </Button>
+                      <button
+                        type="button"
+                        onClick={removeFile}
+                        className="text-red-600 hover:text-red-800 p-1"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {uploadedFiles.length > 0 && (
+                <div className="mt-4 p-4 bg-green-50 rounded-lg">
+                  <h3 className="text-sm font-medium text-green-800 mb-2">Uploaded Files:</h3>
+                  {uploadedFiles.map((file: any, index: number) => (
+                    <div key={index} className="flex items-center space-x-2 text-sm text-green-700">
+                      <FileText className="w-4 h-4" />
+                      <span>{file.name}</span>
+                      <span className="text-xs text-green-600">✓ Uploaded</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {uploadError && (
+                <p className="text-red-500 text-sm mt-2">{uploadError}</p>
+              )}
             </div>
 
             <div className="flex items-start space-x-3">
@@ -271,12 +383,17 @@ const Register = () => {
                 type="submit"
                 size="lg"
                 className="w-full"
-                disabled={isSubmitting}
+                disabled={isSubmitting || isPending || isConfirming || isAlreadyRegistered}
               >
-                {isSubmitting ? (
+                {isSubmitting || isPending ? (
                   <div className="flex items-center justify-center">
                     <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
-                    Submitting Registration...
+                    {isPending ? 'Transaction Pending...' : 'Submitting Registration...'}
+                  </div>
+                ) : isConfirming ? (
+                  <div className="flex items-center justify-center">
+                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
+                    Confirming Transaction...
                   </div>
                 ) : (
                   <div className="flex items-center justify-center">

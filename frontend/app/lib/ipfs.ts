@@ -208,6 +208,44 @@ export class IPFSService {
   }
 
   /**
+   * Upload JSON data to IPFS
+   */
+  static async uploadJSON(
+    data: any,
+    metadata?: {
+      name?: string;
+      keyvalues?: Record<string, string>;
+    }
+  ): Promise<string> {
+    try {
+      const response = await fetch('/api/ipfs/upload-json', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ 
+          data, 
+          metadata: {
+            name: metadata?.name || 'data.json',
+            keyvalues: metadata?.keyvalues || {}
+          }
+        })
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'JSON upload failed');
+      }
+
+      const result = await response.json();
+      return result.hash;
+    } catch (error) {
+      console.error('IPFS JSON upload error:', error);
+      throw new Error(`Failed to upload JSON to IPFS: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  }
+
+  /**
    * Get file info from IPFS hash
    */
   static async getFileInfo(hash: string): Promise<{

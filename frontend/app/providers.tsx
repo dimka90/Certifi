@@ -12,6 +12,7 @@ import {
   optimism,
   arbitrum,
   base,
+  baseSepolia,
 } from 'wagmi/chains';
 import {
   QueryClientProvider,
@@ -23,11 +24,52 @@ import { Toaster } from 'react-hot-toast';
 // Get project ID from environment or use a development fallback
 const projectId = process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID || 'certifi-dev-project';
 
-// Configure RainbowKit with Base as primary chain
+// Disable all tracking and analytics
+if (typeof window !== 'undefined') {
+  // Disable WalletConnect analytics
+  process.env.NEXT_PUBLIC_WALLETCONNECT_DISABLE_ANALYTICS = 'true';
+  // Disable Coinbase analytics
+  process.env.NEXT_PUBLIC_COINBASE_DISABLE_ANALYTICS = 'true';
+  
+  // Suppress console errors from analytics
+  const originalError = console.error;
+  console.error = (...args) => {
+    const message = args[0]?.toString() || '';
+    if (
+      message.includes('Analytics SDK') ||
+      message.includes('Analytics blocked') ||
+      message.includes('pulse.walletconnect.org') ||
+      message.includes('cca-lite.coinbase.com') ||
+      message.includes('ERR_BLOCKED_BY_CLIENT') ||
+      message.includes('Failed to fetch')
+    ) {
+      return; // Suppress these errors
+    }
+    originalError.apply(console, args);
+  };
+  
+  // Block analytics requests silently
+  const originalFetch = window.fetch;
+  window.fetch = function(...args) {
+    const url = args[0]?.toString() || '';
+    if (
+      url.includes('pulse.walletconnect.org') ||
+      url.includes('cca-lite.coinbase.com') ||
+      url.includes('analytics') ||
+      url.includes('telemetry')
+    ) {
+      // Return a successful response instead of rejecting
+      return Promise.resolve(new Response('{}', { status: 200 }));
+    }
+    return originalFetch.apply(this, args);
+  };
+}
+
+// Configure RainbowKit with Base Sepolia as primary chain (testnet)
 const config = getDefaultConfig({
   appName: 'Certifi - Blockchain Credentials',
   projectId: projectId,
-  chains: [base, mainnet, polygon, optimism, arbitrum],
+  chains: [baseSepolia, base, mainnet, polygon, optimism, arbitrum],
   ssr: true, // Enable server-side rendering support
   batch: {
     multicall: true,
@@ -48,13 +90,15 @@ export function Providers({ children }: ProvidersProps) {
     <WagmiProvider config={config}>
       <QueryClientProvider client={queryClient}>
         <RainbowKitProvider
-          initialChain={base}
+          initialChain={baseSepolia}
           showRecentTransactions={true}
           modalSize="compact"
           appInfo={{
             appName: 'Certifi',
             learnMoreUrl: 'https://certifi.app',
           }}
+          // Disable additional tracking features
+          coolMode={false}
         >
           {children}
           <Toaster
