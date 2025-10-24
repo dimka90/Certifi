@@ -12,12 +12,12 @@ const Navbar = () => {
               <path d="M10 2L3 7v6l7 5 7-5V7l-7-5z" fill="currentColor" className="text-black/80"/>
             </svg>
           </div>
-          <span className="text-white text-lg sm:text-xl font-semibold tracking-tight">.Certifi</span>
+          <span className="text-white text-lg sm:text-xl font-semibold tracking-tight">Certifi</span>
         </div>
 
         {/* Navigation Links */}
         <div className="hidden lg:flex items-center gap-8 xl:gap-10">
-          <a href="#" className="text-green-400 text-sm font-medium hover:text-green-300 transition-colors">
+          <a href="/" className="text-green-400 text-sm font-medium hover:text-green-300 transition-colors">
             Home
           </a>
           <a href="#" className="text-gray-300 text-sm font-medium hover:text-white transition-colors">
@@ -25,9 +25,6 @@ const Navbar = () => {
           </a>
           <a href="#" className="text-gray-300 text-sm font-medium hover:text-white transition-colors">
             Services
-          </a>
-          <a href="#" className="text-gray-300 text-sm font-medium hover:text-white transition-colors">
-            Review
           </a>
           <a href="#" className="text-gray-300 text-sm font-medium hover:text-white transition-colors">
             Blog

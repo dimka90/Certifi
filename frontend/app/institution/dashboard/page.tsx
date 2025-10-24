@@ -11,13 +11,10 @@ import {
   Eye,
   Users,
   XCircle,
-  Menu,
   X,
   Building2,
   MapPin,
   Mail,
-  Phone,
-  Globe,
   FileText,
   Hash
 } from 'lucide-react';
@@ -33,7 +30,7 @@ const InstitutionDashboard = () => {
     { id: 'issue-certificates', label: 'Issue certificates', icon: Plus, route: '/institution/issue-certificate' },
     { id: 'view-certificates', label: 'View certificates details', icon: Eye, route: '/institution/view-certificates' },
     { id: 'issue-multiple', label: 'Issue multiple certificates', icon: Users, route: '/institution/issue-multiple-certificates' },
-    { id: 'revoke-certificates', label: 'Revoke certificates', icon: XCircle, route: '/institution/view-certificates' },
+    { id: 'revoke-certificates', label: 'Revoke certificates', icon: XCircle, route: '/institution/revoke-certificate' },
     { id: 'settings', label: 'Settings', icon: Settings, route: '/institution/settings' },
   ];
 
@@ -157,25 +154,28 @@ const InstitutionDashboard = () => {
                       </div>
                       
                       <div>
-                        <h3 className="text-lg font-semibold text-gray-900 mb-2">Registration Number</h3>
-                        <p className="text-base text-gray-700">{institutionData.registrationNumber}</p>
+                        <h3 className="text-lg font-semibold text-gray-900 mb-2">Institution ID</h3>
+                        <p className="text-base text-gray-700">{institutionData.institutionID}</p>
                       </div>
                     </div>
 
                     <div className="mt-6">
                       <h3 className="text-lg font-semibold text-gray-900 mb-2 flex items-center">
                         <MapPin className="w-5 h-5 mr-2 text-green-500" />
-                        Address
+                        Country
                       </h3>
-                      <p className="text-base text-gray-700">{institutionData.address}</p>
+                      <p className="text-base text-gray-700">{institutionData.country}</p>
                     </div>
 
-                    {institutionData.description && (
-                      <div className="mt-6">
-                        <h3 className="text-lg font-semibold text-gray-900 mb-2">Description</h3>
-                        <p className="text-base text-gray-700">{institutionData.description}</p>
-                      </div>
-                    )}
+                    <div className="mt-6">
+                      <h3 className="text-lg font-semibold text-gray-900 mb-2">Institution Type</h3>
+                      <p className="text-base text-gray-700">
+                        {institutionData.institutionType === 0 ? 'University' :
+                         institutionData.institutionType === 1 ? 'College' :
+                         institutionData.institutionType === 2 ? 'School' :
+                         institutionData.institutionType === 3 ? 'Training Center' : 'Other'}
+                      </p>
+                    </div>
                   </div>
 
               
@@ -196,34 +196,20 @@ const InstitutionDashboard = () => {
                           <Mail className="w-5 h-5 mr-2 text-green-500" />
                           Email
                         </h3>
-                        <p className="text-base text-gray-700">{institutionData.contactEmail}</p>
+                        <p className="text-base text-gray-700">{institutionData.email}</p>
                       </div>
                       
                       <div>
                         <h3 className="text-lg font-semibold text-gray-900 mb-2 flex items-center">
-                          <Phone className="w-5 h-5 mr-2 text-green-500" />
-                          Phone
+                          <Hash className="w-5 h-5 mr-2 text-green-500" />
+                          Wallet Address
                         </h3>
-                        <p className="text-base text-gray-700">{institutionData.contactPhone}</p>
+                        <p className="text-base text-gray-700 font-mono bg-gray-100 px-3 py-2 rounded">
+                          {institutionData.walletAddress || 'Not available'}
+                        </p>
                       </div>
                     </div>
 
-                    {institutionData.website && (
-                      <div className="mt-6">
-                        <h3 className="text-lg font-semibold text-gray-900 mb-2 flex items-center">
-                          <Globe className="w-5 h-5 mr-2 text-green-500" />
-                          Website
-                        </h3>
-                        <a 
-                          href={institutionData.website} 
-                          target="_blank" 
-                          rel="noopener noreferrer"
-                          className="text-base text-blue-600 hover:text-blue-800 underline"
-                        >
-                          {institutionData.website}
-                        </a>
-                      </div>
-                    )}
                   </div>
 
               

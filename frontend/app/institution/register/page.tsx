@@ -2,34 +2,40 @@
 
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import {ArrowRight } from 'lucide-react';
+import { useAccount } from 'wagmi';
+import { ArrowRight } from 'lucide-react';
 import { Button } from '../../components/ui/Button';
 import { Input } from '../../components/ui/Input';
 import FileUpload from '../../components/ui/FileUpload';
 import Layout from '../../components/Layout';
 import { IPFSUploadResult } from '../../lib/ipfs';
 import { institutionStore } from '../../lib/institutionStore';
+import { useCertificateContract, InstitutionType, INSTITUTION_TYPES } from '../../../lib/contracts';
 import toast from 'react-hot-toast';
 
 const InstitutionRegister = () => {
   const router = useRouter();
+  const { address, isConnected } = useAccount();
+  const { registerInstitution, isPending, isConfirming, isConfirmed, error } = useCertificateContract();
+  
   const [formData, setFormData] = useState({
-    institutionName: '',
-    address: '',
-    contactEmail: '',
-    contactPhone: '',
-    website: '',
-    registrationNumber: '',
-    description: ''
+    name: '',
+    institutionID: '',
+    email: '',
+    country: '',
+    institutionType: InstitutionType.UNIVERSITY
   });
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
   const [ipfsUploadResult, setIpfsUploadResult] = useState<IPFSUploadResult | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
+    setFormData(prev => ({ 
+      ...prev, 
+      [name]: name === 'institutionType' ? parseInt(value) : value 
+    }));
     if (errors[name]) {
       setErrors(prev => ({ ...prev, [name]: '' }));
     }
@@ -57,31 +63,25 @@ const InstitutionRegister = () => {
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
 
-    if (!formData.institutionName.trim()) {
-      newErrors.institutionName = 'Institution name is required';
+    if (!formData.name.trim()) {
+      newErrors.name = 'Institution name is required';
     }
 
-    if (!formData.address.trim()) {
-      newErrors.address = 'Address is required';
+    if (!formData.institutionID.trim()) {
+      newErrors.institutionID = 'Institution ID is required';
     }
 
-    if (!formData.contactEmail.trim()) {
-      newErrors.contactEmail = 'Contact email is required';
-    } else if (!/\S+@\S+\.\S+/.test(formData.contactEmail)) {
-      newErrors.contactEmail = 'Please enter a valid email address';
+    if (!formData.email.trim()) {
+      newErrors.email = 'Email is required';
+    } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
+      newErrors.email = 'Please enter a valid email address';
     }
 
-    if (!formData.contactPhone.trim()) {
-      newErrors.contactPhone = 'Contact phone is required';
+    if (!formData.country.trim()) {
+      newErrors.country = 'Country is required';
     }
 
-    if (!formData.registrationNumber.trim()) {
-      newErrors.registrationNumber = 'Registration number is required';
-    }
-
-    if (!ipfsUploadResult) {
-      newErrors.registrationDocument = 'Registration document is required';
-    }
+    // Document upload is optional - no validation required
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -94,37 +94,39 @@ const InstitutionRegister = () => {
       return;
     }
 
+    // Check wallet connection
+    if (!isConnected || !address) {
+      toast.error('Please connect your wallet to register');
+      return;
+    }
+
     setIsSubmitting(true);
 
     try {
-     
-      const registrationData = {
-        ...formData,
+      // Call smart contract
+      await registerInstitution({
+        name: formData.name,
+        institutionID: formData.institutionID,
+        email: formData.email,
+        country: formData.country,
+        institutionType: formData.institutionType
+      });
+
+      // Store data locally for dashboard
+      institutionStore.setInstitutionData({
+        institutionName: formData.name,
+        institutionID: formData.institutionID,
+        email: formData.email,
+        country: formData.country,
+        institutionType: formData.institutionType,
+        walletAddress: address,
         registrationDocument: ipfsUploadResult ? {
           hash: ipfsUploadResult.hash,
           url: ipfsUploadResult.url,
           name: ipfsUploadResult.name,
           size: ipfsUploadResult.size
-        } : null
-      };
-      
-      console.log('Registration data with IPFS:', registrationData);
-      
-    
-      institutionStore.setInstitutionData({
-        ...registrationData,
-        registrationDocument: registrationData.registrationDocument || undefined
+        } : undefined
       });
-      
-      
-      const loadingToast = toast.loading('Submitting registration...');
-      
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      toast.dismiss(loadingToast);
-      toast.success('Registration submitted successfully! Redirecting to dashboard...');
-      setTimeout(() => {
-        router.push('/institution/dashboard');
-      }, 1500);
       
     } catch (error) {
       console.error('Registration failed:', error);
@@ -133,6 +135,16 @@ const InstitutionRegister = () => {
       setIsSubmitting(false);
     }
   };
+
+  // Handle successful transaction
+  React.useEffect(() => {
+    if (isConfirmed) {
+      toast.success('Institution registered successfully! Redirecting to dashboard...');
+      setTimeout(() => {
+        router.push('/institution/dashboard');
+      }, 1500);
+    }
+  }, [isConfirmed, router]);
 
   return (
     <Layout>
@@ -163,96 +175,72 @@ const InstitutionRegister = () => {
                 <div>
                   <Input
                     label="Institution Name *"
-                    name="institutionName"
-                    value={formData.institutionName}
+                    name="name"
+                    value={formData.name}
                     onChange={handleInputChange}
-                    error={errors.institutionName}
+                    error={errors.name}
                     placeholder="Enter institution name"
                   />
                 </div>
                 
                 <div>
                   <Input
-                    label="Registration Number *"
-                    name="registrationNumber"
-                    value={formData.registrationNumber}
+                    label="Institution ID *"
+                    name="institutionID"
+                    value={formData.institutionID}
                     onChange={handleInputChange}
-                    error={errors.registrationNumber}
-                    placeholder="Enter registration number"
+                    error={errors.institutionID}
+                    placeholder="Enter institution ID"
                   />
                 </div>
               </div>
 
               <div className="mt-6">
                 <Input
-                  label="Address *"
-                  name="address"
-                  value={formData.address}
+                  label="Email *"
+                  name="email"
+                  type="email"
+                  value={formData.email}
                   onChange={handleInputChange}
-                  error={errors.address}
-                  placeholder="Enter full address"
+                  error={errors.email}
+                  placeholder="Enter email address"
                 />
               </div>
 
               <div className="mt-6">
-                <label className="block text-sm font-medium text-gray-700 mb-2 pl-1">
-                  Description
+                <Input
+                  label="Country *"
+                  name="country"
+                  value={formData.country}
+                  onChange={handleInputChange}
+                  error={errors.country}
+                  placeholder="Enter country"
+                />
+              </div>
+
+              <div className="mt-6">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Institution Type *
                 </label>
-                <textarea
-                  name="description"
-                  value={formData.description}
+                <select
+                  name="institutionType"
+                  value={formData.institutionType}
                   onChange={handleInputChange}
-                  rows={3}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-colors text-base text-gray-900 placeholder:text-gray-500 placeholder:opacity-100"
-                  placeholder="Brief description of your institution"
-                />
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-colors text-base text-gray-900"
+                >
+                  {Object.entries(INSTITUTION_TYPES).map(([key, value]) => (
+                    <option key={key} value={key}>
+                      {String(value)}
+                    </option>
+                  ))}
+                </select>
               </div>
             </div>
 
-            <div className="border-b border-gray-200 pb-6">
-              <h2 className="text-lg sm:text-xl font-semibold text-gray-900 mb-4 flex items-center">
-                Contact Information
-              </h2>
-              
-              <div className="grid sm:grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
-                <div>
-                  <Input
-                    label="Contact Email *"
-                    name="contactEmail"
-                    type="email"
-                    value={formData.contactEmail}
-                    onChange={handleInputChange}
-                    error={errors.contactEmail}
-                    placeholder="Enter contact email"
-                  />
-                </div>
-                
-                <div>
-                  <Input
-                    label="Contact Phone *"
-                    name="contactPhone"
-                    value={formData.contactPhone}
-                    onChange={handleInputChange}
-                    error={errors.contactPhone}
-                    placeholder="Enter contact phone"
-                  />
-                </div>
-              </div>
-
-              <div className="mt-6">
-                <Input
-                  label="Website"
-                  name="website"
-                  value={formData.website}
-                  onChange={handleInputChange}
-                  placeholder="https://your-institution.com"
-                />
-              </div>
-            </div>
 
             <div className="pb-6">
               <h2 className="text-lg sm:text-xl font-semibold text-gray-900 mb-4 flex items-center">
-                Registration Documents
+                Registration Documents (Optional)
               </h2>
               
               <FileUpload
@@ -273,7 +261,7 @@ const InstitutionRegister = () => {
                   description: 'Registration document for institution verification',
                   keyvalues: {
                     type: 'registration',
-                    institution: formData.institutionName,
+                    institution: formData.name,
                     timestamp: new Date().toISOString()
                   }
                 }}
@@ -309,16 +297,21 @@ const InstitutionRegister = () => {
                 type="submit"
                 size="lg"
                 className="w-full"
-                disabled={isSubmitting}
+                disabled={isSubmitting || isPending || isConfirming}
               >
-                {isSubmitting ? (
+                {isSubmitting || isPending ? (
                   <div className="flex items-center justify-center">
                     <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
-                    Submitting Registration...
+                    {isPending ? 'Transaction Pending...' : 'Submitting Registration...'}
+                  </div>
+                ) : isConfirming ? (
+                  <div className="flex items-center justify-center">
+                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
+                    Confirming Transaction...
                   </div>
                 ) : (
-                  <div className="flex items-center justify-center  text-white">
-                    Submit Registration
+                  <div className="flex items-center justify-center text-white">
+                    {isConnected ? 'Submit Registration' : 'Connect Wallet & Submit'}
                     <ArrowRight className="w-5 h-5 ml-2" />
                   </div>
                 )}

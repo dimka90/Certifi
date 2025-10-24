@@ -5,12 +5,10 @@ import Testimonials from './Testimonials';
 
 const HomePage = () => {
   return (
-    <div className="min-h-screen bg-black">
+    <div className="bg-black">
       <Hero />
-      <div className=" ">
-        <Services />
-        <Testimonials />
-      </div>
+      <Services />
+      <Testimonials />
     </div>
   );
 };

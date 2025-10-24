@@ -1,12 +1,11 @@
 // Simple state management for institution data
 export interface InstitutionData {
   institutionName: string;
-  address: string;
-  contactEmail: string;
-  contactPhone: string;
-  website: string;
-  registrationNumber: string;
-  description: string;
+  institutionID: string;
+  email: string;
+  country: string;
+  institutionType: number;
+  walletAddress?: string;
   registrationDocument?: {
     hash: string;
     url: string;
