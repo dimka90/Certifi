@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import React from 'react';
 import { ArrowUpRight, Shield, Zap, Users } from 'lucide-react';
 

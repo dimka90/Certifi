@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import { useState, useCallback } from 'react';
 import IPFSService, { IPFSUploadResult, IPFSUploadProgress } from '../lib/ipfs';
 

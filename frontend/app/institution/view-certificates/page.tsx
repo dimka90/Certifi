@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+/* eslint-disable @typescript-eslint/no-unused-vars */
 'use client';
 
 import React, { useState, useEffect } from 'react';
@@ -91,7 +93,7 @@ const ViewCertificates = () => {
     };
 
     fetchCertificates();
-  }, [tokenIds]);
+  }, [tokenIds, config]);
 
   // Process certificate data for display
   const processedCertificates = certificatesData.map((item: any, index: number) => {

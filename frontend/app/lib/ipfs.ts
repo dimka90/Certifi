@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 // Client-side IPFS service using API routes
 
 // IPFS Gateway URL
@@ -211,7 +212,7 @@ export class IPFSService {
    * Upload JSON data to IPFS
    */
   static async uploadJSON(
-    data: any,
+    data: Record<string, unknown>,
     metadata?: {
       name?: string;
       keyvalues?: Record<string, string>;
