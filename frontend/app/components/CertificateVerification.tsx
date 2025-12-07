@@ -26,17 +26,17 @@ const CertificateVerification: React.FC = () => {
     <Section padding="lg">
       <Container size="md">
         <Card className="border-green-500/30">
-          <CardContent className="space-y-8 pt-10">
+          <CardContent className="space-y-10 pt-12 pb-12">
             <div className="text-center space-y-4">
-              <h2 className="text-4xl sm:text-5xl font-bold text-white">
+              <h2 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-white">
                 Verify a Certificate
               </h2>
-              <p className="text-gray-400 text-lg">
+              <p className="text-gray-400 text-lg sm:text-xl">
                 Enter a certificate ID to instantly verify its authenticity
               </p>
             </div>
 
-            <form onSubmit={handleSearch} className="space-y-6">
+            <form onSubmit={handleSearch} className="space-y-6 max-w-2xl mx-auto">
               <div className="flex flex-col sm:flex-row gap-3">
                 <input
                   type="text"

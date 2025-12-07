@@ -34,18 +34,18 @@ const TESTIMONIALS: Testimonial[] = [
 
 const TestimonialCard: React.FC<{ testimonial: Testimonial }> = ({ testimonial }) => (
   <Card className="h-full flex flex-col hover:border-green-500/50 transition-all duration-300">
-    <CardContent className="flex-1 flex flex-col justify-between pt-8">
+    <CardContent className="flex-1 flex flex-col justify-between pt-10">
       <div>
-        <div className="flex gap-1 mb-6">
+        <div className="flex gap-1 mb-6 justify-center">
           {Array.from({ length: testimonial.rating }).map((_, i) => (
             <Star key={i} className="w-5 h-5 fill-yellow-400 text-yellow-400" />
           ))}
         </div>
-        <p className="text-gray-300 text-base leading-relaxed">
+        <p className="text-gray-300 text-base leading-relaxed text-center">
           "{testimonial.content}"
         </p>
       </div>
-      <div className="mt-8 pt-6 border-t border-zinc-700">
+      <div className="mt-8 pt-6 border-t border-zinc-700 text-center">
         <p className="font-semibold text-white text-lg">{testimonial.name}</p>
         <p className="text-sm text-gray-400 mt-2">{testimonial.role}</p>
       </div>
@@ -62,12 +62,12 @@ const Testimonials: React.FC = () => {
             Trusted by
             <span className="block text-green-400">Institutions & Employers</span>
           </h2>
-          <p className="text-gray-400 text-xl max-w-2xl mx-auto">
+          <p className="text-gray-400 text-lg sm:text-xl max-w-3xl mx-auto">
             See how Certifi is transforming credential verification across Africa
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 max-w-6xl mx-auto">
           {TESTIMONIALS.map((testimonial, index) => (
             <TestimonialCard key={index} testimonial={testimonial} />
           ))}
