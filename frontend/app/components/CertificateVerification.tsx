@@ -24,7 +24,7 @@ const CertificateVerification: React.FC = () => {
 
   return (
     <Section padding="lg">
-      <Container size="md">
+      <div className="w-full px-4 sm:px-6 lg:px-8 mx-auto max-w-2xl">
         <Card className="border-green-500/30">
           <CardContent className="space-y-10 pt-12 pb-12">
             <div className="text-center space-y-4">
@@ -36,7 +36,7 @@ const CertificateVerification: React.FC = () => {
               </p>
             </div>
 
-            <form onSubmit={handleSearch} className="space-y-6 max-w-2xl mx-auto">
+            <form onSubmit={handleSearch} className="space-y-6">
               <div className="flex flex-col sm:flex-row gap-3">
                 <input
                   type="text"
@@ -74,7 +74,7 @@ const CertificateVerification: React.FC = () => {
             </form>
           </CardContent>
         </Card>
-      </Container>
+      </div>
     </Section>
   );
 };

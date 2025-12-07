@@ -1,7 +1,6 @@
 import React from 'react';
 import { Lock, Zap, Globe } from 'lucide-react';
 import { Section } from './ui/Section';
-import { Container } from './ui/Container';
 import { Card, CardContent } from './ui/Card';
 
 interface Service {
@@ -46,7 +45,7 @@ const ServiceCard: React.FC<{ service: Service }> = ({ service }) => {
 const Services: React.FC = () => {
   return (
     <Section padding="lg">
-      <Container>
+      <div className="w-full px-4 sm:px-6 lg:px-8 mx-auto">
         <div className="text-center mb-20">
           <h2 className="text-5xl sm:text-6xl lg:text-7xl font-bold text-white mb-6">
             Why Choose
@@ -62,7 +61,7 @@ const Services: React.FC = () => {
             <ServiceCard key={index} service={service} />
           ))}
         </div>
-      </Container>
+      </div>
     </Section>
   );
 };

@@ -1,7 +1,6 @@
   import React from 'react';
 import { Star } from 'lucide-react';
 import { Section } from './ui/Section';
-import { Container } from './ui/Container';
 import { Card, CardContent } from './ui/Card';
 
 interface Testimonial {
@@ -56,7 +55,7 @@ const TestimonialCard: React.FC<{ testimonial: Testimonial }> = ({ testimonial }
 const Testimonials: React.FC = () => {
   return (
     <Section padding="lg">
-      <Container>
+      <div className="w-full px-4 sm:px-6 lg:px-8 mx-auto">
         <div className="text-center mb-20">
           <h2 className="text-5xl sm:text-6xl lg:text-7xl font-bold text-white mb-6">
             Trusted by
@@ -72,7 +71,7 @@ const Testimonials: React.FC = () => {
             <TestimonialCard key={index} testimonial={testimonial} />
           ))}
         </div>
-      </Container>
+      </div>
     </Section>
   );
 };
