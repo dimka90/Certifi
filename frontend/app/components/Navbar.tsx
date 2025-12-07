@@ -1,58 +1,115 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
-import React from 'react';
+'use client';
+
+import React, { useState } from 'react';
 import Link from 'next/link';
-import { ArrowUpRight, Menu } from 'lucide-react';
+import { Menu, X } from 'lucide-react';
 import { ConnectButton } from '@rainbow-me/rainbowkit';
-const Navbar = () => {
+import { Container } from './ui/Container';
+
+const NAV_LINKS = [
+  { label: 'Home', href: '/' },
+  { label: 'About', href: '#' },
+  { label: 'Services', href: '#' },
+  { label: 'Blog', href: '#' },
+  { label: 'Contact', href: '#' },
+];
+
+const Navbar: React.FC = () => {
+  const [isOpen, setIsOpen] = useState(false);
+
   return (
-    <nav className="absolute top-0 left-0 right-0 z-50 px-4 sm:px-6 lg:px-8 py-4 sm:py-6 border-b-2 bg-black">
-      <div className="max-w-[1400px] mx-auto flex justify-between items-center">
-        {/* Logo */}
-        <div className="flex items-center gap-2">
-          <div className="w-6 h-6 sm:w-8 sm:h-8 bg-gradient-to-br from-green-400 to-green-600 rounded flex items-center justify-center">
-            <svg width="16" height="16" className="sm:w-5 sm:h-5" viewBox="0 0 20 20" fill="none">
-              <path d="M10 2L3 7v6l7 5 7-5V7l-7-5z" fill="currentColor" className="text-black/80"/>
-            </svg>
-          </div>
-          <span className="text-white text-lg sm:text-xl font-semibold tracking-tight">Certifi</span>
-        </div>
-
-        {/* Navigation Links */}
-        <div className="hidden lg:flex items-center gap-8 xl:gap-10">
-          <Link href="/" className="text-green-400 text-sm font-medium hover:text-green-300 transition-colors">
-            Home
+    <nav className="fixed top-0 left-0 right-0 z-50 bg-black/95 backdrop-blur-sm border-b border-zinc-800">
+      <Container>
+        <div className="flex justify-between items-center h-16 sm:h-20">
+          {/* Logo */}
+          <Link href="/" className="flex items-center gap-2 flex-shrink-0">
+            <div className="w-8 h-8 bg-gradient-to-br from-green-400 to-green-600 rounded flex items-center justify-center">
+              <svg width="16" height="16" viewBox="0 0 20 20" fill="none">
+                <path
+                  d="M10 2L3 7v6l7 5 7-5V7l-7-5z"
+                  fill="currentColor"
+                  className="text-black/80"
+                />
+              </svg>
+            </div>
+            <span className="text-white text-lg font-semibold tracking-tight">Certifi</span>
           </Link>
-          <a href="#" className="text-gray-300 text-sm font-medium hover:text-white transition-colors">
-            About Us
-          </a>
-          <a href="#" className="text-gray-300 text-sm font-medium hover:text-white transition-colors">
-            Services
-          </a>
-          <a href="#" className="text-gray-300 text-sm font-medium hover:text-white transition-colors">
-            Blog
-          </a>
-          <a href="#" className="text-gray-300 text-sm font-medium hover:text-white transition-colors">
-            Contact
-          </a>
-          <ConnectButton 
-            label="Connect wallet"
-            chainStatus={{
-              largeScreen: 'name',
-              smallScreen: 'icon',
-            }}
-            showBalance={false}
-            accountStatus={{
-              largeScreen: 'full',
-              smallScreen: 'address',
-            }}
-          />
+
+          {/* Desktop Navigation */}
+          <div className="hidden lg:flex items-center gap-8">
+            {NAV_LINKS.map((link) => (
+              <Link
+                key={link.label}
+                href={link.href}
+                className="text-sm font-medium text-gray-300 hover:text-white transition-colors"
+              >
+                {link.label}
+              </Link>
+            ))}
+          </div>
+
+          {/* Wallet Connect & Mobile Menu */}
+          <div className="flex items-center gap-4">
+            <div className="hidden sm:block">
+              <ConnectButton
+                label="Connect"
+                chainStatus={{
+                  largeScreen: 'name',
+                  smallScreen: 'icon',
+                }}
+                showBalance={false}
+                accountStatus={{
+                  largeScreen: 'full',
+                  smallScreen: 'address',
+                }}
+              />
+            </div>
+
+            {/* Mobile Menu Button */}
+            <button
+              onClick={() => setIsOpen(!isOpen)}
+              className="lg:hidden text-white p-2"
+              aria-label="Toggle menu"
+            >
+              {isOpen ? (
+                <X className="w-6 h-6" />
+              ) : (
+                <Menu className="w-6 h-6" />
+              )}
+            </button>
+          </div>
         </div>
 
-        {/* Mobile Menu */}
-        <button className="lg:hidden text-white">
-          <Menu className="w-5 h-5 sm:w-6 sm:h-6" />
-        </button>
-      </div>
+        {/* Mobile Navigation */}
+        {isOpen && (
+          <div className="lg:hidden border-t border-zinc-800 py-4 space-y-3">
+            {NAV_LINKS.map((link) => (
+              <Link
+                key={link.label}
+                href={link.href}
+                className="block text-sm font-medium text-gray-300 hover:text-white transition-colors px-4 py-2"
+                onClick={() => setIsOpen(false)}
+              >
+                {link.label}
+              </Link>
+            ))}
+            <div className="px-4 pt-2">
+              <ConnectButton
+                label="Connect Wallet"
+                chainStatus={{
+                  largeScreen: 'name',
+                  smallScreen: 'icon',
+                }}
+                showBalance={false}
+                accountStatus={{
+                  largeScreen: 'full',
+                  smallScreen: 'address',
+                }}
+              />
+            </div>
+          </div>
+        )}
+      </Container>
     </nav>
   );
 };
