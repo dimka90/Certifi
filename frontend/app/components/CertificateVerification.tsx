@@ -18,7 +18,6 @@ const CertificateVerification: React.FC = () => {
     if (!certificateId.trim()) return;
 
     setIsSearching(true);
-    // Simulate verification delay
     await new Promise((resolve) => setTimeout(resolve, 500));
     router.push(`/verify/${certificateId}`);
   };
@@ -26,51 +25,51 @@ const CertificateVerification: React.FC = () => {
   return (
     <Section padding="lg">
       <Container size="md">
-        <Card>
-          <CardContent className="space-y-6">
-            <div className="text-center space-y-2">
-              <h2 className="text-3xl md:text-4xl font-bold text-white">
-                Verify Certificate
+        <Card className="border-green-500/30">
+          <CardContent className="space-y-8 pt-10">
+            <div className="text-center space-y-4">
+              <h2 className="text-4xl sm:text-5xl font-bold text-white">
+                Verify a Certificate
               </h2>
-              <p className="text-gray-400">
-                Enter a certificate ID to verify its authenticity and view details
+              <p className="text-gray-400 text-lg">
+                Enter a certificate ID to instantly verify its authenticity
               </p>
             </div>
 
-            <form onSubmit={handleSearch} className="space-y-4">
+            <form onSubmit={handleSearch} className="space-y-6">
               <div className="flex flex-col sm:flex-row gap-3">
                 <input
                   type="text"
-                  placeholder="Enter Certificate ID"
+                  placeholder="Enter Certificate ID or Token ID"
                   value={certificateId}
                   onChange={(e) => setCertificateId(e.target.value)}
                   disabled={isSearching}
-                  className="flex-1 px-4 py-3 bg-zinc-800/60 border border-zinc-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-green-500 transition-colors disabled:opacity-50"
+                  className="flex-1 px-5 py-4 bg-zinc-800/60 border border-zinc-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-green-500 transition-colors disabled:opacity-50 text-base"
                   aria-label="Certificate ID"
                 />
                 <Button
                   type="submit"
                   variant="secondary"
-                  size="md"
+                  size="lg"
                   disabled={!certificateId.trim() || isSearching}
                   className="whitespace-nowrap"
                 >
                   {isSearching ? (
                     <>
-                      <Loader2 className="w-4 h-4 animate-spin" />
+                      <Loader2 className="w-5 h-5 animate-spin" />
                       Verifying...
                     </>
                   ) : (
                     <>
-                      <Search className="w-4 h-4" />
+                      <Search className="w-5 h-5" />
                       Verify
                     </>
                   )}
                 </Button>
               </div>
 
-              <p className="text-center text-xs text-gray-400">
-                Certificate verification is powered by blockchain technology for maximum security and authenticity.
+              <p className="text-center text-sm text-gray-400">
+                Powered by blockchain technology for maximum security and authenticity
               </p>
             </form>
           </CardContent>

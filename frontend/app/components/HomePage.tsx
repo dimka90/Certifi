@@ -2,12 +2,14 @@ import React from 'react';
 import Hero from './Hero';
 import Services from './Services';
 import Testimonials from './Testimonials';
+import CertificateVerification from './CertificateVerification';
 
 const HomePage = () => {
   return (
     <div className="bg-black">
       <Hero />
       <Services />
+      <CertificateVerification />
       <Testimonials />
     </div>
   );
