@@ -46,7 +46,7 @@ const Hero: React.FC = () => {
       <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.03)_1px,transparent_1px)] bg-[size:64px_64px] [mask-image:radial-gradient(ellipse_at_center,black_40%,transparent_90%)] pointer-events-none" />
 
       {/* Content */}
-      <div className="relative z-10 w-full px-4 sm:px-6 lg:px-8 flex flex-col items-center space-y-12">
+      <div className="relative z-10 w-full px-4 sm:px-6 lg:px-8 flex flex-col items-center space-y-20">
 
         {/* Badge */}
         <motion.div
@@ -62,7 +62,7 @@ const Hero: React.FC = () => {
         </motion.div>
 
         {/* Main Headline */}
-        <div className="space-y-6 text-center max-w-5xl">
+        <div className="space-y-8 text-center max-w-5xl">
           <motion.h1
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -70,7 +70,7 @@ const Hero: React.FC = () => {
             className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-bold text-white leading-[1.1] tracking-tight"
           >
             Instant
-            <span className="block bg-gradient-to-r from-green-400 via-emerald-400 to-green-500 bg-clip-text text-transparent pb-2">
+            <span className="block bg-gradient-to-r from-green-400 via-emerald-400 to-green-500 bg-clip-text text-transparent pb-3">
               Credential Verification
             </span>
           </motion.h1>
@@ -90,7 +90,7 @@ const Hero: React.FC = () => {
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 0.6, delay: 0.6 }}
-          className="flex flex-col sm:flex-row gap-5 w-full sm:w-auto justify-center"
+          className="flex flex-col sm:flex-row gap-8 w-full sm:w-auto justify-center"
         >
           <Button
             variant="secondary"
@@ -116,7 +116,7 @@ const Hero: React.FC = () => {
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, delay: 0.8 }}
-          className="grid grid-cols-3 gap-8 sm:gap-16 pt-12 border-t border-white/5 max-w-4xl w-full"
+          className="grid grid-cols-3 gap-8 sm:gap-16 pt-24 border-t border-white/5 max-w-4xl w-full"
         >
           <div className="text-center group">
             <div className="text-3xl sm:text-4xl md:text-5xl font-bold bg-gradient-to-br from-green-400 to-emerald-600 bg-clip-text text-transparent group-hover:scale-110 transition-transform duration-300">3s</div>

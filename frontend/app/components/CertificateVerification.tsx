@@ -23,10 +23,10 @@ const CertificateVerification: React.FC = () => {
   };
 
   return (
-    <Section padding="lg">
+    <Section padding="xl">
       <div className="w-full px-4 sm:px-6 lg:px-8 mx-auto max-w-2xl">
         <Card className="border-green-500/30">
-          <CardContent className="space-y-10 pt-12 pb-12">
+          <CardContent className="space-y-16 pt-12 pb-12">
             <div className="text-center space-y-4">
               <h2 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-white">
                 Verify a Certificate
