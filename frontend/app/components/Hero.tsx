@@ -19,9 +19,9 @@ const Hero: React.FC = () => {
 
       {/* Content */}
       <div className="relative z-10 w-full min-h-screen flex flex-col items-center justify-center py-20">
-        <div className="w-full px-4 sm:px-6 lg:px-8 flex flex-col items-center">
+        <div className="w-full px-4 sm:px-6 lg:px-8 flex flex-col items-center space-y-16">
           {/* Badge */}
-          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-green-500/10 border border-green-500/30 mb-8">
+          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-green-500/10 border border-green-500/30">
             <Shield className="w-4 h-4 text-green-400" />
             <span className="text-sm font-medium text-green-400">
               Blockchain-Powered Verification
@@ -29,7 +29,7 @@ const Hero: React.FC = () => {
           </div>
 
           {/* Main Headline */}
-          <div className="space-y-8 text-center max-w-5xl mb-12">
+          <div className="space-y-8 text-center max-w-5xl">
             <h1 className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-bold text-white leading-tight tracking-tight">
               Instant
               <span className="block bg-gradient-to-r from-green-400 via-green-500 to-emerald-400 bg-clip-text text-transparent">
@@ -42,7 +42,7 @@ const Hero: React.FC = () => {
           </div>
 
           {/* CTA Buttons */}
-          <div className="flex flex-col sm:flex-row gap-4 mb-20">
+          <div className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto justify-center">
             <Button
               variant="secondary"
               size="lg"
@@ -61,7 +61,7 @@ const Hero: React.FC = () => {
           </div>
 
           {/* Stats */}
-          <div className="grid grid-cols-3 gap-8 sm:gap-12 pt-12 border-t border-zinc-800/50 max-w-2xl">
+          <div className="grid grid-cols-3 gap-8 sm:gap-12 pt-12 border-t border-zinc-800/50 max-w-2xl w-full">
             <div className="text-center">
               <div className="text-3xl sm:text-4xl md:text-5xl font-bold text-green-400">3s</div>
               <p className="text-xs sm:text-sm text-gray-400 mt-3 font-medium">Verification Time</p>
