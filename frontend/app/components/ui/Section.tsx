@@ -24,7 +24,7 @@ const Section = React.forwardRef<HTMLElement, SectionProps>(
     return (
       <section
         ref={ref}
-        className={cn(variantClasses[variant], paddingClasses[padding], className)}
+        className={cn(variantClasses[variant], paddingClasses[padding], 'w-full', className)}
         {...props}
       />
     );

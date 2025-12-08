@@ -6,7 +6,7 @@ import CertificateVerification from './CertificateVerification';
 
 const HomePage = () => {
   return (
-    <div className="bg-black flex flex-col gap-32 pb-32">
+    <div className="bg-black flex flex-col gap-32 pb-32 w-full">
       <Hero />
       <Services />
       <CertificateVerification />
