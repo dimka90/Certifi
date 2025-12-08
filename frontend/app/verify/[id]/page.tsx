@@ -1,12 +1,13 @@
 import Layout from '../../components/Layout';
 
 interface CertificatePageProps {
-  params: {
+  params: Promise<{
     id: string;
-  };
+  }>;
 }
 
-export default function CertificateVerification({ params }: CertificatePageProps) {
+export default async function CertificateVerification(props: CertificatePageProps) {
+  const params = await props.params;
   return (
     <Layout>
       <div className="min-h-screen bg-black py-20">
@@ -19,7 +20,7 @@ export default function CertificateVerification({ params }: CertificatePageProps
               Certificate ID: {params.id}
             </p>
           </div>
-          
+
           <div className="bg-gradient-to-br from-zinc-900/60 to-zinc-950/80 backdrop-blur-sm rounded-2xl p-8 border border-zinc-800/50">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
               <div>
@@ -49,7 +50,7 @@ export default function CertificateVerification({ params }: CertificatePageProps
                   </div>
                 </div>
               </div>
-              
+
               {/* Blockchain Proof */}
               <div>
                 <h2 className="text-2xl font-bold text-white mb-6">Blockchain Proof</h2>
@@ -73,7 +74,7 @@ export default function CertificateVerification({ params }: CertificatePageProps
                     </div>
                   </div>
                 </div>
-                
+
                 <div className="mt-6">
                   <button className="w-full py-3 bg-gradient-to-r from-green-500 to-green-600 text-black font-semibold rounded-lg hover:from-green-600 hover:to-green-700 transition-all duration-300">
                     View on Blockchain Explorer
