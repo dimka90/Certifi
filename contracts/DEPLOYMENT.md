@@ -13,60 +13,49 @@
 - RPC: https://forno.celo.org
 - Chain ID: 42220
 
-**Celo Alfajores Testnet:**
-- RPC: https://alfajores-forno.celo-testnet.org
+**Celo Sepolia Testnet:**
+- RPC: https://forno.celo-sepolia.celo-testnet.org
 - Chain ID: 44787
 
 ### Setup
 
-1. Update `.env` file with your private key:
-```bash
-DEPLOYER_PRIVATE_KEY=your_private_key_here
-```
+Get your private key ready (without 0x prefix if needed).
 
-2. Get a Celoscan API key from https://celoscan.io and add it to `.env`:
-```bash
-CELOSCAN_API_KEY=your_api_key_here
-```
-
-### Deploy to Celo Alfajores Testnet
+### Deploy to Celo Sepolia Testnet
 
 ```bash
+cd contracts
 forge script script/DeployCelo.s.sol:DeployCelo \
-  --rpc-url https://alfajores-forno.celo-testnet.org \
+  --rpc-url https://forno.celo-sepolia.celo-testnet.org \
+  --private-key <your_private_key> \
   --broadcast \
-  --verify \
-  --verifier blockscout \
-  --verifier-url https://alfajores-blockscout.celo-testnet.org/api
+  -vvvv \
+  --via-ir
 ```
 
 ### Deploy to Celo Mainnet
 
 ```bash
+cd contracts
 forge script script/DeployCelo.s.sol:DeployCelo \
   --rpc-url https://forno.celo.org \
+  --private-key <your_private_key> \
   --broadcast \
-  --verify \
-  --verifier blockscout \
-  --verifier-url https://explorer.celo.org/api
-```
-
-### Verify Contract
-
-If verification fails during deployment, verify manually:
-
-```bash
-forge verify-contract <CONTRACT_ADDRESS> CertificateNFT \
-  --chain-id 44787 \
-  --verifier blockscout \
-  --verifier-url https://alfajores-blockscout.celo-testnet.org/api
+  -vvvv \
+  --via-ir
 ```
 
 ### Check Deployment
 
 After deployment, you'll see the contract address in the output. You can verify it on:
-- Alfajores: https://alfajores-blockscout.celo-testnet.org
-- Mainnet: https://explorer.celo.org
+- Celo Sepolia: https://sepolia.celoscan.io
+- Celo Mainnet: https://celoscan.io
+
+The deployment output will show:
+- Transaction hash
+- Contract address
+- Gas used
+- Block number
 
 ## Contract Functions
 
