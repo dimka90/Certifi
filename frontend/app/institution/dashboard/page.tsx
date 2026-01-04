@@ -78,8 +78,8 @@ const InstitutionDashboard = () => {
                   <button
                     onClick={() => handleNavigation(item.route)}
                     className={`w-full flex items-center space-x-3 px-4 py-4 rounded-lg text-left transition-all ${activeTab === item.id
-                        ? 'bg-green-500 text-black font-bold shadow-lg shadow-green-500/20'
-                        : 'text-zinc-400 hover:bg-zinc-900 hover:text-white'
+                      ? 'bg-green-500 text-black font-bold shadow-lg shadow-green-500/20'
+                      : 'text-zinc-400 hover:bg-zinc-900 hover:text-white'
                       }`}
                   >
                     <Icon className="w-5 h-5" />
@@ -139,118 +139,114 @@ const InstitutionDashboard = () => {
               {institutionData ? (
                 <div className="space-y-6">
 
-                  <div className="bg-zinc-900/40 backdrop-blur-xl rounded-xl border border-white/5 p-8 shadow-2xl">
-                    <div className="flex items-center space-x-4 mb-6">
+                  <div className="glass-card rounded-2xl p-8 hover:scale-[1.01] transition-all duration-300">
+                    <div className="flex items-center space-x-4 mb-8">
                       <div className="w-12 h-12 bg-green-500/10 border border-green-500/20 rounded-xl flex items-center justify-center">
                         <Building2 className="w-6 h-6 text-green-400" />
                       </div>
                       <div>
                         <h2 className="text-2xl font-bold text-white tracking-tight">Institution Overview</h2>
-                        <p className="text-base text-zinc-400">Your registered institution details</p>
+                        <p className="text-sm text-zinc-500">Your registered identification details</p>
                       </div>
                     </div>
 
-                    <div className="grid md:grid-cols-2 gap-8">
+                    <div className="grid md:grid-cols-2 gap-10">
                       <div>
-                        <h3 className="text-sm font-medium text-zinc-500 uppercase tracking-wider mb-2">Institution Name</h3>
-                        <p className="text-lg text-white font-medium">{institutionData.institutionName}</p>
+                        <h3 className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-2">Institution Name</h3>
+                        <p className="text-lg text-white font-semibold">{institutionData.institutionName}</p>
                       </div>
 
                       <div>
-                        <h3 className="text-sm font-medium text-zinc-500 uppercase tracking-wider mb-2">Institution ID</h3>
-                        <p className="text-lg text-white font-medium">{institutionData.institutionID}</p>
+                        <h3 className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-2">Institution ID</h3>
+                        <p className="text-lg text-white font-mono bg-white/5 px-2 py-1 rounded inline-block">{institutionData.institutionID}</p>
                       </div>
                     </div>
 
-                    <div className="grid md:grid-cols-2 gap-8 mt-8">
+                    <div className="grid md:grid-cols-2 gap-10 mt-10">
                       <div>
-                        <h3 className="text-sm font-medium text-zinc-500 uppercase tracking-wider mb-2 flex items-center">
-                          <MapPin className="w-4 h-4 mr-2 text-green-400" />
+                        <h3 className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-2 flex items-center">
+                          <MapPin className="w-3 h-3 mr-2 text-green-500" />
                           Country
                         </h3>
                         <p className="text-lg text-white font-medium">{institutionData.country}</p>
                       </div>
                       <div>
-                        <h3 className="text-sm font-medium text-zinc-500 uppercase tracking-wider mb-2">Institution Type</h3>
-                        <p className="text-lg text-white font-medium">
+                        <h3 className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-2">Institution Type</h3>
+                        <div className="inline-flex items-center px-3 py-1 bg-green-500/10 text-green-400 rounded-lg text-sm font-bold border border-green-500/20 mt-1">
                           {institutionData.institutionType === 0 ? 'University' :
                             institutionData.institutionType === 1 ? 'College' :
                               institutionData.institutionType === 2 ? 'School' :
                                 institutionData.institutionType === 3 ? 'Training Center' : 'Other'}
-                        </p>
+                        </div>
                       </div>
                     </div>
                   </div>
 
-
-
-                  <div className="bg-zinc-900/40 backdrop-blur-xl rounded-xl border border-white/5 p-8 shadow-2xl">
-                    <div className="flex items-center space-x-4 mb-6">
+                  <div className="glass-card rounded-2xl p-8 hover:scale-[1.01] transition-all duration-300">
+                    <div className="flex items-center space-x-4 mb-8">
                       <div className="w-12 h-12 bg-green-500/10 border border-green-500/20 rounded-xl flex items-center justify-center">
                         <Mail className="w-6 h-6 text-green-400" />
                       </div>
                       <div>
                         <h2 className="text-2xl font-bold text-white tracking-tight">Contact Information</h2>
-                        <p className="text-base text-zinc-400">Your institution contact details</p>
+                        <p className="text-sm text-zinc-500">How we reach out to you</p>
                       </div>
                     </div>
 
-                    <div className="grid md:grid-cols-2 gap-8">
+                    <div className="grid md:grid-cols-2 gap-10">
                       <div>
-                        <h3 className="text-sm font-medium text-zinc-500 uppercase tracking-wider mb-2 flex items-center">
-                          <Mail className="w-4 h-4 mr-2 text-green-400" />
-                          Email
+                        <h3 className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-2 flex items-center">
+                          <Mail className="w-3 h-3 mr-2 text-green-500" />
+                          Email Address
                         </h3>
-                        <p className="text-lg text-white font-medium">{institutionData.email}</p>
+                        <p className="text-lg text-white font-medium break-all underline decoration-green-500/30 underline-offset-4">{institutionData.email}</p>
                       </div>
 
                       <div>
-                        <h3 className="text-sm font-medium text-zinc-500 uppercase tracking-wider mb-2 flex items-center">
-                          <Hash className="w-4 h-4 mr-2 text-green-400" />
-                          Wallet Address
+                        <h3 className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-2 flex items-center">
+                          <Hash className="w-3 h-3 mr-2 text-green-500" />
+                          Settlement Wallet
                         </h3>
-                        <p className="text-sm text-white font-mono bg-zinc-950/50 border border-white/5 px-3 py-2 rounded break-all">
+                        <p className="text-xs text-white font-mono bg-zinc-950/80 border border-white/5 px-4 py-3 rounded-xl break-all shadow-inner">
                           {institutionData.walletAddress || 'Not available'}
                         </p>
                       </div>
                     </div>
-
                   </div>
 
-
                   {institutionData.registrationDocument && (
-                    <div className="bg-zinc-900/40 backdrop-blur-xl rounded-xl border border-white/5 p-8 shadow-2xl">
-                      <div className="flex items-center space-x-4 mb-6">
+                    <div className="glass-card rounded-2xl p-8 hover:scale-[1.01] transition-all duration-300">
+                      <div className="flex items-center space-x-4 mb-8">
                         <div className="w-12 h-12 bg-green-500/10 border border-green-500/20 rounded-xl flex items-center justify-center">
                           <FileText className="w-6 h-6 text-green-400" />
                         </div>
                         <div>
-                          <h2 className="text-2xl font-bold text-white tracking-tight">Registration Document</h2>
-                          <p className="text-base text-zinc-400">Your uploaded registration document</p>
+                          <h2 className="text-2xl font-bold text-white tracking-tight">Legal Documentation</h2>
+                          <p className="text-sm text-zinc-500">Your institution verification files</p>
                         </div>
                       </div>
 
-                      <div className="grid md:grid-cols-2 gap-8">
-                        <div className="space-y-6">
+                      <div className="grid md:grid-cols-2 gap-10">
+                        <div className="space-y-8">
                           <div>
-                            <h3 className="text-sm font-medium text-zinc-500 uppercase tracking-wider mb-2">Document Name</h3>
-                            <p className="text-lg text-white font-medium">{institutionData.registrationDocument.name}</p>
+                            <h3 className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-2">Filename</h3>
+                            <p className="text-lg text-white font-medium truncate">{institutionData.registrationDocument.name}</p>
                           </div>
 
                           <div>
-                            <h3 className="text-sm font-medium text-zinc-500 uppercase tracking-wider mb-2 flex items-center">
-                              <Hash className="w-4 h-4 mr-2 text-green-400" />
-                              IPFS Hash
+                            <h3 className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-2 flex items-center">
+                              <Hash className="w-3 h-3 mr-2 text-green-500" />
+                              IPFS CONTENT ID
                             </h3>
-                            <p className="text-sm text-white font-mono bg-zinc-950/50 border border-white/5 px-3 py-2 rounded break-all">
+                            <p className="text-[10px] text-zinc-400 font-mono bg-zinc-950/50 border border-white/5 px-3 py-2 rounded break-all">
                               {institutionData.registrationDocument.hash}
                             </p>
                           </div>
                         </div>
 
-                        <div className="space-y-6">
+                        <div className="space-y-8 flex flex-col justify-between">
                           <div>
-                            <h3 className="text-sm font-medium text-zinc-500 uppercase tracking-wider mb-2">Document Size</h3>
+                            <h3 className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest mb-2">Storage Footprint</h3>
                             <p className="text-lg text-white font-medium">
                               {(institutionData.registrationDocument.size / (1024 * 1024)).toFixed(2)} MB
                             </p>
@@ -261,10 +257,10 @@ const InstitutionDashboard = () => {
                               href={institutionData.registrationDocument.url}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="inline-flex items-center px-6 py-3 bg-green-500 text-black font-bold rounded-lg hover:bg-green-400 transition-all shadow-lg shadow-green-900/20"
+                              className="w-full inline-flex items-center justify-center px-6 py-4 bg-green-500 text-black font-bold rounded-xl hover:bg-green-400 transition-all shadow-lg shadow-green-950/20 group"
                             >
-                              <FileText className="w-5 h-5 mr-2" />
-                              View Document
+                              <FileText className="w-5 h-5 mr-2 group-hover:scale-110 transition-transform" />
+                              Inspect Source Document
                             </a>
                           </div>
                         </div>
