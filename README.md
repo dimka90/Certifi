@@ -1,13 +1,17 @@
-# Certifi - Blockchain-Powered Credential Verification
+# Certifi - Blockchain-Powered Credential Verification on Base
 ## Restoring Global Trust in Academic Credentials
+
+![Built on Base](https://img.shields.io/badge/Built%20on-Base-0052FF?style=for-the-badge&logo=base&logoColor=white)
+
 # The Problem
 ### African academic institutions face a critical trust crisis globally. Employers worldwide struggle to verify African qualifications, leading to:
 ### Delayed hiring processes due to lengthy verification procedures
 ### Millions in fraud losses from fake certificates and credentials
 ### Loss of opportunities for qualified African graduates
 ### Erosion of trust in African educational institutions
+
 # The Solution
-## Certifi is a revolutionary blockchain-powered platform that restores global trust in academic credentials through:
+## Certifi is a revolutionary platform built on the **Base network** that restores global trust in academic credentials through:
 1. Tamper-Proof Certificates
    Immutable blockchain storage ensures certificates cannot be forged
 Cryptographic verification guarantees authenticity
