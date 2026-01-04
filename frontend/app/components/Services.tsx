@@ -54,8 +54,10 @@ const ServiceCard: React.FC<{ service: Service; index: number }> = ({ service, i
 
 const Services: React.FC = () => {
   return (
-    <Section padding="xl" className="relative">
-      <div className="absolute inset-0 bg-zinc-900/20 skew-y-3 transform origin-top-left -z-10 h-full w-full" />
+    <Section padding="xl" className="relative overflow-hidden">
+      {/* Background Decor */}
+      <div className="absolute top-1/2 left-0 w-[500px] h-[500px] bg-green-500/5 rounded-full blur-[120px] -z-10 animate-pulse" />
+      <div className="absolute bottom-0 right-0 w-[400px] h-[400px] bg-emerald-500/5 rounded-full blur-[100px] -z-10" />
 
       <div className="w-full px-4 sm:px-6 lg:px-8 mx-auto">
         <motion.div
@@ -65,16 +67,18 @@ const Services: React.FC = () => {
           transition={{ duration: 0.6 }}
           className="text-center mb-24 relative z-10"
         >
+          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-green-500/10 border border-green-500/20 text-green-400 text-sm font-medium mb-8">
+            Our Platform Pillars
+          </div>
           <h2 className="text-5xl sm:text-6xl lg:text-7xl font-bold text-white mb-6 tracking-tight">
-            Why Choose
-            <span className="block text-green-400">Certifi?</span>
+            Trust at <span className="text-gradient-green">Internet Scale</span>
           </h2>
-          <p className="text-gray-400 text-lg sm:text-xl max-w-3xl mx-auto">
-            Built on blockchain technology for maximum security, speed, and reliability
+          <p className="text-zinc-500 text-lg sm:text-xl max-w-2xl mx-auto leading-relaxed">
+            Revolutionizing academic and professional credentials with immutable blockchain technology.
           </p>
         </motion.div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-6xl mx-auto">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-10 max-w-7xl mx-auto">
           {SERVICES.map((service, index) => (
             <ServiceCard key={index} service={service} index={index} />
           ))}
