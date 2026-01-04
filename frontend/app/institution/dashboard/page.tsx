@@ -3,9 +3,9 @@
 
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { 
-  Award, 
-  Settings, 
+import {
+  Award,
+  Settings,
   Plus,
   User,
   LogOut,
@@ -36,7 +36,7 @@ const InstitutionDashboard = () => {
   ];
 
   useEffect(() => {
-    
+
     const data = institutionStore.getInstitutionData();
     setInstitutionData(data);
   }, []);
@@ -47,17 +47,17 @@ const InstitutionDashboard = () => {
 
 
   return (
-    <div className="h-screen bg-gray-100 flex">
-     
-      <div className={`${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} fixed inset-y-0 left-0 z-50 w-64 bg-gray-900 text-white transition-transform duration-300 ease-in-out lg:translate-x-0 lg:static lg:inset-0 flex flex-col`}>
-        <div className="flex items-center justify-between h-16 px-6 border-b border-gray-700 flex-shrink-0">
+    <div className="h-screen bg-black flex overflow-hidden">
+
+      <div className={`${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} fixed inset-y-0 left-0 z-50 w-64 bg-zinc-950 border-r border-white/5 text-white transition-transform duration-300 ease-in-out lg:translate-x-0 lg:static lg:inset-0 flex flex-col shadow-2xl shadow-green-950/20`}>
+        <div className="flex items-center justify-between h-16 px-6 border-b border-white/5 flex-shrink-0">
           <div className="flex items-center space-x-3">
             <div className="w-8 h-8 bg-green-500 rounded flex items-center justify-center">
               <Award className="w-5 h-5 text-white" />
             </div>
             <h1 className="text-xl sm:text-xl md:text-2xl lg:text-2xl xl:text-2xl xl:text-5xl font-bold leading-[1.1] tracking-tight">
               <span className="bg-gradient-to-r from-green-300 via-green-400 to-green-500 bg-clip-text text-transparent">
-              Certifi
+                Certifi
               </span>
             </h1>
           </div>
@@ -77,11 +77,10 @@ const InstitutionDashboard = () => {
                 <div key={item.id} className="flex-1 flex items-center">
                   <button
                     onClick={() => handleNavigation(item.route)}
-                    className={`w-full flex items-center space-x-3 px-4 py-4 rounded-lg text-left transition-colors ${
-                      activeTab === item.id
-                        ? 'bg-green-500 text-white'
-                        : 'text-gray-300 hover:bg-gray-800 hover:text-white'
-                    }`}
+                    className={`w-full flex items-center space-x-3 px-4 py-4 rounded-lg text-left transition-all ${activeTab === item.id
+                        ? 'bg-green-500 text-black font-bold shadow-lg shadow-green-500/20'
+                        : 'text-zinc-400 hover:bg-zinc-900 hover:text-white'
+                      }`}
                   >
                     <Icon className="w-5 h-5" />
                     <span className="font-medium">{item.label}</span>
@@ -91,9 +90,9 @@ const InstitutionDashboard = () => {
             })}
           </div>
 
-         
-          <div className="pt-6 border-t border-gray-700">
-            <button className="w-full flex items-center space-x-3 px-4 py-4 rounded-lg text-left transition-colors text-red-400 hover:bg-red-900/20 hover:text-red-300">
+
+          <div className="pt-6 border-t border-white/5">
+            <button className="w-full flex items-center space-x-3 px-4 py-4 rounded-lg text-left transition-colors text-red-400 hover:bg-red-500/10 hover:text-red-300">
               <LogOut className="w-5 h-5" />
               <span className="font-medium">Logout</span>
             </button>
@@ -101,18 +100,18 @@ const InstitutionDashboard = () => {
         </nav>
       </div>
 
-    
+
       {sidebarOpen && (
-        <div 
+        <div
           className="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden"
           onClick={() => setSidebarOpen(false)}
         />
       )}
 
-    
-      <div className="flex-1 flex flex-col overflow-hidden min-h-[600px] mx-8 rounded-lg">
-      
-        <header className="bg-white shadow-sm border-b border-gray-200">
+
+      <div className="flex-1 flex flex-col overflow-hidden min-h-[600px]">
+
+        <header className="bg-zinc-950/50 backdrop-blur-md border-b border-white/5">
           <div className="flex items-center justify-between h-16 px-6 ">
             <div className="flex  items-center space-x-4">
               <h1 className="text-xl sm:text-xl md:text-2xl lg:text-2xl xl:text-2xl xl:text-5xl font-bold leading-[1.1] tracking-tight">
@@ -121,91 +120,96 @@ const InstitutionDashboard = () => {
                 </span>
               </h1>
             </div>
-            
-          
+
+
             <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
-                <User className="w-6 h-6 text-green-600" />
+              <div className="w-10 h-10 bg-green-500/10 border border-green-500/20 rounded-full flex items-center justify-center">
+                <User className="w-6 h-6 text-green-400" />
               </div>
             </div>
           </div>
         </header>
 
-        <main className="flex-1 overflow-y-auto bg-gray-50" style={{ marginTop: '28px' }}>
-          <div className="px-8 py-8 pt-16 flex items-center justify-center">
+        <main className="flex-1 overflow-y-auto bg-black relative">
+          {/* Background Decoration */}
+          <div className="absolute top-0 right-0 w-[400px] h-[400px] bg-green-500/5 rounded-full blur-[100px] -z-10" />
+
+          <div className="px-8 py-8 pt-16 flex items-center justify-center relative z-10">
             <div className="w-full max-w-6xl">
               {institutionData ? (
                 <div className="space-y-6">
-               
-                  <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8">
+
+                  <div className="bg-zinc-900/40 backdrop-blur-xl rounded-xl border border-white/5 p-8 shadow-2xl">
                     <div className="flex items-center space-x-4 mb-6">
-                      <div className="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center">
-                        <Building2 className="w-6 h-6 text-green-600" />
+                      <div className="w-12 h-12 bg-green-500/10 border border-green-500/20 rounded-xl flex items-center justify-center">
+                        <Building2 className="w-6 h-6 text-green-400" />
                       </div>
                       <div>
-                        <h2 className="text-2xl font-bold text-gray-900">Institution Overview</h2>
-                        <p className="text-base text-gray-600">Your registered institution details</p>
+                        <h2 className="text-2xl font-bold text-white tracking-tight">Institution Overview</h2>
+                        <p className="text-base text-zinc-400">Your registered institution details</p>
                       </div>
                     </div>
 
-                    <div className="grid md:grid-cols-2 gap-6">
+                    <div className="grid md:grid-cols-2 gap-8">
                       <div>
-                        <h3 className="text-lg font-semibold text-gray-900 mb-2">Institution Name</h3>
-                        <p className="text-base text-gray-700">{institutionData.institutionName}</p>
+                        <h3 className="text-sm font-medium text-zinc-500 uppercase tracking-wider mb-2">Institution Name</h3>
+                        <p className="text-lg text-white font-medium">{institutionData.institutionName}</p>
                       </div>
-                      
+
                       <div>
-                        <h3 className="text-lg font-semibold text-gray-900 mb-2">Institution ID</h3>
-                        <p className="text-base text-gray-700">{institutionData.institutionID}</p>
+                        <h3 className="text-sm font-medium text-zinc-500 uppercase tracking-wider mb-2">Institution ID</h3>
+                        <p className="text-lg text-white font-medium">{institutionData.institutionID}</p>
                       </div>
                     </div>
 
-                    <div className="mt-6">
-                      <h3 className="text-lg font-semibold text-gray-900 mb-2 flex items-center">
-                        <MapPin className="w-5 h-5 mr-2 text-green-500" />
-                        Country
-                      </h3>
-                      <p className="text-base text-gray-700">{institutionData.country}</p>
-                    </div>
-
-                    <div className="mt-6">
-                      <h3 className="text-lg font-semibold text-gray-900 mb-2">Institution Type</h3>
-                      <p className="text-base text-gray-700">
-                        {institutionData.institutionType === 0 ? 'University' :
-                         institutionData.institutionType === 1 ? 'College' :
-                         institutionData.institutionType === 2 ? 'School' :
-                         institutionData.institutionType === 3 ? 'Training Center' : 'Other'}
-                      </p>
+                    <div className="grid md:grid-cols-2 gap-8 mt-8">
+                      <div>
+                        <h3 className="text-sm font-medium text-zinc-500 uppercase tracking-wider mb-2 flex items-center">
+                          <MapPin className="w-4 h-4 mr-2 text-green-400" />
+                          Country
+                        </h3>
+                        <p className="text-lg text-white font-medium">{institutionData.country}</p>
+                      </div>
+                      <div>
+                        <h3 className="text-sm font-medium text-zinc-500 uppercase tracking-wider mb-2">Institution Type</h3>
+                        <p className="text-lg text-white font-medium">
+                          {institutionData.institutionType === 0 ? 'University' :
+                            institutionData.institutionType === 1 ? 'College' :
+                              institutionData.institutionType === 2 ? 'School' :
+                                institutionData.institutionType === 3 ? 'Training Center' : 'Other'}
+                        </p>
+                      </div>
                     </div>
                   </div>
 
-              
-                  <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8">
+
+
+                  <div className="bg-zinc-900/40 backdrop-blur-xl rounded-xl border border-white/5 p-8 shadow-2xl">
                     <div className="flex items-center space-x-4 mb-6">
-                      <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center">
-                        <Mail className="w-6 h-6 text-blue-600" />
+                      <div className="w-12 h-12 bg-green-500/10 border border-green-500/20 rounded-xl flex items-center justify-center">
+                        <Mail className="w-6 h-6 text-green-400" />
                       </div>
                       <div>
-                        <h2 className="text-2xl font-bold text-gray-900">Contact Information</h2>
-                        <p className="text-base text-gray-600">Your institution contact details</p>
+                        <h2 className="text-2xl font-bold text-white tracking-tight">Contact Information</h2>
+                        <p className="text-base text-zinc-400">Your institution contact details</p>
                       </div>
                     </div>
 
-                    <div className="grid md:grid-cols-2 gap-6">
+                    <div className="grid md:grid-cols-2 gap-8">
                       <div>
-                        <h3 className="text-lg font-semibold text-gray-900 mb-2 flex items-center">
-                          <Mail className="w-5 h-5 mr-2 text-green-500" />
+                        <h3 className="text-sm font-medium text-zinc-500 uppercase tracking-wider mb-2 flex items-center">
+                          <Mail className="w-4 h-4 mr-2 text-green-400" />
                           Email
                         </h3>
-                        <p className="text-base text-gray-700">{institutionData.email}</p>
+                        <p className="text-lg text-white font-medium">{institutionData.email}</p>
                       </div>
-                      
+
                       <div>
-                        <h3 className="text-lg font-semibold text-gray-900 mb-2 flex items-center">
-                          <Hash className="w-5 h-5 mr-2 text-green-500" />
+                        <h3 className="text-sm font-medium text-zinc-500 uppercase tracking-wider mb-2 flex items-center">
+                          <Hash className="w-4 h-4 mr-2 text-green-400" />
                           Wallet Address
                         </h3>
-                        <p className="text-base text-gray-700 font-mono bg-gray-100 px-3 py-2 rounded">
+                        <p className="text-sm text-white font-mono bg-zinc-950/50 border border-white/5 px-3 py-2 rounded break-all">
                           {institutionData.walletAddress || 'Not available'}
                         </p>
                       </div>
@@ -213,69 +217,73 @@ const InstitutionDashboard = () => {
 
                   </div>
 
-              
+
                   {institutionData.registrationDocument && (
-                    <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8">
+                    <div className="bg-zinc-900/40 backdrop-blur-xl rounded-xl border border-white/5 p-8 shadow-2xl">
                       <div className="flex items-center space-x-4 mb-6">
-                        <div className="w-12 h-12 bg-purple-100 rounded-xl flex items-center justify-center">
-                          <FileText className="w-6 h-6 text-purple-600" />
+                        <div className="w-12 h-12 bg-green-500/10 border border-green-500/20 rounded-xl flex items-center justify-center">
+                          <FileText className="w-6 h-6 text-green-400" />
                         </div>
                         <div>
-                          <h2 className="text-2xl font-bold text-gray-900">Registration Document</h2>
-                          <p className="text-base text-gray-600">Your uploaded registration document</p>
+                          <h2 className="text-2xl font-bold text-white tracking-tight">Registration Document</h2>
+                          <p className="text-base text-zinc-400">Your uploaded registration document</p>
                         </div>
                       </div>
 
-                      <div className="space-y-4">
-                        <div>
-                          <h3 className="text-lg font-semibold text-gray-900 mb-2">Document Name</h3>
-                          <p className="text-base text-gray-700">{institutionData.registrationDocument.name}</p>
-                        </div>
-                        
-                        <div>
-                          <h3 className="text-lg font-semibold text-gray-900 mb-2 flex items-center">
-                            <Hash className="w-5 h-5 mr-2 text-green-500" />
-                            IPFS Hash
-                          </h3>
-                          <p className="text-base text-gray-700 font-mono bg-gray-100 px-3 py-2 rounded">
-                            {institutionData.registrationDocument.hash}
-                          </p>
+                      <div className="grid md:grid-cols-2 gap-8">
+                        <div className="space-y-6">
+                          <div>
+                            <h3 className="text-sm font-medium text-zinc-500 uppercase tracking-wider mb-2">Document Name</h3>
+                            <p className="text-lg text-white font-medium">{institutionData.registrationDocument.name}</p>
+                          </div>
+
+                          <div>
+                            <h3 className="text-sm font-medium text-zinc-500 uppercase tracking-wider mb-2 flex items-center">
+                              <Hash className="w-4 h-4 mr-2 text-green-400" />
+                              IPFS Hash
+                            </h3>
+                            <p className="text-sm text-white font-mono bg-zinc-950/50 border border-white/5 px-3 py-2 rounded break-all">
+                              {institutionData.registrationDocument.hash}
+                            </p>
+                          </div>
                         </div>
 
-                        <div>
-                          <h3 className="text-lg font-semibold text-gray-900 mb-2">Document Size</h3>
-                          <p className="text-base text-gray-700">
-                            {(institutionData.registrationDocument.size / (1024 * 1024)).toFixed(2)} MB
-                          </p>
-                        </div>
+                        <div className="space-y-6">
+                          <div>
+                            <h3 className="text-sm font-medium text-zinc-500 uppercase tracking-wider mb-2">Document Size</h3>
+                            <p className="text-lg text-white font-medium">
+                              {(institutionData.registrationDocument.size / (1024 * 1024)).toFixed(2)} MB
+                            </p>
+                          </div>
 
-                        <div>
-                          <a 
-                            href={institutionData.registrationDocument.url} 
-                            target="_blank" 
-                            rel="noopener noreferrer"
-                            className="inline-flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
-                          >
-                            <FileText className="w-4 h-4 mr-2" />
-                            View Document
-                          </a>
+                          <div>
+                            <a
+                              href={institutionData.registrationDocument.url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center px-6 py-3 bg-green-500 text-black font-bold rounded-lg hover:bg-green-400 transition-all shadow-lg shadow-green-900/20"
+                            >
+                              <FileText className="w-5 h-5 mr-2" />
+                              View Document
+                            </a>
+                          </div>
                         </div>
                       </div>
                     </div>
                   )}
                 </div>
               ) : (
-                <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8 text-center" >
-                  <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <Building2 className="w-8 h-8 text-gray-400" />
+                <div className="bg-zinc-900/40 backdrop-blur-xl rounded-xl border border-white/5 p-12 text-center" >
+                  <div className="w-20 h-20 bg-zinc-950/50 border border-white/5 rounded-full flex items-center justify-center mx-auto mb-6 shadow-xl">
+                    <Building2 className="w-10 h-10 text-zinc-600" />
                   </div>
-                  <h2 className="text-xl font-semibold text-gray-900 mb-2">No Institution Data</h2>
-                  <p className="text-base text-gray-600 mb-10">
-                    Please register your institution first to view your dashboard.
+                  <h2 className="text-2xl font-bold text-white mb-3">No Institution Data</h2>
+                  <p className="text-lg text-zinc-400 mb-10 max-w-sm mx-auto">
+                    Please register your institution first to unlock your certificate management dashboard.
                   </p>
-                  <button 
+                  <button
                     onClick={() => router.push('/institution/register')}
-                    className="bg-gradient-to-r from-green-300 via-green-400 to-green-500 text-white px-8 py-4 rounded-lg hover:bg-green-700 transition-colors text-lg font-medium"
+                    className="bg-green-500 text-black px-10 py-4 rounded-lg hover:bg-green-400 transition-all text-lg font-bold shadow-lg shadow-green-900/20"
                   >
                     Register Institution
                   </button>
