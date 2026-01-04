@@ -25,9 +25,55 @@ No more waiting for manual verification processes
 
 3. Complete Ecosystem
    Institution registration and management
-Student certificate issuance
-Employer verification tools
-Comprehensive audit trails
+   Student certificate issuance
+   Employer verification tools
+   Comprehensive audit trails
+
+# System Architecture
+
+```mermaid
+graph TB
+    subgraph Actors ["Users & Actors"]
+        Inst["Educational Institution"]
+        Emp["Employers / Verifiers"]
+    end
+
+    subgraph App_Layer ["Frontend Application (Next.js 15)"]
+        UI["UI Layer (Tailwind + Lucide)"]
+        Wagmi["Web3 Layer (Wagmi + RainbowKit)"]
+        Pinata["IPFS Integration (Pinata)"]
+    end
+
+    subgraph Storage_Layer ["Storage & Ledger"]
+        IPFS["IPFS (Decentralized Storage)"]
+        Base["Base Blockchain (L2)"]
+        BC_Contract["Certifi Smart Contract (ERC-721)"]
+    end
+
+    %% Flow: Issuance
+    Inst -- "1. Upload Credential" --> UI
+    UI -- "2. Store Metadata" --> Pinata
+    Pinata -- "3. Return IPFS CID" --> IPFS
+    IPFS -- "4. CID Path" --> Pinata
+    Pinata -- "5. Hash" --> UI
+    UI -- "6. Sign Transaction" --> Wagmi
+    Wagmi -- "7. issueCertificate(CID)" --> BC_Contract
+    BC_Contract -- "8. Mint NFT" --> Base
+
+    %% Flow: Verification
+    Emp -- "9. Enter Certificate ID" --> UI
+    UI -- "10. Query Validity" --> Wagmi
+    Wagmi -- "11. isCertificateValid(id)" --> BC_Contract
+    BC_Contract -- "12. Return Status + CID" --> Wagmi
+    Wagmi -- "13. Fetch JSON" --> IPFS
+    IPFS -- "14. Display Proof" --> UI
+    UI -- "15. Trust Established" --> Emp
+
+    style Inst fill:#22c55e,stroke:#15803d,color:#fff
+    style Emp fill:#3b82f6,stroke:#1d4ed8,color:#fff
+    style BC_Contract fill:#f59e0b,stroke:#b45309,color:#fff
+```
+
 # Getting Started
 ## Prerequisites
 Node.js 18+
