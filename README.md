@@ -1,13 +1,17 @@
-# Certifi - Blockchain-Powered Credential Verification
+# Certifi - Blockchain-Powered Credential Verification on Base
 ## Restoring Global Trust in Academic Credentials
+
+![Built on Base](https://img.shields.io/badge/Built%20on-Base-0052FF?style=for-the-badge&logo=base&logoColor=white)
+
 # The Problem
 ### African academic institutions face a critical trust crisis globally. Employers worldwide struggle to verify African qualifications, leading to:
 ### Delayed hiring processes due to lengthy verification procedures
 ### Millions in fraud losses from fake certificates and credentials
 ### Loss of opportunities for qualified African graduates
 ### Erosion of trust in African educational institutions
+
 # The Solution
-## Certifi is a revolutionary blockchain-powered platform that restores global trust in academic credentials through:
+## Certifi is a revolutionary platform built on the **Base network** that restores global trust in academic credentials through:
 1. Tamper-Proof Certificates
    Immutable blockchain storage ensures certificates cannot be forged
 Cryptographic verification guarantees authenticity
@@ -21,9 +25,55 @@ No more waiting for manual verification processes
 
 3. Complete Ecosystem
    Institution registration and management
-Student certificate issuance
-Employer verification tools
-Comprehensive audit trails
+   Student certificate issuance
+   Employer verification tools
+   Comprehensive audit trails
+
+# System Architecture
+
+```mermaid
+graph TB
+    subgraph Actors ["Users & Actors"]
+        Inst["Educational Institution"]
+        Emp["Employers / Verifiers"]
+    end
+
+    subgraph App_Layer ["Frontend Application (Next.js 15)"]
+        UI["UI Layer (Tailwind + Lucide)"]
+        Wagmi["Web3 Layer (Wagmi + RainbowKit)"]
+        Pinata["IPFS Integration (Pinata)"]
+    end
+
+    subgraph Storage_Layer ["Storage & Ledger"]
+        IPFS["IPFS (Decentralized Storage)"]
+        Base["Base Blockchain (L2)"]
+        BC_Contract["Certifi Smart Contract (ERC-721)"]
+    end
+
+    %% Flow: Issuance
+    Inst -- "1. Upload Credential" --> UI
+    UI -- "2. Store Metadata" --> Pinata
+    Pinata -- "3. Return IPFS CID" --> IPFS
+    IPFS -- "4. CID Path" --> Pinata
+    Pinata -- "5. Hash" --> UI
+    UI -- "6. Sign Transaction" --> Wagmi
+    Wagmi -- "7. issueCertificate(CID)" --> BC_Contract
+    BC_Contract -- "8. Mint NFT" --> Base
+
+    %% Flow: Verification
+    Emp -- "9. Enter Certificate ID" --> UI
+    UI -- "10. Query Validity" --> Wagmi
+    Wagmi -- "11. isCertificateValid(id)" --> BC_Contract
+    BC_Contract -- "12. Return Status + CID" --> Wagmi
+    Wagmi -- "13. Fetch JSON" --> IPFS
+    IPFS -- "14. Display Proof" --> UI
+    UI -- "15. Trust Established" --> Emp
+
+    style Inst fill:#22c55e,stroke:#15803d,color:#fff
+    style Emp fill:#3b82f6,stroke:#1d4ed8,color:#fff
+    style BC_Contract fill:#f59e0b,stroke:#b45309,color:#fff
+```
+
 # Getting Started
 ## Prerequisites
 Node.js 18+
