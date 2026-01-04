@@ -6,8 +6,8 @@ import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAccount, useReadContract, useConfig } from 'wagmi';
 import { readContract } from '@wagmi/core';
-import { 
-  Award, 
+import {
+  Award,
   ArrowLeft,
   XCircle,
   Search,
@@ -29,14 +29,14 @@ const RevokeCertificate = () => {
   const router = useRouter();
   const { address } = useAccount();
   const config = useConfig();
-  const { 
-    useGetCertificatesByInstitution, 
-    revokeCertificate, 
-    isPending, 
-    isConfirming, 
-    isConfirmed 
+  const {
+    useGetCertificatesByInstitution,
+    revokeCertificate,
+    isPending,
+    isConfirming,
+    isConfirmed
   } = useCertificateContract();
-  
+
   const [selectedCertificate, setSelectedCertificate] = useState<any>(null);
   const [revokeForm, setRevokeForm] = useState({
     tokenId: '',
@@ -89,13 +89,13 @@ const RevokeCertificate = () => {
               functionName: 'isRevoked',
               args: [tokenId],
             });
-            
+
             console.log('Certificate details for token', tokenId.toString(), ':', cert);
             console.log('Is revoked for token', tokenId.toString(), ':', isRevoked);
-            
+
             if (cert) {
-              certs.push({ 
-                tokenId, 
+              certs.push({
+                tokenId,
                 ...cert,
                 isRevoked: isRevoked,
                 // Map certificate struct to readable format
@@ -140,9 +140,9 @@ const RevokeCertificate = () => {
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
-    setRevokeForm(prev => ({ ...prev, [name]: value }));
+    setRevokeForm((prev: any) => ({ ...prev, [name]: value }));
     if (errors[name]) {
-      setErrors(prev => ({ ...prev, [name]: '' }));
+      setErrors((prev: any) => ({ ...prev, [name]: '' }));
     }
   };
 
@@ -163,7 +163,7 @@ const RevokeCertificate = () => {
 
   const handleRevoke = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!validateForm()) {
       return;
     }
@@ -182,7 +182,7 @@ const RevokeCertificate = () => {
       });
 
       toast.success('Certificate revocation submitted!');
-      
+
       // Wait for transaction confirmation
       if (isConfirmed) {
         toast.success('Certificate revoked successfully!');
@@ -197,24 +197,27 @@ const RevokeCertificate = () => {
     }
   };
 
-  const filteredCertificates = certificatesData?.filter((cert: any) => 
+  const filteredCertificates = certificatesData?.filter((cert: any) =>
     cert.studentName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     cert.degreeTitle?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     cert.tokenId?.toString().includes(searchTerm)
   ) || [];
 
   return (
-    <div className="h-screen bg-gray-100 flex">
+    <div className="h-screen bg-black flex overflow-hidden relative">
+      {/* Decorative background element */}
+      <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-red-500/5 rounded-full blur-[140px] -z-10 pointer-events-none" />
+
       {/* Sidebar */}
-      <div className={`${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} fixed inset-y-0 left-0 z-50 w-64 bg-gray-900 text-white transition-transform duration-300 ease-in-out lg:translate-x-0 lg:static lg:inset-0 flex flex-col`}>
-        <div className="flex items-center justify-between h-16 px-6 border-b border-gray-700 flex-shrink-0">
+      <div className={`${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} fixed inset-y-0 left-0 z-50 w-64 bg-zinc-950 border-r border-white/5 text-white transition-transform duration-300 ease-in-out lg:translate-x-0 lg:static lg:inset-0 flex flex-col`}>
+        <div className="flex items-center justify-between h-16 px-6 border-b border-white/5 flex-shrink-0">
           <div className="flex items-center space-x-3">
             <div className="w-8 h-8 bg-green-500 rounded flex items-center justify-center">
               <Award className="w-5 h-5 text-white" />
             </div>
             <h1 className="text-xl sm:text-xl md:text-2xl lg:text-2xl xl:text-2xl xl:text-5xl font-bold leading-[1.1] tracking-tight">
               <span className="bg-gradient-to-r from-green-300 via-green-400 to-green-500 bg-clip-text text-transparent">
-              Certifi
+                Certifi
               </span>
             </h1>
           </div>
@@ -230,9 +233,9 @@ const RevokeCertificate = () => {
           <div className="flex-1 flex flex-col justify-start space-y-4">
             <button
               onClick={() => router.push('/institution/dashboard')}
-              className="w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-left transition-colors text-gray-300 hover:bg-gray-800 hover:text-white"
+              className="w-full flex items-center space-x-3 px-4 py-3 rounded-xl text-left transition-all duration-200 text-zinc-400 hover:bg-zinc-900 hover:text-white group"
             >
-              <ArrowLeft className="w-5 h-5" />
+              <ArrowLeft className="w-5 h-5 transition-transform group-hover:-translate-x-1" />
               <span className="font-medium">Back to Dashboard</span>
             </button>
           </div>
@@ -241,14 +244,14 @@ const RevokeCertificate = () => {
 
       {/* Mobile overlay */}
       {sidebarOpen && (
-        <div 
+        <div
           className="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden"
           onClick={() => setSidebarOpen(false)}
         />
       )}
 
-      <div className="flex-1 flex flex-col overflow-hidden">
-        <header className="bg-white shadow-sm border-b-2 border-gray-300">
+      <div className="flex-1 flex flex-col overflow-hidden z-10">
+        <header className="bg-zinc-950/50 backdrop-blur-md border-b border-white/5">
           <div className="flex items-center justify-between h-16 px-8">
             <button
               onClick={() => setSidebarOpen(true)}
@@ -259,7 +262,7 @@ const RevokeCertificate = () => {
             <div className="flex items-center space-x-4">
               <h1 className="text-xl sm:text-xl md:text-2xl lg:text-2xl xl:text-2xl xl:text-5xl font-bold leading-[1.1] tracking-tight">
                 <span className="bg-gradient-to-r from-green-300 via-green-400 to-green-500 bg-clip-text text-transparent">
-                Revoke Certificate
+                  Revoke Certificate
                 </span>
               </h1>
             </div>
@@ -267,31 +270,30 @@ const RevokeCertificate = () => {
           </div>
         </header>
 
-        <main className="flex-1 overflow-y-auto bg-gray-50 px-4 sm:px-6 lg:px-8 py-6 sm:py-8 lg:py-12  ">
+        <main className="flex-1 overflow-y-auto bg-transparent px-4 sm:px-6 lg:px-8 py-6 sm:py-8 lg:py-12  ">
           <div className="w-full max-w-7xl mx-auto">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8 min-h-[600px]">
-              
+
               {/* Certificates Table */}
-              <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 sm:p-6 flex flex-col">
-                <div className="flex items-center justify-between mb-6">
+              <div className="bg-zinc-900/40 backdrop-blur-xl rounded-2xl border border-white/10 p-4 sm:p-6 flex flex-col shadow-2xl">
+                <div className="flex items-center justify-between mb-8">
                   <div className="flex items-center space-x-3">
-                   
                     <div>
-                      <h2 className="text-xl font-bold text-gray-900">Certificates</h2>
-                      <p className="text-sm text-gray-600">Select a certificate to revoke</p>
+                      <h2 className="text-xl font-bold text-white tracking-tight">Certificates</h2>
+                      <p className="text-sm text-zinc-400 font-medium">Select a certificate to revoke</p>
                     </div>
                   </div>
                 </div>
 
                 {/* Search */}
-                <div className="mb-4">
-                  <div className="relative">
-                    <Search className="absolute left-1 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                <div className="mb-6">
+                  <div className="relative group">
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-zinc-500 w-4 h-4 transition-colors group-focus-within:text-red-400" />
                     <Input
-                      placeholder="           Search certificates..."
+                      placeholder="Search certificates..."
                       value={searchTerm}
                       onChange={(e) => setSearchTerm(e.target.value)}
-                      className="pl-10"
+                      className="pl-11 bg-zinc-950/50 border-white/5 text-white placeholder:text-zinc-600 focus:ring-red-500/50 focus:border-red-500/50 transition-all rounded-xl h-12"
                     />
                   </div>
                 </div>
@@ -300,77 +302,79 @@ const RevokeCertificate = () => {
                 <div className="overflow-x-auto flex-1">
                   <table className="w-full min-w-[600px]">
                     <thead>
-                      <tr className="border-b border-gray-200">
-                        <th className="text-left py-3 px-2 sm:px-4 font-semibold text-gray-700 text-xs sm:text-sm">Token ID</th>
-                        <th className="text-left py-3 px-2 sm:px-4 font-semibold text-gray-700 text-xs sm:text-sm">Student</th>
-                        <th className="text-left py-3 px-2 sm:px-4 font-semibold text-gray-700 text-xs sm:text-sm">Degree</th>
-                        <th className="text-left py-3 px-2 sm:px-4 font-semibold text-gray-700 text-xs sm:text-sm">Status</th>
-                        <th className="text-left py-3 px-2 sm:px-4 font-semibold text-gray-700 text-xs sm:text-sm">Action</th>
+                      <tr className="bg-zinc-950">
+                        <th className="text-left py-4 px-4 font-semibold text-zinc-500 text-[10px] uppercase tracking-wider">Token ID</th>
+                        <th className="text-left py-4 px-4 font-semibold text-zinc-500 text-[10px] uppercase tracking-wider">Student</th>
+                        <th className="text-left py-4 px-4 font-semibold text-zinc-500 text-[10px] uppercase tracking-wider">Course</th>
+                        <th className="text-left py-4 px-4 font-semibold text-zinc-500 text-[10px] uppercase tracking-wider">Status</th>
+                        <th className="text-left py-4 px-4 font-semibold text-zinc-500 text-[10px] uppercase tracking-wider">Action</th>
                       </tr>
                     </thead>
                     <tbody>
                       {isLoading || loadingCerts ? (
                         <tr>
-                          <td colSpan={5} className="text-center py-8 text-gray-500">
-                            <div className="flex items-center justify-center space-x-2">
-                              <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-red-500"></div>
-                              <span>Loading certificates from blockchain...</span>
+                          <td colSpan={5} className="text-center py-12 text-zinc-500">
+                            <div className="flex flex-col items-center justify-center space-y-4">
+                              <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-red-500"></div>
+                              <span className="font-medium tracking-wide">Fetching blockchain data...</span>
                             </div>
                           </td>
                         </tr>
                       ) : error ? (
                         <tr>
-                          <td colSpan={5} className="text-center py-8 text-red-500">
-                            Error loading certificates
+                          <td colSpan={5} className="text-center py-12 text-red-500">
+                            <div className="flex flex-col items-center">
+                              <AlertTriangle className="w-10 h-10 mb-2 opacity-50" />
+                              <span className="font-medium">Error loading certificates</span>
+                            </div>
                           </td>
                         </tr>
                       ) : filteredCertificates.length === 0 ? (
                         <tr>
-                          <td colSpan={5} className="text-center py-8 text-gray-500">
-                            No certificates found
+                          <td colSpan={5} className="text-center py-12 text-zinc-500">
+                            <div className="flex flex-col items-center">
+                              <Search className="w-10 h-10 mb-2 opacity-20" />
+                              <span className="font-medium">No certificates found</span>
+                            </div>
                           </td>
                         </tr>
                       ) : (
                         filteredCertificates.map((certificate: any, index: number) => (
-                          <tr 
+                          <tr
                             key={index}
-                            className={`border-b border-gray-100 hover:bg-gray-50 cursor-pointer ${
-                              selectedCertificate?.tokenId === certificate.tokenId ? 'bg-red-50 border-red-200' : ''
-                            }`}
+                            className={`hover:bg-white/5 transition-all duration-200 cursor-pointer ${selectedCertificate?.tokenId === certificate.tokenId ? 'bg-red-500/10' : ''
+                              }`}
                             onClick={() => handleCertificateSelect(certificate)}
                           >
-                            <td className="py-3 px-2 sm:px-4 font-mono text-xs sm:text-sm">
-                              <div className="truncate max-w-[80px] sm:max-w-none">
-                                {certificate.tokenId?.toString()}
-                              </div>
+                            <td className="py-4 px-4 font-mono text-xs text-white">
+                              {certificate.tokenId?.toString()}
                             </td>
-                            <td className="py-3 px-2 sm:px-4">
+                            <td className="py-4 px-4">
                               <div>
-                                <div className="font-medium text-gray-900 text-xs sm:text-sm truncate">{certificate.studentName}</div>
-                                <div className="text-xs text-gray-500 truncate">{certificate.studentID}</div>
+                                <div className="font-bold text-white text-sm tracking-tight">{certificate.studentName}</div>
+                                <div className="text-[10px] text-zinc-500 font-medium uppercase tracking-widest mt-0.5">{certificate.studentID}</div>
                               </div>
                             </td>
-                            <td className="py-3 px-2 sm:px-4">
-                              <div className="text-xs sm:text-sm text-gray-700 truncate max-w-[120px] sm:max-w-none">{certificate.degreeTitle}</div>
+                            <td className="py-4 px-4">
+                              <div className="text-sm text-zinc-400 font-medium">{certificate.degreeTitle}</div>
                             </td>
-                            <td className="py-3 px-2 sm:px-4">
-                              <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
-                                certificate.isRevoked 
-                                  ? 'bg-red-100 text-red-800' 
-                                  : 'bg-green-100 text-green-800'
-                              }`}>
+                            <td className="py-4 px-4">
+                              <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider border ${certificate.isRevoked
+                                ? 'bg-red-500/10 text-red-500 border-red-500/20'
+                                : 'bg-green-500/10 text-green-400 border-green-500/20'
+                                }`}>
                                 {certificate.isRevoked ? 'Revoked' : 'Active'}
                               </span>
                             </td>
-                            <td className="py-3 px-2 sm:px-4">
+                            <td className="py-4 px-4">
                               <button
                                 onClick={(e) => {
                                   e.stopPropagation();
                                   handleCertificateSelect(certificate);
                                 }}
-                                className="text-red-600 hover:text-red-800 transition-colors p-1"
+                                className="text-zinc-500 hover:text-red-500 hover:bg-red-500/10 transition-all p-2 rounded-lg"
                               >
-                                <Trash2 className="w-4 h-4" />
+                                <Trash2 className="w-4.5 h-4.5" />
                               </button>
                             </td>
                           </tr>
@@ -382,25 +386,41 @@ const RevokeCertificate = () => {
               </div>
 
               {/* Revoke Form */}
-              <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 sm:p-6 flex flex-col">
-                <div className="flex items-center space-x-3 mb-6">
+              <div className="bg-zinc-900/40 backdrop-blur-xl rounded-2xl border border-white/10 p-4 sm:p-8 flex flex-col shadow-2xl relative overflow-hidden">
+                <div className="flex items-center space-x-3 mb-8">
                   <div>
-                    <h2 className="text-xl font-bold text-gray-900">Revoke Certificate</h2>
+                    <h2 className="text-2xl font-bold text-white tracking-tight">Revocation Details</h2>
+                    <p className="text-sm text-zinc-400 font-medium">Verify and confirm the action</p>
                   </div>
                 </div>
 
                 {selectedCertificate ? (
-                  <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
-                    <h3 className="font-semibold text-red-800 mb-2">Selected Certificate</h3>
-                    <div className="text-sm text-red-700">
-                      <div><strong>Token ID:</strong> {selectedCertificate.tokenId?.toString()}</div>
-                      <div><strong>Student:</strong> {selectedCertificate.studentName}</div>
-                      <div><strong>Degree:</strong> {selectedCertificate.degreeTitle}</div>
+                  <div className="mb-8 p-6 bg-red-500/5 border border-red-500/20 rounded-2xl relative overflow-hidden group">
+                    <div className="absolute top-0 right-0 p-3 opacity-20 group-hover:opacity-40 transition-opacity">
+                      <AlertTriangle className="w-12 h-12 text-red-500" />
+                    </div>
+                    <h3 className="font-bold text-red-500 mb-4 uppercase tracking-widest text-xs">Selected Certificate</h3>
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between">
+                        <span className="text-[10px] text-red-500/60 font-bold uppercase tracking-wider">Token ID</span>
+                        <span className="text-white font-mono text-sm">{selectedCertificate.tokenId?.toString()}</span>
+                      </div>
+                      <div className="flex items-center justify-between border-t border-red-500/10 pt-3">
+                        <span className="text-[10px] text-red-500/60 font-bold uppercase tracking-wider">Student</span>
+                        <span className="text-white font-bold">{selectedCertificate.studentName}</span>
+                      </div>
+                      <div className="flex items-center justify-between border-t border-red-500/10 pt-3">
+                        <span className="text-[10px] text-red-500/60 font-bold uppercase tracking-wider">Degree</span>
+                        <span className="text-zinc-300 font-medium">{selectedCertificate.degreeTitle}</span>
+                      </div>
                     </div>
                   </div>
                 ) : (
-                  <div className="mb-6 p-4 bg-gray-50 border border-gray-200 rounded-lg">
-                    <p className="text-gray-600 text-sm">Please select a certificate from the table to revoke.</p>
+                  <div className="mb-8 p-10 bg-zinc-950/50 border border-white/5 rounded-2xl border-dashed flex flex-col items-center text-center">
+                    <div className="w-16 h-16 bg-zinc-900 rounded-full flex items-center justify-center mb-4 border border-white/5">
+                      <Trash2 className="w-8 h-8 text-zinc-700" />
+                    </div>
+                    <p className="text-zinc-500 font-medium text-sm max-w-[200px]">Select a certificate from the table to begin revocation.</p>
                   </div>
                 )}
 
@@ -418,37 +438,38 @@ const RevokeCertificate = () => {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest block mb-3 ml-1">
                       Reason for Revocation *
                     </label>
-                    <select
-                      name="reason"
-                      value={revokeForm.reason}
-                      onChange={handleInputChange}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-colors text-gray-900 bg-white hover:border-gray-400 focus:outline-none"
-                      style={{ 
-                        color: '#111827',
-                        backgroundColor: '#ffffff',
-                        appearance: 'none',
-                        backgroundImage: `url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3e%3c/svg%3e")`,
-                        backgroundPosition: 'right 12px center',
-                        backgroundRepeat: 'no-repeat',
-                        backgroundSize: '16px'
-                      }}
-                    >
-                      <option value="" style={{ color: '#6b7280' }}>Select reason</option>
-                      {revocationReasons.map((reason) => (
-                        <option key={reason} value={reason} style={{ color: '#111827' }}>
-                          {reason}
-                        </option>
-                      ))}
-                    </select>
+                    <div className="relative group">
+                      <select
+                        name="reason"
+                        value={revokeForm.reason}
+                        onChange={handleInputChange}
+                        className="w-full px-4 py-3 bg-zinc-950/50 border border-white/5 rounded-xl focus:ring-2 focus:ring-red-500/50 focus:border-red-500/50 transition-all text-white focus:outline-none appearance-none cursor-pointer h-12"
+                      >
+                        <option value="" className="bg-zinc-950 text-zinc-500">Select reason</option>
+                        {revocationReasons.map((reason) => (
+                          <option key={reason} value={reason} className="bg-zinc-950 text-white">
+                            {reason}
+                          </option>
+                        ))}
+                      </select>
+                      <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-zinc-500 group-hover:text-zinc-300 transition-colors">
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+                        </svg>
+                      </div>
+                    </div>
                     {errors.reason && (
-                      <p className="text-red-500 text-sm mt-1">{errors.reason}</p>
+                      <p className="text-red-500 text-[11px] mt-2 ml-1 flex items-center">
+                        <AlertTriangle className="w-3 h-3 mr-1" />
+                        {errors.reason}
+                      </p>
                     )}
                   </div>
 
-                  <div className="flex flex-col sm:flex-row space-y-3 sm:space-y-0 sm:space-x-4 pt-4 mt-auto">
+                  <div className="flex flex-col sm:flex-row space-y-3 sm:space-y-0 sm:space-x-4 pt-8 mt-auto border-t border-white/5">
                     <Button
                       type="button"
                       variant="outline"
@@ -456,7 +477,7 @@ const RevokeCertificate = () => {
                         setSelectedCertificate(null);
                         setRevokeForm({ tokenId: '', reason: '' });
                       }}
-                      className="flex-1 w-full sm:w-auto"
+                      className="flex-1 w-full sm:w-auto border-zinc-800 text-zinc-400 hover:text-white hover:bg-zinc-900 h-12"
                     >
                       Clear Selection
                     </Button>
@@ -464,17 +485,17 @@ const RevokeCertificate = () => {
                       type="submit"
                       size="lg"
                       disabled={!selectedCertificate || isSubmitting || isPending || isConfirming}
-                      className="flex-1 w-full sm:w-auto bg-red-600 hover:bg-red-700"
+                      className="flex-1 w-full sm:w-auto bg-red-600 hover:bg-red-500 text-white font-bold h-12 shadow-lg shadow-red-950/20"
                     >
                       {isSubmitting || isPending ? (
                         <div className="flex items-center justify-center">
                           <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
-                          {isPending ? 'Transaction Pending...' : 'Revoking Certificate...'}
+                          {isPending ? 'Pending...' : 'Revoking...'}
                         </div>
                       ) : isConfirming ? (
                         <div className="flex items-center justify-center">
                           <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
-                          Confirming Transaction...
+                          Confirming...
                         </div>
                       ) : (
                         <div className="flex items-center justify-center">
