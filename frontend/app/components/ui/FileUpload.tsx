@@ -14,7 +14,7 @@ interface FileUploadProps {
   multiple?: boolean;
   accept?: string;
   maxFiles?: number;
-  maxFileSize?: number; 
+  maxFileSize?: number;
   allowedTypes?: string[];
   className?: string;
   disabled?: boolean;
@@ -32,7 +32,7 @@ const FileUpload: React.FC<FileUploadProps> = ({
   multiple = false,
   accept = "*/*",
   maxFiles = 5,
-  maxFileSize = 100 * 1024 * 1024, 
+  maxFileSize = 100 * 1024 * 1024,
   allowedTypes = [
     'image/jpeg',
     'image/png',
@@ -72,14 +72,14 @@ const FileUpload: React.FC<FileUploadProps> = ({
     if (!files) return;
 
     const fileArray = Array.from(files);
-  
+
     if (fileArray.length > maxFiles) {
       const error = `Maximum ${maxFiles} files allowed`;
       onError?.(error);
       return;
     }
 
-   
+
     const validFiles: File[] = [];
     const invalidFiles: string[] = [];
 
@@ -116,9 +116,9 @@ const FileUpload: React.FC<FileUploadProps> = ({
     e.preventDefault();
     e.stopPropagation();
     setDragActive(false);
-    
+
     if (disabled) return;
-    
+
     handleFiles(e.dataTransfer.files);
   }, [disabled, handleFiles]);
 
@@ -162,9 +162,9 @@ const FileUpload: React.FC<FileUploadProps> = ({
 
   const getFileIcon = (file: File) => {
     if (file.type.startsWith('image/')) {
-      return <Image className="w-5 h-5 text-blue-500" />;
+      return <Image className="w-5 h-5 text-green-400" />;
     }
-    return <FileText className="w-5 h-5 text-gray-500" />;
+    return <FileText className="w-5 h-5 text-gray-400" />;
   };
 
   const formatFileSize = (bytes: number) => {
@@ -177,7 +177,7 @@ const FileUpload: React.FC<FileUploadProps> = ({
 
   return (
     <div className={`w-full ${className}`}>
-     
+
       <input
         ref={fileInputRef}
         type="file"
@@ -188,12 +188,12 @@ const FileUpload: React.FC<FileUploadProps> = ({
         disabled={disabled}
       />
 
-   
+
       <div
         className={`
-          border-2 border-dashed rounded-lg p-8 text-center transition-colors cursor-pointer
-          ${dragActive ? 'border-green-400 bg-green-50' : 'border-gray-300 hover:border-green-400'}
-          ${disabled ? 'opacity-50 cursor-not-allowed' : 'hover:bg-gray-50'}
+          border-2 border-dashed rounded-lg p-8 text-center transition-all cursor-pointer
+          ${dragActive ? 'border-green-400 bg-green-500/10' : 'border-zinc-800 hover:border-green-500/50 bg-zinc-900/30'}
+          ${disabled ? 'opacity-50 cursor-not-allowed' : 'hover:bg-zinc-900/50'}
         `}
         onDragEnter={handleDrag}
         onDragLeave={handleDrag}
@@ -201,34 +201,34 @@ const FileUpload: React.FC<FileUploadProps> = ({
         onDrop={handleDrop}
         onClick={openFileDialog}
       >
-        <Upload className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-        <div className="text-lg font-medium text-gray-900 mb-2">
+        <Upload className="w-12 h-12 text-zinc-500 mx-auto mb-4" />
+        <div className="text-lg font-medium text-white mb-2">
           {dragActive ? 'Drop files here' : 'Click to upload or drag and drop'}
         </div>
-        <p className="text-sm text-gray-500 mb-4">
+        <p className="text-sm text-gray-400 mb-4">
           {multiple ? `Up to ${maxFiles} files, max ${formatFileSize(maxFileSize)} each` : `Max ${formatFileSize(maxFileSize)}`}
         </p>
-        <Button type="button" variant="outline" disabled={disabled}>
+        <Button type="button" variant="outline" disabled={disabled} className="border-zinc-700 text-zinc-300 hover:text-white hover:bg-zinc-800">
           Choose Files
         </Button>
       </div>
 
-     
+
       {selectedFiles.length > 0 && (
         <div className="mt-4 space-y-2">
-          <h4 className="text-sm font-medium text-gray-700">Selected Files:</h4>
+          <h4 className="text-sm font-medium text-gray-400">Selected Files:</h4>
           {selectedFiles.map((file, index) => (
-            <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+            <div key={index} className="flex items-center justify-between p-3 bg-zinc-900/50 border border-zinc-800 rounded-lg">
               <div className="flex items-center space-x-3">
                 {getFileIcon(file)}
                 <div>
-                  <p className="text-sm font-medium text-gray-900">{file.name}</p>
-                  <p className="text-xs text-gray-500">{formatFileSize(file.size)}</p>
+                  <p className="text-sm font-medium text-white">{file.name}</p>
+                  <p className="text-xs text-zinc-500">{formatFileSize(file.size)}</p>
                 </div>
               </div>
               <button
                 onClick={() => removeFile(index)}
-                className="text-gray-400 hover:text-red-500 transition-colors"
+                className="text-zinc-500 hover:text-red-400 transition-colors"
                 disabled={disabled}
               >
                 <X className="w-4 h-4" />
@@ -241,10 +241,10 @@ const FileUpload: React.FC<FileUploadProps> = ({
       {isUploading && (
         <div className="mt-4">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-sm font-medium text-gray-700">Uploading...</span>
-            <span className="text-sm text-gray-500">{uploadProgress}%</span>
+            <span className="text-sm font-medium text-gray-400">Uploading...</span>
+            <span className="text-sm text-zinc-500">{uploadProgress}%</span>
           </div>
-          <div className="w-full bg-gray-200 rounded-full h-2">
+          <div className="w-full bg-zinc-800 rounded-full h-2 overflow-hidden">
             <div
               className="bg-green-500 h-2 rounded-full transition-all duration-300"
               style={{ width: `${uploadProgress}%` }}
@@ -253,14 +253,14 @@ const FileUpload: React.FC<FileUploadProps> = ({
         </div>
       )}
 
-    
+
       {uploadError && (
-        <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg flex items-center space-x-2">
-          <AlertCircle className="w-5 h-5 text-red-500" />
-          <span className="text-sm text-red-700">{uploadError}</span>
+        <div className="mt-4 p-3 bg-red-500/10 border border-red-500/20 rounded-lg flex items-center space-x-2">
+          <AlertCircle className="w-5 h-5 text-red-400" />
+          <span className="text-sm text-red-300">{uploadError}</span>
           <button
             onClick={clearError}
-            className="ml-auto text-red-400 hover:text-red-600"
+            className="ml-auto text-red-400 hover:text-red-300"
           >
             <X className="w-4 h-4" />
           </button>
@@ -284,21 +284,21 @@ const FileUpload: React.FC<FileUploadProps> = ({
       {/* Uploaded Files */}
       {uploadedFiles.length > 0 && (
         <div className="mt-4 space-y-2">
-          <h4 className="text-sm font-medium text-gray-700">Uploaded Files:</h4>
+          <h4 className="text-sm font-medium text-gray-400">Uploaded Files:</h4>
           {uploadedFiles.map((file, index) => (
-            <div key={index} className="flex items-center justify-between p-3 bg-green-50 border border-green-200 rounded-lg">
+            <div key={index} className="flex items-center justify-between p-3 bg-green-500/10 border border-green-500/20 rounded-lg">
               <div className="flex items-center space-x-3">
-                <CheckCircle className="w-5 h-5 text-green-500" />
+                <CheckCircle className="w-5 h-5 text-green-400" />
                 <div>
-                  <p className="text-sm font-medium text-gray-900">{file.name}</p>
-                  <p className="text-xs text-gray-500">IPFS Hash: {file.hash}</p>
+                  <p className="text-sm font-medium text-white">{file.name}</p>
+                  <p className="text-xs text-zinc-500">IPFS Hash: {file.hash}</p>
                 </div>
               </div>
               <a
                 href={file.url}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-green-600 hover:text-green-800 text-sm"
+                className="text-green-400 hover:text-green-300 text-sm font-medium"
               >
                 View
               </a>
