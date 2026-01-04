@@ -18,38 +18,35 @@ const Navbar: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
 
   return (
-    <nav className="fixed top-0 left-0 right-0 z-50 bg-black/95 backdrop-blur-sm border-b border-zinc-800">
+    <nav className="fixed top-0 left-0 right-0 z-50 bg-zinc-950/50 backdrop-blur-xl border-b border-white/5">
       <Container>
-        <div className="flex justify-between items-center h-16 sm:h-20">
+        <div className="flex justify-between items-center h-20">
           {/* Logo */}
-          <Link href="/" className="flex items-center gap-2 flex-shrink-0">
-            <div className="w-8 h-8 bg-gradient-to-br from-green-400 to-green-600 rounded flex items-center justify-center">
-              <svg width="16" height="16" viewBox="0 0 20 20" fill="none">
-                <path
-                  d="M10 2L3 7v6l7 5 7-5V7l-7-5z"
-                  fill="currentColor"
-                  className="text-black/80"
-                />
+          <Link href="/" className="flex items-center gap-3 group">
+            <div className="w-10 h-10 bg-gradient-to-br from-green-400 to-green-600 rounded-xl flex items-center justify-center shadow-lg shadow-green-500/20 group-hover:scale-110 transition-transform duration-300">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-black">
+                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
               </svg>
             </div>
-            <span className="text-white text-lg font-semibold tracking-tight">Certifi</span>
+            <span className="text-white text-xl font-bold tracking-tight">Certifi</span>
           </Link>
 
           {/* Desktop Navigation */}
-          <div className="hidden lg:flex items-center gap-8">
+          <div className="hidden lg:flex items-center gap-10">
             {NAV_LINKS.map((link) => (
               <Link
                 key={link.label}
                 href={link.href}
-                className="text-sm font-medium text-gray-300 hover:text-white transition-colors"
+                className="text-sm font-semibold text-zinc-400 hover:text-green-400 transition-all duration-300 relative group"
               >
                 {link.label}
+                <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-green-500 transition-all duration-300 group-hover:w-full" />
               </Link>
             ))}
           </div>
 
           {/* Wallet Connect & Mobile Menu */}
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-6">
             <div className="hidden sm:block">
               <ConnectButton
                 label="Connect"
@@ -68,7 +65,7 @@ const Navbar: React.FC = () => {
             {/* Mobile Menu Button */}
             <button
               onClick={() => setIsOpen(!isOpen)}
-              className="lg:hidden text-white p-2"
+              className="lg:hidden text-zinc-400 hover:text-white transition-colors h-10 w-10 flex items-center justify-center rounded-xl bg-white/5"
               aria-label="Toggle menu"
             >
               {isOpen ? (
@@ -82,29 +79,22 @@ const Navbar: React.FC = () => {
 
         {/* Mobile Navigation */}
         {isOpen && (
-          <div className="lg:hidden border-t border-zinc-800 py-4 space-y-3">
+          <div className="lg:hidden border-t border-white/5 py-6 space-y-4 animate-in fade-in slide-in-from-top-4 duration-300">
             {NAV_LINKS.map((link) => (
               <Link
                 key={link.label}
                 href={link.href}
-                className="block text-sm font-medium text-gray-300 hover:text-white transition-colors px-4 py-2"
+                className="block text-base font-medium text-zinc-400 hover:text-green-400 px-4 py-2 hover:bg-white/5 rounded-xl transition-all"
                 onClick={() => setIsOpen(false)}
               >
                 {link.label}
               </Link>
             ))}
-            <div className="px-4 pt-2">
+            <div className="px-4 pt-4 border-t border-white/5">
               <ConnectButton
                 label="Connect Wallet"
-                chainStatus={{
-                  largeScreen: 'name',
-                  smallScreen: 'icon',
-                }}
+                chainStatus="none"
                 showBalance={false}
-                accountStatus={{
-                  largeScreen: 'full',
-                  smallScreen: 'address',
-                }}
               />
             </div>
           </div>
