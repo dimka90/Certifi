@@ -3,8 +3,8 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAccount } from 'wagmi';
-import { 
-  Award, 
+import {
+  Award,
   ArrowLeft,
   CheckCircle,
   Menu,
@@ -20,7 +20,7 @@ const IssueCertificate = () => {
   const router = useRouter();
   const { address } = useAccount();
   const { issueCertificate, isPending, isConfirming, isConfirmed } = useCertificateContract();
-  
+
   const [formData, setFormData] = useState({
     studentName: '',
     studentID: '',
@@ -49,7 +49,7 @@ const IssueCertificate = () => {
         faculty: Faculty.ENGINEERING,
         studentWallet: ''
       });
-      
+
       // Redirect to view certificates page
       router.push('/institution/view-certificates');
       setIsSubmitting(false);
@@ -58,12 +58,12 @@ const IssueCertificate = () => {
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
-    setFormData(prev => ({ 
-      ...prev, 
-      [name]: name === 'grade' || name === 'faculty' ? parseInt(value) : value 
+    setFormData((prev: typeof formData) => ({
+      ...prev,
+      [name]: name === 'grade' || name === 'faculty' ? parseInt(value) : value
     }));
     if (errors[name]) {
-      setErrors(prev => ({ ...prev, [name]: '' }));
+      setErrors((prev: Record<string, string>) => ({ ...prev, [name]: '' }));
     }
   };
 
@@ -102,7 +102,7 @@ const IssueCertificate = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!validateForm()) {
       return;
     }
@@ -142,17 +142,17 @@ const IssueCertificate = () => {
   };
 
   return (
-    <div className="h-screen bg-gray-100 flex">
+    <div className="h-screen bg-black flex overflow-hidden">
       {/* Mobile Sidebar */}
-      <div className={`${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} fixed inset-y-0 left-0 z-50 w-64 bg-gray-900 text-white transition-transform duration-300 ease-in-out lg:translate-x-0 lg:static lg:inset-0 flex flex-col`}>
-        <div className="flex items-center justify-between h-16 px-6 border-b border-gray-700 flex-shrink-0">
+      <div className={`${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} fixed inset-y-0 left-0 z-50 w-64 bg-zinc-950 border-r border-white/5 text-white transition-transform duration-300 ease-in-out lg:translate-x-0 lg:static lg:inset-0 flex flex-col shadow-2xl shadow-green-950/20`}>
+        <div className="flex items-center justify-between h-16 px-6 border-b border-white/5 flex-shrink-0">
           <div className="flex items-center space-x-3">
             <div className="w-8 h-8 bg-green-500 rounded flex items-center justify-center">
               <Award className="w-5 h-5 text-white" />
             </div>
             <h1 className="text-xl sm:text-xl md:text-2xl lg:text-2xl xl:text-2xl xl:text-5xl font-bold leading-[1.1] tracking-tight">
               <span className="bg-gradient-to-r from-green-300 via-green-400 to-green-500 bg-clip-text text-transparent">
-              Certifi
+                Certifi
               </span>
             </h1>
           </div>
@@ -171,7 +171,7 @@ const IssueCertificate = () => {
                 router.push('/institution/dashboard');
                 setSidebarOpen(false);
               }}
-              className="w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-left transition-colors text-gray-300 hover:bg-gray-800 hover:text-white"
+              className="w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-left transition-all text-zinc-400 hover:bg-zinc-900 hover:text-white"
             >
               <ArrowLeft className="w-5 h-5" />
               <span className="font-medium">Back to Dashboard</span>
@@ -182,27 +182,27 @@ const IssueCertificate = () => {
 
       {/* Mobile Overlay */}
       {sidebarOpen && (
-        <div 
+        <div
           className="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden"
           onClick={() => setSidebarOpen(false)}
         />
       )}
 
-    
-      <div className="flex-1 flex flex-col  overflow-hidden">
-      
-        <header className="bg-white shadow-sm border-b-2 border-gray-300">
+
+      <div className="flex-1 flex flex-col overflow-hidden">
+
+        <header className="bg-zinc-950/50 backdrop-blur-md border-b border-white/5">
           <div className="flex items-center justify-between h-16 px-4 sm:px-8">
             <button
               onClick={() => setSidebarOpen(true)}
-              className="lg:hidden p-2 rounded-lg hover:bg-gray-100 transition-colors"
+              className="lg:hidden p-2 rounded-lg hover:bg-zinc-900 transition-colors"
             >
-              <Menu className="w-6 h-6 text-gray-600" />
+              <Menu className="w-6 h-6 text-zinc-400" />
             </button>
             <div className="flex items-center space-x-4">
               <h1 className="text-lg sm:text-xl md:text-2xl lg:text-2xl xl:text-2xl font-bold leading-[1.1] tracking-tight">
                 <span className="bg-gradient-to-r from-green-300 via-green-400 to-green-500 bg-clip-text text-transparent">
-                Issue Certificate
+                  Issue Certificate
                 </span>
               </h1>
             </div>
@@ -210,18 +210,21 @@ const IssueCertificate = () => {
           </div>
         </header>
 
-      
-        <main className="flex-1 overflow-y-auto bg-gray-50 px-4 sm:px-6 lg:px-8 pt-16 pb-6 sm:pb-8 flex items-center justify-center">
-          <div className="w-full max-w-2xl xl:max-w-4xl mx-auto">
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 sm:p-6 lg:p-8">
+
+        <main className="flex-1 overflow-y-auto bg-black relative px-4 sm:px-6 lg:px-8 pt-16 pb-6 sm:pb-8 flex items-center justify-center">
+          {/* Background Decoration */}
+          <div className="absolute top-0 right-0 w-[400px] h-[400px] bg-green-500/5 rounded-full blur-[100px] -z-10" />
+
+          <div className="w-full max-w-2xl xl:max-w-4xl mx-auto relative z-10">
+            <div className="bg-zinc-900/40 backdrop-blur-xl rounded-xl border border-white/5 p-4 sm:p-6 lg:p-8 shadow-2xl">
               <div className="flex items-center justify-center space-x-4 mb-6">
-                <div className="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center">
-                  <Award className="w-6 h-6 text-green-600" />
+                <div className="w-12 h-12 bg-green-500/10 border border-green-500/20 rounded-xl flex items-center justify-center">
+                  <Award className="w-6 h-6 text-green-400" />
                 </div>
                 <div>
                   <h1 className="text-lg sm:text-xl md:text-xl lg:text-xl font-bold leading-[1.1] tracking-tight">
                     <span className="bg-gradient-to-r from-green-300 via-green-400 to-green-500 bg-clip-text text-transparent">
-                    Certificate Details
+                      Certificate Details
                     </span>
                   </h1>
                 </div>
@@ -229,13 +232,12 @@ const IssueCertificate = () => {
 
 
               <form onSubmit={handleSubmit} className="space-y-6">
-             
-                <div className="border-b border-gray-200 pb-6">
-                  <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-                    
+
+                <div className="border-b border-white/5 pb-6">
+                  <h3 className="text-lg font-semibold text-white mb-4 flex items-center tracking-tight">
                     Student Information
                   </h3>
-                  
+
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
                     <div>
                       <Input
@@ -247,7 +249,7 @@ const IssueCertificate = () => {
                         placeholder="Enter student's full name"
                       />
                     </div>
-                    
+
                     <div>
                       <Input
                         label="Student ID *"
@@ -272,12 +274,12 @@ const IssueCertificate = () => {
                   </div>
                 </div>
 
-              
-                <div className="border-b border-gray-200 pb-6">
-                  <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+
+                <div className="border-b border-white/5 pb-6">
+                  <h3 className="text-lg font-semibold text-white mb-4 flex items-center tracking-tight">
                     Certificate Information
                   </h3>
-                  
+
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
                     <div>
                       <Input
@@ -289,23 +291,22 @@ const IssueCertificate = () => {
                         placeholder="Enter degree title"
                       />
                     </div>
-                    
+
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                      <label className="block text-sm font-medium text-zinc-400 mb-2">
                         Grade Classification *
                       </label>
                       <select
                         name="grade"
                         value={formData.grade}
                         onChange={handleInputChange}
-                        className="w-full px-3 sm:px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-colors text-gray-900 bg-white text-sm sm:text-base"
-                        style={{ color: '#111827' }}
+                        className="w-full px-3 sm:px-4 py-3 border border-zinc-800 rounded-lg focus:ring-2 focus:ring-green-500/50 focus:border-green-500 transition-all text-white bg-zinc-950/50 text-sm sm:text-base outline-none"
                       >
-                        <option value={Classification.FIRST_CLASS} style={{ color: '#111827' }}>First Class</option>
-                        <option value={Classification.SECOND_CLASS_UPPER} style={{ color: '#111827' }}>Second Class Upper</option>
-                        <option value={Classification.SECOND_CLASS_LOWER} style={{ color: '#111827' }}>Second Class Lower</option>
-                        <option value={Classification.THIRD_CLASS} style={{ color: '#111827' }}>Third Class</option>
-                        <option value={Classification.PASS} style={{ color: '#111827' }}>Pass</option>
+                        <option value={Classification.FIRST_CLASS} className="bg-zinc-950">First Class</option>
+                        <option value={Classification.SECOND_CLASS_UPPER} className="bg-zinc-950">Second Class Upper</option>
+                        <option value={Classification.SECOND_CLASS_LOWER} className="bg-zinc-950">Second Class Lower</option>
+                        <option value={Classification.THIRD_CLASS} className="bg-zinc-950">Third Class</option>
+                        <option value={Classification.PASS} className="bg-zinc-950">Pass</option>
                       </select>
                     </div>
                   </div>
@@ -321,7 +322,7 @@ const IssueCertificate = () => {
                         placeholder="e.g., 4 years, 2 semesters"
                       />
                     </div>
-                    
+
                     <div>
                       <Input
                         label="CGPA *"
@@ -335,34 +336,33 @@ const IssueCertificate = () => {
                   </div>
 
                   <div className="mt-6">
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-sm font-medium text-zinc-400 mb-2">
                       Faculty *
                     </label>
                     <select
                       name="faculty"
                       value={formData.faculty}
                       onChange={handleInputChange}
-                      className="w-full px-3 sm:px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 transition-colors text-gray-900 bg-white text-sm sm:text-base"
-                      style={{ color: '#111827' }}
+                      className="w-full px-3 sm:px-4 py-3 border border-zinc-800 rounded-lg focus:ring-2 focus:ring-green-500/50 focus:border-green-500 transition-all text-white bg-zinc-950/50 text-sm sm:text-base outline-none"
                     >
-                      <option value={Faculty.ENGINEERING} style={{ color: '#111827' }}>Engineering</option>
-                      <option value={Faculty.MEDICINE} style={{ color: '#111827' }}>Medicine</option>
-                      <option value={Faculty.LAW} style={{ color: '#111827' }}>Law</option>
-                      <option value={Faculty.BUSINESS} style={{ color: '#111827' }}>Business</option>
-                      <option value={Faculty.ARTS} style={{ color: '#111827' }}>Arts</option>
-                      <option value={Faculty.SCIENCE} style={{ color: '#111827' }}>Science</option>
-                      <option value={Faculty.OTHER} style={{ color: '#111827' }}>Other</option>
+                      <option value={Faculty.ENGINEERING} className="bg-zinc-950">Engineering</option>
+                      <option value={Faculty.MEDICINE} className="bg-zinc-950">Medicine</option>
+                      <option value={Faculty.LAW} className="bg-zinc-950">Law</option>
+                      <option value={Faculty.BUSINESS} className="bg-zinc-950">Business</option>
+                      <option value={Faculty.ARTS} className="bg-zinc-950">Arts</option>
+                      <option value={Faculty.SCIENCE} className="bg-zinc-950">Science</option>
+                      <option value={Faculty.OTHER} className="bg-zinc-950">Other</option>
                     </select>
                   </div>
                 </div>
 
-             
-                <div className="flex flex-col sm:flex-row justify-between gap-4 sm:gap-4 bg-gray-900 p-4 sm:p-6 rounded-lg">
+
+                <div className="flex flex-col sm:flex-row justify-between gap-4 sm:gap-4 bg-zinc-950/50 border border-white/5 p-4 sm:p-6 rounded-lg">
                   <Button
                     type="button"
                     variant="outline"
                     onClick={() => router.push('/institution/dashboard')}
-                    className="w-full sm:w-auto"
+                    className="w-full sm:w-auto border-zinc-800 text-zinc-400 hover:text-white hover:bg-zinc-900"
                   >
                     Cancel
                   </Button>
@@ -370,22 +370,22 @@ const IssueCertificate = () => {
                     type="submit"
                     size="lg"
                     disabled={isSubmitting || isPending || isConfirming}
-                    className="w-full sm:w-auto"
+                    className="w-full sm:w-auto bg-green-500 text-black font-bold shadow-lg shadow-green-950/20 hover:bg-green-400"
                   >
                     {isSubmitting || isPending ? (
                       <div className="flex items-center justify-center">
-                        <div className="animate-spin rounded-full h-4 w-4 sm:h-5 sm:w-5 border-b-2 border-white mr-2"></div>
+                        <div className="animate-spin rounded-full h-4 w-4 sm:h-5 sm:w-5 border-b-2 border-black mr-2"></div>
                         <span className="text-sm sm:text-base">
                           {isPending ? 'Transaction Pending...' : 'Issuing Certificate...'}
                         </span>
                       </div>
                     ) : isConfirming ? (
                       <div className="flex items-center justify-center">
-                        <div className="animate-spin rounded-full h-4 w-4 sm:h-5 sm:w-5 border-b-2 border-white mr-2"></div>
+                        <div className="animate-spin rounded-full h-4 w-4 sm:h-5 sm:w-5 border-b-2 border-black mr-2"></div>
                         <span className="text-sm sm:text-base">Confirming Transaction...</span>
                       </div>
                     ) : (
-                      <div className="flex items-center justify-center border-2 border-white rounded-md text-white">
+                      <div className="flex items-center justify-center">
                         <CheckCircle className="w-4 h-4 sm:w-5 sm:h-5 mr-2" />
                         <span className="text-sm sm:text-base">Issue Certificate</span>
                       </div>
