@@ -14,12 +14,24 @@ import {
   XCircle,
   X,
   Building2,
+  AlertCircle,
+  FileStack,
   MapPin,
   Mail,
   FileText,
-  Hash
+  Hash,
+  TrendingUp,
+  ShieldCheck
 } from 'lucide-react';
+import { motion } from 'framer-motion';
+import { clsx, type ClassValue } from 'clsx';
+import { twMerge } from 'tailwind-merge';
 import { institutionStore, InstitutionData } from '../../lib/institutionStore';
+import { Sidebar } from '../../components/Sidebar';
+
+function cn(...inputs: ClassValue[]) {
+  return twMerge(clsx(inputs));
+}
 
 const InstitutionDashboard = () => {
   const router = useRouter();
@@ -48,65 +60,7 @@ const InstitutionDashboard = () => {
 
   return (
     <div className="h-screen bg-black flex overflow-hidden">
-
-      <div className={`${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} fixed inset-y-0 left-0 z-50 w-64 bg-zinc-950 border-r border-white/5 text-white transition-transform duration-300 ease-in-out lg:translate-x-0 lg:static lg:inset-0 flex flex-col shadow-2xl shadow-green-950/20`}>
-        <div className="flex items-center justify-between h-16 px-6 border-b border-white/5 flex-shrink-0">
-          <div className="flex items-center space-x-3">
-            <div className="w-8 h-8 bg-green-500 rounded flex items-center justify-center">
-              <Award className="w-5 h-5 text-white" />
-            </div>
-            <h1 className="text-xl sm:text-xl md:text-2xl lg:text-2xl xl:text-2xl xl:text-5xl font-bold leading-[1.1] tracking-tight">
-              <span className="bg-gradient-to-r from-green-300 via-green-400 to-green-500 bg-clip-text text-transparent">
-                Certifi
-              </span>
-            </h1>
-          </div>
-          <button
-            onClick={() => setSidebarOpen(false)}
-            className="lg:hidden"
-          >
-            <X className="w-6 h-6" />
-          </button>
-        </div>
-
-        <nav className="flex-1 flex flex-col justify-between px-4 py-6 ">
-          <div className="flex-1 flex flex-col justify-between ">
-            {sidebarItems.map((item) => {
-              const Icon = item.icon;
-              return (
-                <div key={item.id} className="flex-1 flex items-center">
-                  <button
-                    onClick={() => handleNavigation(item.route)}
-                    className={`w-full flex items-center space-x-3 px-4 py-4 rounded-lg text-left transition-all ${activeTab === item.id
-                      ? 'bg-green-500 text-black font-bold shadow-lg shadow-green-500/20'
-                      : 'text-zinc-400 hover:bg-zinc-900 hover:text-white'
-                      }`}
-                  >
-                    <Icon className="w-5 h-5" />
-                    <span className="font-medium">{item.label}</span>
-                  </button>
-                </div>
-              );
-            })}
-          </div>
-
-
-          <div className="pt-6 border-t border-white/5">
-            <button className="w-full flex items-center space-x-3 px-4 py-4 rounded-lg text-left transition-colors text-red-400 hover:bg-red-500/10 hover:text-red-300">
-              <LogOut className="w-5 h-5" />
-              <span className="font-medium">Logout</span>
-            </button>
-          </div>
-        </nav>
-      </div>
-
-
-      {sidebarOpen && (
-        <div
-          className="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden"
-          onClick={() => setSidebarOpen(false)}
-        />
-      )}
+      <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
 
 
       <div className="flex-1 flex flex-col overflow-hidden min-h-[600px]">
@@ -130,14 +84,41 @@ const InstitutionDashboard = () => {
           </div>
         </header>
 
-        <main className="flex-1 overflow-y-auto bg-black relative">
+        <main className="flex-1 overflow-y-auto bg-black relative custom-scrollbar">
           {/* Background Decoration */}
-          <div className="absolute top-0 right-0 w-[400px] h-[400px] bg-green-500/5 rounded-full blur-[100px] -z-10" />
+          <div className="absolute top-1/4 right-0 w-[500px] h-[500px] bg-green-500/5 rounded-full blur-[120px] -z-10" />
+          <div className="absolute bottom-1/4 left-0 w-[300px] h-[300px] bg-green-500/5 rounded-full blur-[100px] -z-10" />
 
-          <div className="px-8 py-8 pt-16 flex items-center justify-center relative z-10">
+          <div className="px-8 py-8 pt-10 flex items-center justify-center relative z-10">
             <div className="w-full max-w-6xl">
               {institutionData ? (
-                <div className="space-y-6">
+                <div className="space-y-8">
+                  {/* Analytics Grid */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                    {[
+                      { label: 'Total Issued', value: '1,284', icon: FileStack, color: 'text-green-500', trend: '+12%' },
+                      { label: 'Active Certificates', value: '1,240', icon: ShieldCheck, color: 'text-blue-500', trend: '+8%' },
+                      { label: 'Revocations', value: '44', icon: AlertCircle, color: 'text-red-500', trend: '-2%' },
+                      { label: 'Verification Queries', value: '8.4k', icon: TrendingUp, color: 'text-purple-500', trend: '+24%' },
+                    ].map((stat: { label: string; value: string; icon: any; color: string; trend: string }, i) => (
+                      <motion.div
+                        key={stat.label}
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: i * 0.1 }}
+                        className="glass-card p-6 rounded-3xl group hover:border-white/10 transition-all duration-300"
+                      >
+                        <div className="flex justify-between items-start mb-4">
+                          <div className={cn("p-3 rounded-2xl bg-white/5 group-hover:scale-110 transition-transform duration-300", stat.color)}>
+                            <stat.icon className="w-6 h-6" />
+                          </div>
+                          <span className="text-[10px] font-bold text-green-500 bg-green-500/10 px-2 py-1 rounded-full">{stat.trend}</span>
+                        </div>
+                        <div className="text-2xl font-bold text-white mb-1 tracking-tight">{stat.value}</div>
+                        <div className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest">{stat.label}</div>
+                      </motion.div>
+                    ))}
+                  </div>
 
                   <div className="glass-card rounded-2xl p-8 hover:scale-[1.01] transition-all duration-300">
                     <div className="flex items-center space-x-4 mb-8">
