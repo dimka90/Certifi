@@ -4,6 +4,7 @@ pragma solidity ^0.8.20;
 import {Test, console} from "forge-std/Test.sol";
 import {CertificateNFT} from "../src/core/CertificationNft.sol";
 import {InstitutionType} from "../src/types/Enums.sol";
+import {Institution} from "../src/types/Structs.sol";
 
 contract CertificationNftTest is Test {
     CertificateNFT public certNFT;
@@ -69,25 +70,14 @@ contract CertificationNftTest is Test {
         assertTrue(certNFT.registeredInstitutions(institution1));
         
         // Verify institution data
-        (string memory name, string memory id, address wallet, , , , , bool isAuthorized, ) = 
-            _getInstitutionData(institution1);
-        assertEq(name, INSTITUTION_NAME);
-        assertEq(id, INSTITUTION_ID);
-        assertEq(wallet, institution1);
-        assertFalse(isAuthorized); // Should not be authorized yet
+        Institution memory inst = _getInstitutionData(institution1);
+        assertEq(inst.name, INSTITUTION_NAME);
+        assertEq(inst.institutionID, INSTITUTION_ID);
+        assertEq(inst.walletAddress, institution1);
+        assertFalse(inst.isAuthorized); // Should not be authorized yet
     }
     
-    function _getInstitutionData(address addr) internal view returns (
-        string memory name,
-        string memory institutionID,
-        address walletAddress,
-        string memory email,
-        string memory country,
-        InstitutionType institutionType,
-        uint256 registrationDate,
-        bool isAuthorized,
-        uint256 totalCertificatesIssued
-    ) {
+    function _getInstitutionData(address addr) internal view returns (Institution memory) {
         return certNFT.getInstitution(addr);
     }
     
@@ -115,9 +105,9 @@ contract CertificationNftTest is Test {
         assertTrue(certNFT.registeredInstitutions(institution2));
         
         // Verify different types
-        (, , , , , InstitutionType type1, , , ) = _getInstitutionData(institution1);
-        (, , , , , InstitutionType type2, , , ) = _getInstitutionData(institution2);
-        assertTrue(uint8(type1) != uint8(type2));
+        Institution memory inst1 = _getInstitutionData(institution1);
+        Institution memory inst2 = _getInstitutionData(institution2);
+        assertTrue(uint8(inst1.institutionType) != uint8(inst2.institutionType));
     }
     
     function test_RegisterInstitution_AlreadyRegistered_Reverts() public {
@@ -180,8 +170,8 @@ contract CertificationNftTest is Test {
             InstitutionType.University
         );
         
-        (, , , , , , uint256 registrationDate, , ) = _getInstitutionData(institution1);
-        assertEq(registrationDate, beforeTime);
+        Institution memory inst = _getInstitutionData(institution1);
+        assertEq(inst.registrationDate, beforeTime);
     }
     
     // ============ authorizeInstitution Tests ============
@@ -198,8 +188,8 @@ contract CertificationNftTest is Test {
         );
         
         // Verify not authorized initially
-        (, , , , , , , bool isAuthorizedBefore, ) = _getInstitutionData(institution1);
-        assertFalse(isAuthorizedBefore);
+        Institution memory instBefore = _getInstitutionData(institution1);
+        assertFalse(instBefore.isAuthorized);
         
         // Authorize the institution
         vm.expectEmit(true, false, false, true);
@@ -208,8 +198,8 @@ contract CertificationNftTest is Test {
         certNFT.authorizeInstitution(institution1);
         
         // Verify authorized
-        (, , , , , , , bool isAuthorizedAfter, ) = _getInstitutionData(institution1);
-        assertTrue(isAuthorizedAfter);
+        Institution memory instAfter = _getInstitutionData(institution1);
+        assertTrue(instAfter.isAuthorized);
     }
     
     function test_AuthorizeInstitution_OnlyOwnerCanAuthorize() public {
@@ -277,10 +267,10 @@ contract CertificationNftTest is Test {
         certNFT.authorizeInstitution(institution2);
         
         // Verify both are authorized
-        (, , , , , , , bool auth1, ) = _getInstitutionData(institution1);
-        (, , , , , , , bool auth2, ) = _getInstitutionData(institution2);
-        assertTrue(auth1);
-        assertTrue(auth2);
+        Institution memory inst1 = _getInstitutionData(institution1);
+        Institution memory inst2 = _getInstitutionData(institution2);
+        assertTrue(inst1.isAuthorized);
+        assertTrue(inst2.isAuthorized);
     }
 }
 
