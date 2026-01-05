@@ -227,5 +227,60 @@ contract CertificationNftTest is Test {
         vm.prank(institution1);
         certNFT.authorizeInstitution(institution1);
     }
+    
+    function test_AuthorizeInstitution_NotRegistered_Reverts() public {
+        // Try to authorize an institution that hasn't been registered
+        vm.expectRevert();
+        certNFT.authorizeInstitution(institution1);
+    }
+    
+    function test_AuthorizeInstitution_AlreadyAuthorized_Reverts() public {
+        // Register and authorize
+        _registerInstitution(
+            institution1,
+            INSTITUTION_NAME,
+            INSTITUTION_ID,
+            INSTITUTION_EMAIL,
+            INSTITUTION_COUNTRY,
+            InstitutionType.University
+        );
+        
+        certNFT.authorizeInstitution(institution1);
+        
+        // Try to authorize again - should revert
+        vm.expectRevert();
+        certNFT.authorizeInstitution(institution1);
+    }
+    
+    function test_AuthorizeInstitution_MultipleInstitutions() public {
+        // Register two institutions
+        _registerInstitution(
+            institution1,
+            "University A",
+            "UNIV-001",
+            "info@univa.edu",
+            "USA",
+            InstitutionType.University
+        );
+        
+        _registerInstitution(
+            institution2,
+            "Polytechnic B",
+            "POLY-002",
+            "info@polyb.edu",
+            "Canada",
+            InstitutionType.Polytechnic
+        );
+        
+        // Authorize both
+        certNFT.authorizeInstitution(institution1);
+        certNFT.authorizeInstitution(institution2);
+        
+        // Verify both are authorized
+        (, , , , , , , bool auth1, ) = _getInstitutionData(institution1);
+        (, , , , , , , bool auth2, ) = _getInstitutionData(institution2);
+        assertTrue(auth1);
+        assertTrue(auth2);
+    }
 }
 
