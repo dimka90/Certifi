@@ -90,5 +90,57 @@ contract CertificationNftTest is Test {
     ) {
         return certNFT.getInstitution(addr);
     }
+    
+    function test_RegisterInstitution_DifferentInstitutionTypes() public {
+        // Test University
+        vm.prank(institution1);
+        certNFT.registerInstitution(
+            "University A",
+            "UNIV-001",
+            "info@univa.edu",
+            "USA",
+            InstitutionType.University
+        );
+        assertTrue(certNFT.registeredInstitutions(institution1));
+        
+        // Test Polytechnic
+        vm.prank(institution2);
+        certNFT.registerInstitution(
+            "Polytechnic B",
+            "POLY-002",
+            "info@polyb.edu",
+            "Canada",
+            InstitutionType.Polytechnic
+        );
+        assertTrue(certNFT.registeredInstitutions(institution2));
+        
+        // Verify different types
+        (, , , , , InstitutionType type1, , , ) = _getInstitutionData(institution1);
+        (, , , , , InstitutionType type2, , , ) = _getInstitutionData(institution2);
+        assertTrue(uint8(type1) != uint8(type2));
+    }
+    
+    function test_RegisterInstitution_AlreadyRegistered_Reverts() public {
+        // First registration should succeed
+        vm.prank(institution1);
+        certNFT.registerInstitution(
+            INSTITUTION_NAME,
+            INSTITUTION_ID,
+            INSTITUTION_EMAIL,
+            INSTITUTION_COUNTRY,
+            InstitutionType.University
+        );
+        
+        // Second registration should revert
+        vm.expectRevert();
+        vm.prank(institution1);
+        certNFT.registerInstitution(
+            "Another Name",
+            "ANOTHER-ID",
+            "another@email.com",
+            "Another Country",
+            InstitutionType.CollegeOfEducation
+        );
+    }
 }
 
