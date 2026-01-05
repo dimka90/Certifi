@@ -142,5 +142,46 @@ contract CertificationNftTest is Test {
             InstitutionType.CollegeOfEducation
         );
     }
+    
+    function test_RegisterInstitution_EmptyName_Reverts() public {
+        vm.expectRevert();
+        vm.prank(institution1);
+        certNFT.registerInstitution(
+            "", // Empty name
+            INSTITUTION_ID,
+            INSTITUTION_EMAIL,
+            INSTITUTION_COUNTRY,
+            InstitutionType.University
+        );
+    }
+    
+    function test_RegisterInstitution_EmptyInstitutionID_Reverts() public {
+        vm.expectRevert();
+        vm.prank(institution1);
+        certNFT.registerInstitution(
+            INSTITUTION_NAME,
+            "", // Empty institution ID
+            INSTITUTION_EMAIL,
+            INSTITUTION_COUNTRY,
+            InstitutionType.University
+        );
+    }
+    
+    function test_RegisterInstitution_RegistrationDateSet() public {
+        uint256 beforeTime = block.timestamp;
+        vm.warp(beforeTime);
+        
+        vm.prank(institution1);
+        certNFT.registerInstitution(
+            INSTITUTION_NAME,
+            INSTITUTION_ID,
+            INSTITUTION_EMAIL,
+            INSTITUTION_COUNTRY,
+            InstitutionType.University
+        );
+        
+        (, , , , , , uint256 registrationDate, , ) = _getInstitutionData(institution1);
+        assertEq(registrationDate, beforeTime);
+    }
 }
 
