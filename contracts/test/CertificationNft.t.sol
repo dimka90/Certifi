@@ -183,5 +183,49 @@ contract CertificationNftTest is Test {
         (, , , , , , uint256 registrationDate, , ) = _getInstitutionData(institution1);
         assertEq(registrationDate, beforeTime);
     }
+    
+    // ============ authorizeInstitution Tests ============
+    
+    function test_AuthorizeInstitution_Success() public {
+        // First register the institution
+        _registerInstitution(
+            institution1,
+            INSTITUTION_NAME,
+            INSTITUTION_ID,
+            INSTITUTION_EMAIL,
+            INSTITUTION_COUNTRY,
+            InstitutionType.University
+        );
+        
+        // Verify not authorized initially
+        (, , , , , , , bool isAuthorizedBefore, ) = _getInstitutionData(institution1);
+        assertFalse(isAuthorizedBefore);
+        
+        // Authorize the institution
+        vm.expectEmit(true, false, false, true);
+        emit InstitutionAuthorized(institution1, block.timestamp);
+        
+        certNFT.authorizeInstitution(institution1);
+        
+        // Verify authorized
+        (, , , , , , , bool isAuthorizedAfter, ) = _getInstitutionData(institution1);
+        assertTrue(isAuthorizedAfter);
+    }
+    
+    function test_AuthorizeInstitution_OnlyOwnerCanAuthorize() public {
+        _registerInstitution(
+            institution1,
+            INSTITUTION_NAME,
+            INSTITUTION_ID,
+            INSTITUTION_EMAIL,
+            INSTITUTION_COUNTRY,
+            InstitutionType.University
+        );
+        
+        // Non-owner should not be able to authorize
+        vm.expectRevert();
+        vm.prank(institution1);
+        certNFT.authorizeInstitution(institution1);
+    }
 }
 
