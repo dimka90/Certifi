@@ -6,9 +6,9 @@ import { useAccount } from 'wagmi';
 import { toast } from 'react-hot-toast';
 import { CERTIFICATE_MANAGER_ABI } from './abi';
 import { getContractAddress, getFormattedContractAddress } from './address';
-import type { 
-  Certificate, 
-  Institution, 
+import type {
+  Certificate,
+  Institution,
   CertificateVerification,
   InstitutionRegistrationData,
   CertificateIssueData,
@@ -126,7 +126,7 @@ export function useCertificateContract() {
           institutionData.institutionType as number,
         ],
       });
-      
+
       console.log('Transaction hash:', result);
       toast.success('Institution registration submitted!');
     } catch (err) {
@@ -141,7 +141,7 @@ export function useCertificateContract() {
   const issueCertificate = async (certificateData: CertificateIssueData) => {
     try {
       console.log('Calling issueCertificate with:', certificateData);
-      
+
       await writeContract({
         address: getFormattedContractAddress(),
         abi: CERTIFICATE_MANAGER_ABI,
@@ -195,37 +195,36 @@ export function useCertificateContract() {
     useGetTotalCertificatesIssued,
     useCheckInstitutionRegistration,
     useCheckInstitutionAuthorization,
-    
+
     // Write functions
     registerInstitution,
     issueCertificate,
     revokeCertificate,
-    
-    
+
     // Transaction state
     isPending,
     isConfirming,
     isConfirmed,
     error,
     hash,
-  };
+  } as const;
 }
 
 // Specialized hooks for common use cases
 export function useCertificateVerification(certificateId: bigint | null) {
   const { useVerifyCertificate } = useCertificateContract();
-  
+
   return useVerifyCertificate(certificateId || BigInt(0));
 }
 
 export function useInstitutionData(institutionAddress: string | null) {
   const { useGetInstitution } = useCertificateContract();
-  
+
   return useGetInstitution(institutionAddress || '0x0000000000000000000000000000000000000000');
 }
 
 export function useCertificateDetails(certificateId: bigint | null) {
   const { useGetCertificate } = useCertificateContract();
-  
+
   return useGetCertificate(certificateId || BigInt(0));
 }
