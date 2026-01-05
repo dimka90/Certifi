@@ -1,119 +1,102 @@
 import React from 'react';
 import Link from 'next/link';
 import { Container } from './ui/Container';
+import { ShieldCheck, Twitter, Github, Linkedin, Mail } from 'lucide-react';
 
 const FOOTER_LINKS = {
   company: [
-    { label: 'Blog', href: '#' },
-    { label: 'Contact', href: '#' },
+    { label: 'Verify Portal', href: '/verify' },
+    { label: 'Institution Login', href: '/institution/dashboard' },
   ],
   legal: [
-    { label: 'Terms of Service', href: '#' },
-    { label: 'Privacy Policy', href: '#' },
+    { label: 'Privacy Protocol', href: '#' },
+    { label: 'Internal Governance', href: '#' },
   ],
 };
 
-const SOCIAL_LINKS = [
-  {
-    name: 'Twitter',
-    href: '#',
-    icon: (
-      <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-        <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
-      </svg>
-    ),
-  },
-  {
-    name: 'Instagram',
-    href: '#',
-    icon: (
-      <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-        <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073z" />
-      </svg>
-    ),
-  },
-];
-
 const Footer: React.FC = () => {
   return (
-    <footer className="bg-black border-t border-zinc-800">
+    <footer className="bg-black border-t border-white/5 relative overflow-hidden">
+      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-px bg-gradient-to-r from-transparent via-green-500/20 to-transparent" />
+
       <Container>
-        <div className="py-16 space-y-12">
-          {/* Main Footer Content */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
-            {/* Brand */}
-            <div className="md:col-span-2">
-              <div className="flex items-center gap-2 mb-4">
-                <div className="w-8 h-8 bg-gradient-to-br from-green-400 to-green-600 rounded flex items-center justify-center">
-                  <svg width="16" height="16" viewBox="0 0 20 20" fill="none">
-                    <path
-                      d="M10 2L3 7v6l7 5 7-5V7l-7-5z"
-                      fill="currentColor"
-                      className="text-black/80"
-                    />
-                  </svg>
+        <div className="py-20">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-16 lg:gap-8">
+            {/* Brand Identity */}
+            <div className="lg:col-span-6 space-y-8">
+              <Link href="/" className="flex items-center gap-4 group">
+                <div className="w-12 h-12 bg-zinc-900 border border-white/10 rounded-2xl flex items-center justify-center transition-all group-hover:border-green-500/30">
+                  <ShieldCheck className="w-6 h-6 text-green-500" />
                 </div>
-                <span className="text-xl font-bold text-white">Certifi</span>
-              </div>
-              <p className="text-gray-400 text-sm">
-                Blockchain-powered credential verification for global trust in academic credentials.
+                <div className="flex flex-col">
+                  <span className="text-2xl font-bold text-white tracking-tighter">Certifi</span>
+                  <span className="text-[10px] text-zinc-500 font-bold uppercase tracking-[0.2em] mt-0.5">Anchored Integrity</span>
+                </div>
+              </Link>
+              <p className="max-w-md text-zinc-500 text-base leading-relaxed font-medium">
+                The global infrastructure for cryptographically secured academic credentials.
+                Built on blockchain to eliminate forgery and streamline verification.
               </p>
+              <div className="flex items-center gap-3">
+                {[Twitter, Github, Linkedin, Mail].map((Icon, i) => (
+                  <Link
+                    key={i}
+                    href="#"
+                    className="w-10 h-10 rounded-xl bg-white/5 border border-white/5 flex items-center justify-center text-zinc-500 hover:text-white hover:border-white/10 transition-all hover:scale-110"
+                  >
+                    <Icon className="w-4.5 h-4.5" />
+                  </Link>
+                ))}
+              </div>
             </div>
 
-            {/* Company Links */}
-            <div>
-              <h3 className="font-semibold text-white mb-4">Company</h3>
-              <ul className="space-y-2">
-                {FOOTER_LINKS.company.map((link) => (
-                  <li key={link.label}>
-                    <Link
-                      href={link.href}
-                      className="text-sm text-gray-400 hover:text-white transition-colors"
-                    >
-                      {link.label}
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            </div>
+            {/* Navigation Sections */}
+            <div className="lg:col-span-6 grid grid-cols-2 md:grid-cols-3 gap-8">
+              <div className="space-y-6">
+                <p className="text-[10px] font-bold text-white uppercase tracking-[0.2em]">Application</p>
+                <ul className="space-y-4">
+                  {FOOTER_LINKS.company.map((link) => (
+                    <li key={link.label}>
+                      <Link href={link.href} className="text-zinc-500 hover:text-green-500 font-medium transition-colors text-sm">
+                        {link.label}
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              </div>
 
-            {/* Legal Links */}
-            <div>
-              <h3 className="font-semibold text-white mb-4">Legal</h3>
-              <ul className="space-y-2">
-                {FOOTER_LINKS.legal.map((link) => (
-                  <li key={link.label}>
-                    <Link
-                      href={link.href}
-                      className="text-sm text-gray-400 hover:text-white transition-colors"
-                    >
-                      {link.label}
-                    </Link>
-                  </li>
-                ))}
-              </ul>
+              <div className="space-y-6">
+                <p className="text-[10px] font-bold text-white uppercase tracking-[0.2em]">Governance</p>
+                <ul className="space-y-4">
+                  {FOOTER_LINKS.legal.map((link) => (
+                    <li key={link.label}>
+                      <Link href={link.href} className="text-zinc-500 hover:text-white font-medium transition-colors text-sm">
+                        {link.label}
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+
+              <div className="col-span-2 md:col-span-1 space-y-6">
+                <p className="text-[10px] font-bold text-white uppercase tracking-[0.2em]">Status</p>
+                <div className="flex flex-col space-y-4">
+                  <div className="px-4 py-2 bg-green-500/5 border border-green-500/10 rounded-xl inline-flex items-center gap-3">
+                    <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+                    <span className="text-[10px] font-bold text-green-500 uppercase tracking-widest">Mainnet Live</span>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
 
-          {/* Divider */}
-          <div className="border-t border-zinc-800" />
-
-          {/* Bottom Bar */}
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-            <p className="text-sm text-gray-400">
-              © 2025 Certifi. All rights reserved.
+          {/* Infrastructure Disclaimer */}
+          <div className="mt-20 pt-10 border-t border-white/5 flex flex-col md:flex-row justify-between items-center gap-6">
+            <p className="text-xs text-zinc-600 font-medium">
+              © 2025 Certifi protocol. All cryptographic proofs strictly enforced.
             </p>
-            <div className="flex items-center gap-4">
-              {SOCIAL_LINKS.map((link) => (
-                <a
-                  key={link.name}
-                  href={link.href}
-                  aria-label={link.name}
-                  className="text-gray-400 hover:text-white transition-colors"
-                >
-                  {link.icon}
-                </a>
-              ))}
+            <div className="flex items-center gap-6">
+              <span className="text-xs text-zinc-700 font-mono tracking-tighter">BUILD VERSION: 1.0.4-STABLE</span>
             </div>
           </div>
         </div>

@@ -74,27 +74,39 @@ graph TB
     style BC_Contract fill:#f59e0b,stroke:#b45309,color:#fff
 ```
 
+# Premium User Experience
+## Certifi features a state-of-the-art interface designed for the next generation of trust:
+- **Glassmorphism Design**: High-end translucent cards and navigation elements using `backdrop-blur` and `zinc` shades.
+- **Premium Dark Theme**: A refined black-zinc color palette with emerald accents for a "pro" fintech appearance.
+- **Micro-Animations**: Fluid motion using `framer-motion` and custom CSS `float` animations.
+- **Responsive Architecture**: Fully optimized for all device sizes.
+
+# Tech Stack Highlights
+- **Framework**: Next.js 15 (App Router)
+- **Styling**: Tailwind CSS + Custom Glassmorphism Utilities
+- **Motion**: Framer Motion
+- **Web3**: Wagmi & RainbowKit
+- **Icons**: Lucide React
+
 # Getting Started
 ## Prerequisites
-Node.js 18+
-npm or yarn
-MetaMask wallet
-Base Sepolia testnet access
+- Node.js 18+
+- npm or yarn
+- MetaMask wallet
+- Base Sepolia testnet access
+
 # Installation
-```
+```bash
 # Clone the repository
-git clone https://github.com/your-username/certifi.git
-cd certifi/frontend
+git clone https://github.com/dimka90/Certifi.git
+cd Certifi/frontend
 
 # Install dependencies
 npm install
 
-# Set up environment variables
-cp .env.example .env.local
-# Add your contract address and API keys
-
 # Run development server
 npm run dev
 ```
+
 # License
-## This project is licensed under the MIT License - see the LICENSE file for details.
+This project is licensed under the MIT License.

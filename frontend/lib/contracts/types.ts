@@ -91,13 +91,20 @@ export type CertificateStatus = 'active' | 'revoked' | 'inactive';
 export type InstitutionStatus = 'active' | 'inactive';
 export type TransactionStatus = 'idle' | 'pending' | 'confirming' | 'confirmed' | 'failed';
 
-// Institution type labels
-export const INSTITUTION_TYPES = {
-  [InstitutionType.UNIVERSITY]: 'University',
-  [InstitutionType.COLLEGE]: 'College',
-  [InstitutionType.SCHOOL]: 'School',
-  [InstitutionType.TRAINING_CENTER]: 'Training Center',
-  [InstitutionType.OTHER]: 'Other',
+export const GRADE_LABELS = {
+  [Classification.FIRST_CLASS]: 'First Class',
+  [Classification.SECOND_CLASS_UPPER]: 'Second Class (Upper Division)',
+  [Classification.SECOND_CLASS_LOWER]: 'Second Class (Lower Division)',
+  [Classification.THIRD_CLASS]: 'Third Class',
+  [Classification.PASS]: 'Pass',
 } as const;
 
-export type InstitutionTypeKey = keyof typeof INSTITUTION_TYPES;
+export const FACULTY_LABELS = {
+  [Faculty.ENGINEERING]: 'Engineering',
+  [Faculty.MEDICINE]: 'Medicine',
+  [Faculty.LAW]: 'Law',
+  [Faculty.BUSINESS]: 'Business',
+  [Faculty.ARTS]: 'Arts',
+  [Faculty.SCIENCE]: 'Science',
+  [Faculty.OTHER]: 'Other',
+} as const;
