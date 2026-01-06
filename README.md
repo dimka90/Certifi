@@ -3,6 +3,11 @@
 
 ![Built on Base](https://img.shields.io/badge/Built%20on-Base-0052FF?style=for-the-badge&logo=base&logoColor=white)
 
+> [!IMPORTANT]
+> **Certifi Smart Contract is DEPLOYED and LIVE!**  
+> **Network**: Base Mainnet  
+> **Contract Address**: `0x33A21018CF5Ccf399f98DeDfc29eAa1AbEEF0AAB`
+
 # The Problem
 ### African academic institutions face a critical trust crisis globally. Employers worldwide struggle to verify African qualifications, leading to:
 ### Delayed hiring processes due to lengthy verification procedures
