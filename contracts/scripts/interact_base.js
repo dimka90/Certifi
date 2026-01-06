@@ -96,7 +96,7 @@ async function main() {
             txCount++;
 
             // Short delay to allow the network to catch up
-            await new Promise(r => setTimeout(r, 1000));
+            await new Promise(r => setTimeout(r, 1500));
         } catch (e) {
             console.error(`   -> Error issuing certificate: ${e.message}`);
             // If nonce error, try to resync nonce and continue
