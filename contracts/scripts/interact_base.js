@@ -25,7 +25,8 @@ async function main() {
     const wallet = new ethers.Wallet(privateKey, provider);
     const contract = new ethers.Contract(CONTRACT_ADDRESS, ABI, wallet);
 
-    console.log(`Using Wallet: ${wallet.address}`);
+    console.log("--- Diagnostics Start ---");
+  console.log(`Using Wallet: ${wallet.address}`);
     console.log(`Target Contract: ${CONTRACT_ADDRESS}`);
 
     let txCount = 0;
