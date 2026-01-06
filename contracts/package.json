@@ -1,0 +1,10 @@
+{
+    "name": "certifi-scripts",
+    "version": "1.0.0",
+    "description": "Interaction scripts for Certifi contracts",
+    "main": "scripts/interact_base.js",
+    "dependencies": {
+        "dotenv": "^16.4.7",
+        "ethers": "^6.13.5"
+    }
+}
