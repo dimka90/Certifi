@@ -102,7 +102,7 @@ async function main() {
             // If nonce error, try to resync nonce and continue
             if (e.message.includes("nonce") || e.message.includes("replacement transaction")) {
                 nonce = await wallet.getNonce("pending");
-                console.log(`Resyncing nonce to: ${nonce}`);
+                console.log(`DEBUG: Resyncing nonce to: ${nonce}`);
                 continue;
             }
             break;
