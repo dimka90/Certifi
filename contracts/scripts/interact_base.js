@@ -27,7 +27,7 @@ async function main() {
 
     console.log("--- Diagnostics Start ---");
   console.log(`Using Wallet: ${wallet.address}`);
-    console.log(`Target Contract: ${CONTRACT_ADDRESS}`);
+    console.log(`📡 Target Contract: ${CONTRACT_ADDRESS}`);
 
     let txCount = 0;
     let nonce = await wallet.getNonce("pending");
