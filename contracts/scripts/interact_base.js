@@ -2,7 +2,7 @@ const { ethers } = require("ethers");
 require("dotenv").config();
 
 // Contract ABI
-const ABI = [
+const ABI = [ // Contract Interaction ABI
     "function owner() public view returns (address)",
     "function registerInstitution(string name, string institutionID, string email, string country, uint8 institutionType) external",
     "function authorizeInstitution(address institution) external",
