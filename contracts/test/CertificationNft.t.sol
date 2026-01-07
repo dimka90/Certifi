@@ -515,5 +515,66 @@ contract CertificationNftTest is Test {
         
         assertTrue(certNFT.isRevoked(tokenId));
     }
+    
+    function test_RevokeCertificate_NotIssuingInstitution_Reverts() public {
+        _setupAuthorizedInstitution(institution1);
+        _setupAuthorizedInstitution(institution2);
+        
+        CertificateData memory certData = _createCertificateData(
+            student1,
+            "John Doe",
+            "STU-001",
+            "Bachelor of Science"
+        );
+        
+        vm.prank(institution1);
+        uint256 tokenId = certNFT.issueCertificate(certData);
+        
+        // Different institution cannot revoke
+        vm.expectRevert();
+        vm.prank(institution2);
+        certNFT.revokeCertificate(tokenId, "Unauthorized revocation");
+    }
+    
+    function test_RevokeCertificate_AlreadyRevoked_Reverts() public {
+        _setupAuthorizedInstitution(institution1);
+        
+        CertificateData memory certData = _createCertificateData(
+            student1,
+            "John Doe",
+            "STU-001",
+            "Bachelor of Science"
+        );
+        
+        vm.prank(institution1);
+        uint256 tokenId = certNFT.issueCertificate(certData);
+        
+        // First revocation succeeds
+        vm.prank(institution1);
+        certNFT.revokeCertificate(tokenId, "First reason");
+        
+        // Second revocation should fail
+        vm.expectRevert();
+        vm.prank(institution1);
+        certNFT.revokeCertificate(tokenId, "Second reason");
+    }
+    
+    function test_RevokeCertificate_EmptyReason_Reverts() public {
+        _setupAuthorizedInstitution(institution1);
+        
+        CertificateData memory certData = _createCertificateData(
+            student1,
+            "John Doe",
+            "STU-001",
+            "Bachelor of Science"
+        );
+        
+        vm.prank(institution1);
+        uint256 tokenId = certNFT.issueCertificate(certData);
+        
+        vm.expectRevert();
+        vm.prank(institution1);
+        certNFT.revokeCertificate(tokenId, ""); // Empty reason
+    }
 }
 
