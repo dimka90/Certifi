@@ -83,7 +83,6 @@ contract CertificateNFT is ERC721URIStorage {
         emit InstitutionDeauthorized(_institution, block.timestamp);
     }
 
-    // Refactored internal function
     function _issueCertificate(CertificateData memory data) internal returns (uint256) {
         if (data.studentWallet == address(0)) revert InvalidStudentAddress();
         if (bytes(data.studentName).length == 0) revert EmptyString();
@@ -109,7 +108,7 @@ contract CertificateNFT is ERC721URIStorage {
             isRevoked: false,
             revocationDate: 0,
             revocationReason: "",
-            expirationDate: data.expirationDate // Set expiration
+            expirationDate: data.expirationDate
         });
         
         studentCertificates[data.studentWallet].push(newTokenId);
@@ -218,6 +217,10 @@ contract CertificateNFT is ERC721URIStorage {
     ) internal virtual override {
         super._beforeTokenTransfer(from, to, firstTokenId, batchSize);
         
+        if (from != address(0) && to != address(0)) {
+            revert SoulboundTokenNoTransfer(); // Soulbound restriction
+        }
+
         if (from != address(0)) {
             if (certificates[firstTokenId].isRevoked) revert CertificateAlreadyRevoked();
         }
