@@ -576,5 +576,60 @@ contract CertificationNftTest is Test {
         vm.prank(institution1);
         certNFT.revokeCertificate(tokenId, ""); // Empty reason
     }
+    
+    // ============ verifyCertificate Tests ============
+    
+    function test_VerifyCertificate_ValidCertificate() public {
+        _setupAuthorizedInstitution(institution1);
+        
+        CertificateData memory certData = _createCertificateData(
+            student1,
+            "John Doe",
+            "STU-001",
+            "Bachelor of Science"
+        );
+        
+        vm.prank(institution1);
+        uint256 tokenId = certNFT.issueCertificate(certData);
+        
+        // Verify certificate
+        (Certificate memory cert, bool isValid) = certNFT.verifyCertificate(tokenId);
+        
+        assertTrue(isValid);
+        assertEq(cert.studentName, "John Doe");
+        assertEq(cert.studentID, "STU-001");
+        assertEq(cert.degreeTitle, "Bachelor of Science");
+        assertFalse(cert.isRevoked);
+    }
+    
+    function test_VerifyCertificate_RevokedCertificate() public {
+        _setupAuthorizedInstitution(institution1);
+        
+        CertificateData memory certData = _createCertificateData(
+            student1,
+            "John Doe",
+            "STU-001",
+            "Bachelor of Science"
+        );
+        
+        vm.prank(institution1);
+        uint256 tokenId = certNFT.issueCertificate(certData);
+        
+        // Revoke the certificate
+        vm.prank(institution1);
+        certNFT.revokeCertificate(tokenId, "Revocation reason");
+        
+        // Verify certificate - should be invalid
+        (Certificate memory cert, bool isValid) = certNFT.verifyCertificate(tokenId);
+        
+        assertFalse(isValid);
+        assertTrue(cert.isRevoked);
+        assertEq(cert.revocationReason, "Revocation reason");
+    }
+    
+    function test_VerifyCertificate_NonExistent_Reverts() public {
+        vm.expectRevert();
+        certNFT.verifyCertificate(999); // Non-existent token
+    }
 }
 
