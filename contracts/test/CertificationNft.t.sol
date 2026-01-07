@@ -312,5 +312,42 @@ contract CertificationNftTest is Test {
         assertTrue(inst1.isAuthorized);
         assertTrue(inst2.isAuthorized);
     }
+    
+    // ============ issueCertificate Tests ============
+    
+    function test_IssueCertificate_Success() public {
+        // Setup authorized institution
+        _setupAuthorizedInstitution(institution1);
+        
+        // Create certificate data
+        CertificateData memory certData = _createCertificateData(
+            student1,
+            "John Doe",
+            "STU-001",
+            "Bachelor of Science"
+        );
+        
+        // Issue certificate
+        vm.expectEmit(true, true, false, true);
+        emit CertificateIssued(1, student1, institution1, certData.degreeTitle, block.timestamp);
+        
+        vm.prank(institution1);
+        uint256 tokenId = certNFT.issueCertificate(certData);
+        
+        // Verify token ID
+        assertEq(tokenId, 1);
+        
+        // Verify NFT ownership
+        assertEq(certNFT.ownerOf(tokenId), student1);
+        
+        // Verify certificate data
+        Certificate memory cert = certNFT.getCertificate(tokenId);
+        assertEq(cert.studentName, "John Doe");
+        assertEq(cert.studentID, "STU-001");
+        assertEq(cert.studentWallet, student1);
+        assertEq(cert.degreeTitle, "Bachelor of Science");
+        assertEq(cert.issuingInstitution, institution1);
+        assertFalse(cert.isRevoked);
+    }
 }
 
