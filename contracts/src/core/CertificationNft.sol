@@ -11,6 +11,7 @@ contract CertificateNFT is ERC721URIStorage {
     
     address public owner;
     uint256 private _tokenIdCounter;
+    uint256 public constant MAX_BATCH_SIZE = 50;
     
     mapping(address => Institution) public institutions;
     mapping(uint256 => Certificate) public certificates;
