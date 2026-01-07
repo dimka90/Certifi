@@ -20,6 +20,7 @@ error CertificateNotRevoked();
 error InvalidStudentAddress();
 error InvalidTokenURI();
 error InvalidCGPA();
+error CertificateExpired(); // Added
 
 // General Errors
 error InvalidAddress();
