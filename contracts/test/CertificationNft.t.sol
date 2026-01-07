@@ -631,5 +631,76 @@ contract CertificationNftTest is Test {
         vm.expectRevert();
         certNFT.verifyCertificate(999); // Non-existent token
     }
+    
+    // ============ Integration Tests ============
+    
+    function test_CompleteFlow_IssueAndRevoke() public {
+        // Setup
+        _setupAuthorizedInstitution(institution1);
+        
+        // Issue certificate
+        CertificateData memory certData = _createCertificateData(
+            student1,
+            "John Doe",
+            "STU-001",
+            "Bachelor of Science"
+        );
+        
+        vm.prank(institution1);
+        uint256 tokenId = certNFT.issueCertificate(certData);
+        
+        // Verify it's valid
+        (, bool isValidBefore) = certNFT.verifyCertificate(tokenId);
+        assertTrue(isValidBefore);
+        
+        // Revoke it
+        vm.prank(institution1);
+        certNFT.revokeCertificate(tokenId, "Academic misconduct");
+        
+        // Verify it's now invalid
+        (, bool isValidAfter) = certNFT.verifyCertificate(tokenId);
+        assertFalse(isValidAfter);
+        
+        // Verify institution certificate count
+        uint256[] memory instCerts = certNFT.getCertificatesByInstitution(institution1);
+        assertEq(instCerts.length, 1);
+    }
+    
+    function test_MultipleStudents_MultipleCertificates() public {
+        _setupAuthorizedInstitution(institution1);
+        
+        // Issue certificates to different students
+        CertificateData memory certData1 = _createCertificateData(
+            student1,
+            "John Doe",
+            "STU-001",
+            "Bachelor of Science"
+        );
+        
+        CertificateData memory certData2 = _createCertificateData(
+            student2,
+            "Jane Smith",
+            "STU-002",
+            "Master of Arts"
+        );
+        
+        vm.prank(institution1);
+        uint256 tokenId1 = certNFT.issueCertificate(certData1);
+        
+        vm.prank(institution1);
+        uint256 tokenId2 = certNFT.issueCertificate(certData2);
+        
+        // Verify both students have their certificates
+        uint256[] memory student1Certs = certNFT.getCertificatesByStudent(student1);
+        uint256[] memory student2Certs = certNFT.getCertificatesByStudent(student2);
+        
+        assertEq(student1Certs.length, 1);
+        assertEq(student1Certs[0], tokenId1);
+        assertEq(student2Certs.length, 1);
+        assertEq(student2Certs[0], tokenId2);
+        
+        // Verify total certificates
+        assertEq(certNFT.getTotalCertificatesIssued(), 2);
+    }
 }
 
