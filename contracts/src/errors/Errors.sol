@@ -21,7 +21,8 @@ error InvalidStudentAddress();
 error InvalidTokenURI();
 error InvalidCGPA();
 error CertificateExpired();
-error SoulboundTokenNoTransfer(); // Added
+error SoulboundTokenNoTransfer();
+error BatchSizeCheckFailed(); // Added
 
 // General Errors
 error InvalidAddress();
