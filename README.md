@@ -115,3 +115,8 @@ npm run dev
 
 # License
 This project is licensed under the MIT License.
+
+## Recent Updates
+- **Soulbound Tokens**: Certificates are now non-transferable (bound to student wallets).
+- **Batch Issuance**: Institutions can now issue up to 50 certificates in a single transaction.
+- **Expiration**: Certificates now support expiration dates and validation checks.
