@@ -126,6 +126,18 @@ contract CertificateNFT is ERC721URIStorage {
     ) external onlyAuthorizedInstitution returns (uint256) {
         return _issueCertificate(data);
     }
+
+    function issueCertificateBatch(
+        CertificateData[] calldata dataList
+    ) external onlyAuthorizedInstitution {
+        if (dataList.length == 0 || dataList.length > MAX_BATCH_SIZE) revert BatchSizeCheckFailed();
+        
+        for (uint256 i = 0; i < dataList.length; i++) {
+            _issueCertificate(dataList[i]);
+        }
+        
+        emit BatchCertificateIssued(msg.sender, dataList.length, block.timestamp);
+    }
     
     function revokeCertificate(
         uint256 tokenId,
@@ -219,7 +231,7 @@ contract CertificateNFT is ERC721URIStorage {
         super._beforeTokenTransfer(from, to, firstTokenId, batchSize);
         
         if (from != address(0) && to != address(0)) {
-            revert SoulboundTokenNoTransfer(); // Soulbound restriction
+            revert SoulboundTokenNoTransfer();
         }
 
         if (from != address(0)) {
