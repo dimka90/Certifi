@@ -404,5 +404,63 @@ contract CertificationNftTest is Test {
         assertEq(studentCerts.length, 1);
         assertEq(studentCerts[0], tokenId);
     }
+    
+    function test_IssueCertificate_NotAuthorized_Reverts() public {
+        // Register but don't authorize
+        _registerInstitution(
+            institution1,
+            INSTITUTION_NAME,
+            INSTITUTION_ID,
+            INSTITUTION_EMAIL,
+            INSTITUTION_COUNTRY,
+            InstitutionType.University
+        );
+        
+        CertificateData memory certData = _createCertificateData(
+            student1,
+            "John Doe",
+            "STU-001",
+            "Bachelor of Science"
+        );
+        
+        vm.expectRevert();
+        vm.prank(institution1);
+        certNFT.issueCertificate(certData);
+    }
+    
+    function test_IssueCertificate_InvalidStudentAddress_Reverts() public {
+        _setupAuthorizedInstitution(institution1);
+        
+        CertificateData memory certData = _createCertificateData(
+            address(0), // Invalid address
+            "John Doe",
+            "STU-001",
+            "Bachelor of Science"
+        );
+        
+        vm.expectRevert();
+        vm.prank(institution1);
+        certNFT.issueCertificate(certData);
+    }
+    
+    function test_IssueCertificate_EmptyStudentName_Reverts() public {
+        _setupAuthorizedInstitution(institution1);
+        
+        CertificateData memory certData = CertificateData({
+            studentWallet: student1,
+            studentName: "", // Empty name
+            studentID: "STU-001",
+            degreeTitle: "Bachelor of Science",
+            grade: Classification.FirstClass,
+            duration: "4 years",
+            cgpa: "3.8",
+            faculty: Faculty.Engineering,
+            tokenURI: "https://ipfs.io/ipfs/QmTest123"
+        });
+        
+        vm.expectRevert();
+        vm.prank(institution1);
+        certNFT.issueCertificate(certData);
+    }
 }
 
