@@ -462,5 +462,58 @@ contract CertificationNftTest is Test {
         vm.prank(institution1);
         certNFT.issueCertificate(certData);
     }
+    
+    // ============ revokeCertificate Tests ============
+    
+    function test_RevokeCertificate_Success_ByInstitution() public {
+        _setupAuthorizedInstitution(institution1);
+        
+        CertificateData memory certData = _createCertificateData(
+            student1,
+            "John Doe",
+            "STU-001",
+            "Bachelor of Science"
+        );
+        
+        vm.prank(institution1);
+        uint256 tokenId = certNFT.issueCertificate(certData);
+        
+        // Revoke certificate
+        string memory reason = "Academic misconduct";
+        vm.expectEmit(true, false, false, true);
+        emit CertificateRevoked(tokenId, institution1, reason, block.timestamp);
+        
+        vm.prank(institution1);
+        certNFT.revokeCertificate(tokenId, reason);
+        
+        // Verify certificate is revoked
+        assertTrue(certNFT.isRevoked(tokenId));
+        
+        Certificate memory cert = certNFT.getCertificate(tokenId);
+        assertTrue(cert.isRevoked);
+        assertEq(cert.revocationReason, reason);
+        assertGt(cert.revocationDate, 0);
+    }
+    
+    function test_RevokeCertificate_Success_ByOwner() public {
+        _setupAuthorizedInstitution(institution1);
+        
+        CertificateData memory certData = _createCertificateData(
+            student1,
+            "John Doe",
+            "STU-001",
+            "Bachelor of Science"
+        );
+        
+        vm.prank(institution1);
+        uint256 tokenId = certNFT.issueCertificate(certData);
+        
+        // Owner can also revoke
+        string memory reason = "Owner revocation";
+        vm.prank(owner);
+        certNFT.revokeCertificate(tokenId, reason);
+        
+        assertTrue(certNFT.isRevoked(tokenId));
+    }
 }
 
