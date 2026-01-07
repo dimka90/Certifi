@@ -29,7 +29,7 @@ struct Certificate {
     bool isRevoked;
     uint256 revocationDate;
     string revocationReason;
-    uint256 expirationDate; // Added field
+    uint256 expirationDate;
 }
 
 struct CertificateData {
@@ -42,4 +42,5 @@ struct CertificateData {
     string cgpa;
     Faculty faculty;
     string tokenURI;
+    uint256 expirationDate; // Added field
 }
