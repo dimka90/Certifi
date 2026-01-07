@@ -20,7 +20,8 @@ error CertificateNotRevoked();
 error InvalidStudentAddress();
 error InvalidTokenURI();
 error InvalidCGPA();
-error CertificateExpired(); // Added
+error CertificateExpired();
+error SoulboundTokenNoTransfer(); // Added
 
 // General Errors
 error InvalidAddress();
