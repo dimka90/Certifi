@@ -157,7 +157,7 @@ contract CertificateNFT is ERC721URIStorage {
         returns (Certificate memory certificate, bool isValid) 
     {
         Certificate memory cert = certificates[tokenId];
-        bool valid = !cert.isRevoked && _exists(tokenId);
+        bool valid = !cert.isRevoked && _exists(tokenId) && (cert.expirationDate == 0 || block.timestamp < cert.expirationDate);
         return (cert, valid);
     }
     
