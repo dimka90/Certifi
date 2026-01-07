@@ -3,8 +3,8 @@ pragma solidity ^0.8.20;
 
 import {Test, console} from "forge-std/Test.sol";
 import {CertificateNFT} from "../src/core/CertificationNft.sol";
-import {InstitutionType} from "../src/types/Enums.sol";
-import {Institution} from "../src/types/Structs.sol";
+import {InstitutionType, Classification, Faculty} from "../src/types/Enums.sol";
+import {Institution, Certificate, CertificateData} from "../src/types/Structs.sol";
 
 contract CertificationNftTest is Test {
     CertificateNFT public certNFT;
@@ -22,6 +22,8 @@ contract CertificationNftTest is Test {
     
     event InstitutionRegistered(address indexed institution, string name, string institutionID, uint256 timestamp);
     event InstitutionAuthorized(address indexed institution, uint256 timestamp);
+    event CertificateIssued(uint256 indexed tokenId, address indexed student, address indexed institution, string degreeTitle, uint256 timestamp);
+    event CertificateRevoked(uint256 indexed tokenId, address indexed institution, string reason, uint256 timestamp);
     
     function setUp() public {
         owner = address(this);
@@ -79,6 +81,44 @@ contract CertificationNftTest is Test {
     
     function _getInstitutionData(address addr) internal view returns (Institution memory) {
         return certNFT.getInstitution(addr);
+    }
+    
+    // Helper function to authorize an institution
+    function _authorizeInstitution(address institution) internal {
+        certNFT.authorizeInstitution(institution);
+    }
+    
+    // Helper function to setup authorized institution
+    function _setupAuthorizedInstitution(address institution) internal {
+        _registerInstitution(
+            institution,
+            INSTITUTION_NAME,
+            INSTITUTION_ID,
+            INSTITUTION_EMAIL,
+            INSTITUTION_COUNTRY,
+            InstitutionType.University
+        );
+        _authorizeInstitution(institution);
+    }
+    
+    // Helper function to create certificate data
+    function _createCertificateData(
+        address studentWallet,
+        string memory studentName,
+        string memory studentID,
+        string memory degreeTitle
+    ) internal pure returns (CertificateData memory) {
+        return CertificateData({
+            studentWallet: studentWallet,
+            studentName: studentName,
+            studentID: studentID,
+            degreeTitle: degreeTitle,
+            grade: Classification.FirstClass,
+            duration: "4 years",
+            cgpa: "3.8",
+            faculty: Faculty.Engineering,
+            tokenURI: "https://ipfs.io/ipfs/QmTest123"
+        });
     }
     
     function test_RegisterInstitution_DifferentInstitutionTypes() public {
