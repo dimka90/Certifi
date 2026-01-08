@@ -1218,5 +1218,73 @@ contract CertificationNftTest is Test {
         assertEq(certs[0], tokenId1);
         assertEq(certs[1], tokenId2);
     }
+    
+    function test_TransferOwnership_MultipleTransfers() public {
+        address owner1 = address(0x999);
+        address owner2 = address(0x888);
+        address owner3 = address(0x777);
+        
+        // First transfer
+        certNFT.transferOwnership(owner1);
+        assertEq(certNFT.owner(), owner1);
+        
+        // Second transfer
+        vm.prank(owner1);
+        certNFT.transferOwnership(owner2);
+        assertEq(certNFT.owner(), owner2);
+        
+        // Third transfer
+        vm.prank(owner2);
+        certNFT.transferOwnership(owner3);
+        assertEq(certNFT.owner(), owner3);
+    }
+    
+    function test_TransferOwnership_NewOwnerCanManageAllInstitutions() public {
+        address newOwner = address(0x999);
+        
+        // Setup multiple institutions
+        _setupAuthorizedInstitution(institution1);
+        _setupAuthorizedInstitution(institution2);
+        
+        // Transfer ownership
+        certNFT.transferOwnership(newOwner);
+        
+        // New owner can deauthorize both
+        vm.prank(newOwner);
+        certNFT.deauthorizeInstitution(institution1);
+        
+        vm.prank(newOwner);
+        certNFT.deauthorizeInstitution(institution2);
+        
+        Institution memory inst1 = _getInstitutionData(institution1);
+        Institution memory inst2 = _getInstitutionData(institution2);
+        assertFalse(inst1.isAuthorized);
+        assertFalse(inst2.isAuthorized);
+    }
+    
+    function test_TransferOwnership_PreservesExistingState() public {
+        address newOwner = address(0x999);
+        
+        // Setup and issue certificate
+        _setupAuthorizedInstitution(institution1);
+        CertificateData memory certData = _createCertificateData(
+            student1,
+            "John Doe",
+            "STU-001",
+            "Bachelor of Science"
+        );
+        
+        uint256 tokenId = _issueCertificate(institution1, certData);
+        
+        // Transfer ownership
+        certNFT.transferOwnership(newOwner);
+        
+        // All existing state should be preserved
+        assertEq(certNFT.ownerOf(tokenId), student1);
+        assertEq(certNFT.getTotalCertificatesIssued(), 1);
+        
+        uint256[] memory certs = certNFT.getCertificatesByInstitution(institution1);
+        assertEq(certs.length, 1);
+    }
 }
 
