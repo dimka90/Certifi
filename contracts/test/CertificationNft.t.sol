@@ -1104,5 +1104,52 @@ contract CertificationNftTest is Test {
         
         assertTrue(certNFT.isRevoked(tokenId));
     }
+    
+    function test_DeauthorizeInstitution_MultipleInstitutions() public {
+        _setupAuthorizedInstitution(institution1);
+        _setupAuthorizedInstitution(institution2);
+        
+        // Deauthorize one institution
+        certNFT.deauthorizeInstitution(institution1);
+        
+        // Other institution should still be authorized
+        Institution memory inst1 = _getInstitutionData(institution1);
+        Institution memory inst2 = _getInstitutionData(institution2);
+        assertFalse(inst1.isAuthorized);
+        assertTrue(inst2.isAuthorized);
+    }
+    
+    function test_DeauthorizeInstitution_AfterIssuingCertificates() public {
+        _setupAuthorizedInstitution(institution1);
+        
+        // Issue a certificate
+        CertificateData memory certData = _createCertificateData(
+            student1,
+            "John Doe",
+            "STU-001",
+            "Bachelor of Science"
+        );
+        
+        uint256 tokenId = _issueCertificate(institution1, certData);
+        
+        // Deauthorize institution
+        certNFT.deauthorizeInstitution(institution1);
+        
+        // Certificate should still exist and be valid
+        (, bool isValid) = certNFT.verifyCertificate(tokenId);
+        assertTrue(isValid);
+        
+        // But cannot issue new certificates
+        CertificateData memory certData2 = _createCertificateData(
+            student2,
+            "Jane Smith",
+            "STU-002",
+            "Master of Arts"
+        );
+        
+        vm.expectRevert();
+        vm.prank(institution1);
+        certNFT.issueCertificate(certData2);
+    }
 }
 
