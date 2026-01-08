@@ -22,8 +22,11 @@ error InvalidTokenURI();
 error InvalidCGPA();
 error CertificateExpired();
 error SoulboundTokenNoTransfer();
-error BatchSizeCheckFailed(); // Added
+error BatchSizeCheckFailed();
+error InvalidRevocationReason(); // Added
 
 // General Errors
 error InvalidAddress();
 error EmptyString();
+error ContractPaused(); // Added
+error InvalidIndex(); // Added
