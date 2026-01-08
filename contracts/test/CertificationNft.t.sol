@@ -929,5 +929,37 @@ contract CertificationNftTest is Test {
         assertEq(certs.length, 1);
         assertEq(certs[0], tokenId);
     }
+    
+    // ============ transferOwnership Tests ============
+    
+    function test_TransferOwnership_Success() public {
+        address newOwner = address(0x999);
+        
+        // Verify current owner
+        assertEq(certNFT.owner(), owner);
+        
+        // Transfer ownership
+        vm.expectEmit(true, true, false, true);
+        emit OwnershipTransferred(owner, newOwner);
+        
+        certNFT.transferOwnership(newOwner);
+        
+        // Verify new owner
+        assertEq(certNFT.owner(), newOwner);
+    }
+    
+    function test_TransferOwnership_NewOwnerCanTransfer() public {
+        address newOwner = address(0x999);
+        address anotherOwner = address(0x888);
+        
+        // Transfer to new owner
+        certNFT.transferOwnership(newOwner);
+        
+        // New owner can transfer again
+        vm.prank(newOwner);
+        certNFT.transferOwnership(anotherOwner);
+        
+        assertEq(certNFT.owner(), anotherOwner);
+    }
 }
 
