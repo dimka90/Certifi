@@ -1034,5 +1034,75 @@ contract CertificationNftTest is Test {
         Institution memory inst = _getInstitutionData(institution1);
         assertFalse(inst.isAuthorized);
     }
+    
+    function test_DeauthorizeInstitution_PreventsCertificateIssuance() public {
+        _setupAuthorizedInstitution(institution1);
+        
+        // Deauthorize
+        certNFT.deauthorizeInstitution(institution1);
+        
+        // Should not be able to issue certificates
+        CertificateData memory certData = _createCertificateData(
+            student1,
+            "John Doe",
+            "STU-001",
+            "Bachelor of Science"
+        );
+        
+        vm.expectRevert();
+        vm.prank(institution1);
+        certNFT.issueCertificate(certData);
+    }
+    
+    function test_GetCertificatesByInstitution_OrderPreserved() public {
+        _setupAuthorizedInstitution(institution1);
+        
+        // Issue multiple certificates
+        CertificateData memory certData1 = _createCertificateData(
+            student1,
+            "John Doe",
+            "STU-001",
+            "Bachelor of Science"
+        );
+        
+        CertificateData memory certData2 = _createCertificateData(
+            student2,
+            "Jane Smith",
+            "STU-002",
+            "Master of Arts"
+        );
+        
+        uint256 tokenId1 = _issueCertificate(institution1, certData1);
+        uint256 tokenId2 = _issueCertificate(institution1, certData2);
+        
+        // Verify order is preserved
+        uint256[] memory certs = certNFT.getCertificatesByInstitution(institution1);
+        assertEq(certs[0], tokenId1);
+        assertEq(certs[1], tokenId2);
+    }
+    
+    function test_TransferOwnership_NewOwnerCanRevokeCertificates() public {
+        address newOwner = address(0x999);
+        
+        _setupAuthorizedInstitution(institution1);
+        
+        CertificateData memory certData = _createCertificateData(
+            student1,
+            "John Doe",
+            "STU-001",
+            "Bachelor of Science"
+        );
+        
+        uint256 tokenId = _issueCertificate(institution1, certData);
+        
+        // Transfer ownership
+        certNFT.transferOwnership(newOwner);
+        
+        // New owner can revoke certificates
+        vm.prank(newOwner);
+        certNFT.revokeCertificate(tokenId, "Owner revocation");
+        
+        assertTrue(certNFT.isRevoked(tokenId));
+    }
 }
 
