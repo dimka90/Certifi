@@ -78,6 +78,16 @@ contract CertificateNFT is ERC721URIStorage {
     }
     
     function deauthorizeInstitution(address _institution) external onlyOwner {
+
+    function updateInstitutionDetails(string memory _name, string memory _email, string memory _country) external {
+        if (!registeredInstitutions[msg.sender]) revert InstitutionNotRegistered();
+        
+        institutions[msg.sender].name = _name;
+        institutions[msg.sender].email = _email;
+        institutions[msg.sender].country = _country;
+        
+        emit InstitutionDetailsUpdated(msg.sender, _name, _email, block.timestamp);
+    }
         if (!registeredInstitutions[_institution]) revert InstitutionNotRegistered();
         if (!institutions[_institution].isAuthorized) revert InstitutionNotAuthorized();
         
