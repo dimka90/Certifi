@@ -117,6 +117,9 @@ npm run dev
 This project is licensed under the MIT License.
 
 ## Recent Updates
+- **Emergency Pause**: Contract can be paused by admin for safety.
+- **Metadata Updates**: Correct typos in issued certificates without revoking.
+- **Batch Revocation**: Efficiently revoke multiple credentials in one go.
 - **Soulbound Tokens**: Certificates are now non-transferable (bound to student wallets).
 - **Batch Issuance**: Institutions can now issue up to 50 certificates in a single transaction.
 - **Expiration**: Certificates now support expiration dates and validation checks.

@@ -2,17 +2,19 @@
 pragma solidity ^0.8.20;
 
 import "@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol";
+import "@openzeppelin/contracts/security/Pausable.sol";
 import "../types/Enums.sol";
 import "../types/Structs.sol";
 import "../events/Events.sol";
 import "../errors/Errors.sol";
 
-contract CertificateNFT is ERC721URIStorage {
+contract CertificateNFT is ERC721URIStorage, Pausable {
     
     address public owner;
     uint256 private _tokenIdCounter;
     uint256 public constant MAX_BATCH_SIZE = 50;
     
+    address[] public institutionAddresses;
     mapping(address => Institution) public institutions;
     mapping(uint256 => Certificate) public certificates;
     mapping(address => uint256[]) public studentCertificates;
@@ -37,6 +39,14 @@ contract CertificateNFT is ERC721URIStorage {
     constructor() ERC721("Educational Certificate", "CERTIFI") {
         owner = msg.sender;
     }
+
+    function pause() external onlyOwner {
+        _pause();
+    }
+
+    function unpause() external onlyOwner {
+        _unpause();
+    }
     
     function registerInstitution(
         string memory _name,
@@ -44,7 +54,7 @@ contract CertificateNFT is ERC721URIStorage {
         string memory _email,
         string memory _country,
         InstitutionType _institutionType
-    ) external {
+    ) external whenNotPaused {
         if (registeredInstitutions[msg.sender]) revert InstitutionAlreadyRegistered();
         if (bytes(_name).length == 0) revert EmptyString();
         if (bytes(_institutionID).length == 0) revert InvalidInstitutionID();
@@ -62,6 +72,7 @@ contract CertificateNFT is ERC721URIStorage {
         });
         
         registeredInstitutions[msg.sender] = true;
+        institutionAddresses.push(msg.sender);
         
         emit InstitutionRegistered(msg.sender, _name, _institutionID, block.timestamp);
     }
@@ -84,7 +95,21 @@ contract CertificateNFT is ERC721URIStorage {
         emit InstitutionDeauthorized(_institution, block.timestamp);
     }
 
-    function _issueCertificate(CertificateData memory data) internal returns (uint256) {
+    function updateInstitutionDetails(string memory _name, string memory _email, string memory _country) external {
+        if (!registeredInstitutions[msg.sender]) revert InstitutionNotRegistered();
+        
+        institutions[msg.sender].name = _name;
+        institutions[msg.sender].email = _email;
+        institutions[msg.sender].country = _country;
+        
+        emit InstitutionDetailsUpdated(msg.sender, _name, _email, block.timestamp);
+    }
+
+    function getInstitutionCount() external view returns (uint256) {
+        return institutionAddresses.length;
+    }
+
+    function _issueCertificate(CertificateData memory data) internal whenNotPaused returns (uint256) {
         if (data.studentWallet == address(0)) revert InvalidStudentAddress();
         if (bytes(data.studentName).length == 0) revert EmptyString();
         if (bytes(data.tokenURI).length == 0) revert InvalidTokenURI();
@@ -138,23 +163,38 @@ contract CertificateNFT is ERC721URIStorage {
         
         emit BatchCertificateIssued(msg.sender, dataList.length, block.timestamp);
     }
-    
-    function revokeCertificate(
-        uint256 tokenId,
-        string memory reason
-    ) external certificateExists(tokenId) {
-        Certificate storage cert = certificates[tokenId];
-        
-        if (cert.issuingInstitution != msg.sender && msg.sender != owner) {
+
+    function updateTokenURI(uint256 tokenId, string memory newTokenURI) external whenNotPaused {
+        if (msg.sender != owner && msg.sender != certificates[tokenId].issuingInstitution) {
             revert NotIssuingInstitution();
         }
+        if (bytes(newTokenURI).length == 0) revert InvalidTokenURI();
+        _setTokenURI(tokenId, newTokenURI);
+        emit MetadataUpdated(tokenId, newTokenURI, block.timestamp);
+    }
+    
+    function batchRevoke(uint256[] calldata tokenIds, string memory reason) external whenNotPaused {
+        if (tokenIds.length == 0 || tokenIds.length > MAX_BATCH_SIZE) revert BatchSizeCheckFailed();
+        for (uint256 i = 0; i < tokenIds.length; i++) {
+            _revokeCertificate(tokenIds[i], reason);
+        }
+    }
+
+    function revokeCertificate(uint256 tokenId, string memory reason) external whenNotPaused {
+        _revokeCertificate(tokenId, reason);
+    }
+
+    function _revokeCertificate(uint256 tokenId, string memory reason) internal {
+        Certificate storage cert = certificates[tokenId];
+        if (!_exists(tokenId)) revert CertificateDoesNotExist();
+        if (cert.issuingInstitution != msg.sender && msg.sender != owner) revert NotIssuingInstitution();
         if (cert.isRevoked) revert CertificateAlreadyRevoked();
         if (bytes(reason).length == 0) revert EmptyString();
-        
+
         cert.isRevoked = true;
         cert.revocationDate = block.timestamp;
         cert.revocationReason = reason;
-        
+
         emit CertificateRevoked(tokenId, msg.sender, reason, block.timestamp);
     }
     
@@ -173,6 +213,16 @@ contract CertificateNFT is ERC721URIStorage {
         return (cert, valid);
     }
     
+    function getCertificatesByRange(uint256 start, uint256 end) external view returns (Certificate[] memory) {
+        if (start > end || end > _tokenIdCounter) revert InvalidIndex();
+        uint256 size = end - start + 1;
+        Certificate[] memory result = new Certificate[](size);
+        for (uint256 i = 0; i < size; i++) {
+            result[i] = certificates[start + i];
+        }
+        return result;
+    }
+
     function getCertificatesByStudent(address student) 
         external 
         view 
@@ -239,4 +289,3 @@ contract CertificateNFT is ERC721URIStorage {
         }
     }
 }
- 
