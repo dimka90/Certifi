@@ -993,5 +993,46 @@ contract CertificationNftTest is Test {
         vm.expectRevert();
         certNFT.transferOwnership(address(0x888));
     }
+    
+    function test_TransferOwnership_NewOwnerCanAuthorize() public {
+        address newOwner = address(0x999);
+        
+        // Transfer ownership
+        certNFT.transferOwnership(newOwner);
+        
+        // Setup institution
+        _registerInstitution(
+            institution1,
+            INSTITUTION_NAME,
+            INSTITUTION_ID,
+            INSTITUTION_EMAIL,
+            INSTITUTION_COUNTRY,
+            InstitutionType.University
+        );
+        
+        // New owner can authorize
+        vm.prank(newOwner);
+        certNFT.authorizeInstitution(institution1);
+        
+        Institution memory inst = _getInstitutionData(institution1);
+        assertTrue(inst.isAuthorized);
+    }
+    
+    function test_TransferOwnership_NewOwnerCanDeauthorize() public {
+        address newOwner = address(0x999);
+        
+        // Setup authorized institution
+        _setupAuthorizedInstitution(institution1);
+        
+        // Transfer ownership
+        certNFT.transferOwnership(newOwner);
+        
+        // New owner can deauthorize
+        vm.prank(newOwner);
+        certNFT.deauthorizeInstitution(institution1);
+        
+        Institution memory inst = _getInstitutionData(institution1);
+        assertFalse(inst.isAuthorized);
+    }
 }
 
