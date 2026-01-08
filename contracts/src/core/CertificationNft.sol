@@ -138,6 +138,15 @@ contract CertificateNFT is ERC721URIStorage {
         
         emit BatchCertificateIssued(msg.sender, dataList.length, block.timestamp);
     }
+
+    function updateTokenURI(uint256 tokenId, string memory newTokenURI) external {
+        if (msg.sender != owner && msg.sender != certificates[tokenId].issuingInstitution) {
+            revert NotIssuingInstitution();
+        }
+        if (bytes(newTokenURI).length == 0) revert InvalidTokenURI();
+        _setTokenURI(tokenId, newTokenURI);
+        emit MetadataUpdated(tokenId, newTokenURI, block.timestamp);
+    }
     
     function revokeCertificate(
         uint256 tokenId,
@@ -239,4 +248,3 @@ contract CertificateNFT is ERC721URIStorage {
         }
     }
 }
- 
