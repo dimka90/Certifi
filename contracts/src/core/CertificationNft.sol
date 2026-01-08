@@ -222,6 +222,16 @@ contract CertificateNFT is ERC721URIStorage {
         return certificates[tokenId];
     }
 
+    function getCertificatesByRange(uint256 start, uint256 end) external view returns (Certificate[] memory) {
+        if (start > end || end > _tokenIdCounter) revert InvalidIndex();
+        uint256 size = end - start + 1;
+        Certificate[] memory result = new Certificate[](size);
+        for (uint256 i = 0; i < size; i++) {
+            result[i] = certificates[start + i];
+        }
+        return result;
+    }
+
     function getTotalCertificatesIssued() external view returns (uint256) {
         return _tokenIdCounter;
     }
