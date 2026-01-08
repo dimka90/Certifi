@@ -876,5 +876,58 @@ contract CertificationNftTest is Test {
         uint256[] memory certs = certNFT.getCertificatesByInstitution(institution1);
         assertEq(certs.length, 2);
     }
+    
+    function test_GetCertificatesByInstitution_DifferentInstitutions() public {
+        _setupAuthorizedInstitution(institution1);
+        _setupAuthorizedInstitution(institution2);
+        
+        CertificateData memory certData1 = _createCertificateData(
+            student1,
+            "John Doe",
+            "STU-001",
+            "Bachelor of Science"
+        );
+        
+        CertificateData memory certData2 = _createCertificateData(
+            student2,
+            "Jane Smith",
+            "STU-002",
+            "Master of Arts"
+        );
+        
+        uint256 tokenId1 = _issueCertificate(institution1, certData1);
+        uint256 tokenId2 = _issueCertificate(institution2, certData2);
+        
+        // Each institution should only see its own certificates
+        uint256[] memory inst1Certs = certNFT.getCertificatesByInstitution(institution1);
+        uint256[] memory inst2Certs = certNFT.getCertificatesByInstitution(institution2);
+        
+        assertEq(inst1Certs.length, 1);
+        assertEq(inst1Certs[0], tokenId1);
+        assertEq(inst2Certs.length, 1);
+        assertEq(inst2Certs[0], tokenId2);
+    }
+    
+    function test_GetCertificatesByInstitution_IncludesRevokedCertificates() public {
+        _setupAuthorizedInstitution(institution1);
+        
+        CertificateData memory certData = _createCertificateData(
+            student1,
+            "John Doe",
+            "STU-001",
+            "Bachelor of Science"
+        );
+        
+        uint256 tokenId = _issueCertificate(institution1, certData);
+        
+        // Revoke the certificate
+        vm.prank(institution1);
+        certNFT.revokeCertificate(tokenId, "Revocation reason");
+        
+        // Revoked certificate should still be in the list
+        uint256[] memory certs = certNFT.getCertificatesByInstitution(institution1);
+        assertEq(certs.length, 1);
+        assertEq(certs[0], tokenId);
+    }
 }
 
