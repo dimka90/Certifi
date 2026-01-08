@@ -1151,5 +1151,72 @@ contract CertificationNftTest is Test {
         vm.prank(institution1);
         certNFT.issueCertificate(certData2);
     }
+    
+    function test_GetCertificatesByInstitution_LargeNumberOfCertificates() public {
+        _setupAuthorizedInstitution(institution1);
+        
+        // Issue multiple certificates
+        uint256[] memory expectedTokenIds = new uint256[](5);
+        for (uint256 i = 0; i < 5; i++) {
+            CertificateData memory certData = _createCertificateData(
+                address(uint160(uint256(keccak256(abi.encodePacked("student", i))))),
+                string(abi.encodePacked("Student ", i)),
+                string(abi.encodePacked("STU-", i)),
+                "Degree"
+            );
+            expectedTokenIds[i] = _issueCertificate(institution1, certData);
+        }
+        
+        uint256[] memory certs = certNFT.getCertificatesByInstitution(institution1);
+        assertEq(certs.length, 5);
+        
+        // Verify all token IDs are present
+        for (uint256 i = 0; i < 5; i++) {
+            assertEq(certs[i], expectedTokenIds[i]);
+        }
+    }
+    
+    function test_GetCertificatesByInstitution_UnauthorizedInstitution() public {
+        // Register but don't authorize
+        _registerInstitution(
+            institution1,
+            INSTITUTION_NAME,
+            INSTITUTION_ID,
+            INSTITUTION_EMAIL,
+            INSTITUTION_COUNTRY,
+            InstitutionType.University
+        );
+        
+        // Should return empty array even if not authorized
+        uint256[] memory certs = certNFT.getCertificatesByInstitution(institution1);
+        assertEq(certs.length, 0);
+    }
+    
+    function test_GetCertificatesByInstitution_AfterReauthorization() public {
+        _setupAuthorizedInstitution(institution1);
+        
+        // Issue certificate
+        CertificateData memory certData = _createCertificateData(
+            student1,
+            "John Doe",
+            "STU-001",
+            "Bachelor of Science"
+        );
+        
+        uint256 tokenId1 = _issueCertificate(institution1, certData);
+        
+        // Deauthorize and reauthorize
+        certNFT.deauthorizeInstitution(institution1);
+        certNFT.authorizeInstitution(institution1);
+        
+        // Issue another certificate
+        uint256 tokenId2 = _issueCertificate(institution1, certData);
+        
+        // Both certificates should be in the list
+        uint256[] memory certs = certNFT.getCertificatesByInstitution(institution1);
+        assertEq(certs.length, 2);
+        assertEq(certs[0], tokenId1);
+        assertEq(certs[1], tokenId2);
+    }
 }
 
