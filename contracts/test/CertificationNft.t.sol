@@ -824,5 +824,57 @@ contract CertificationNftTest is Test {
         uint256[] memory certs = certNFT.getCertificatesByInstitution(institution1);
         assertEq(certs[0], expectedTokenId);
     }
+    
+    function test_GetCertificatesByInstitution_MultipleCertificates() public {
+        _setupAuthorizedInstitution(institution1);
+        
+        CertificateData memory certData1 = _createCertificateData(
+            student1,
+            "John Doe",
+            "STU-001",
+            "Bachelor of Science"
+        );
+        
+        CertificateData memory certData2 = _createCertificateData(
+            student2,
+            "Jane Smith",
+            "STU-002",
+            "Master of Arts"
+        );
+        
+        uint256 tokenId1 = _issueCertificate(institution1, certData1);
+        uint256 tokenId2 = _issueCertificate(institution1, certData2);
+        
+        uint256[] memory certs = certNFT.getCertificatesByInstitution(institution1);
+        assertEq(certs.length, 2);
+        assertEq(certs[0], tokenId1);
+        assertEq(certs[1], tokenId2);
+    }
+    
+    function test_GetCertificatesByInstitution_MultipleStudents() public {
+        _setupAuthorizedInstitution(institution1);
+        
+        // Issue certificates to different students
+        CertificateData memory certData1 = _createCertificateData(
+            student1,
+            "John Doe",
+            "STU-001",
+            "Bachelor of Science"
+        );
+        
+        CertificateData memory certData2 = _createCertificateData(
+            student2,
+            "Jane Smith",
+            "STU-002",
+            "Master of Arts"
+        );
+        
+        uint256 tokenId1 = _issueCertificate(institution1, certData1);
+        uint256 tokenId2 = _issueCertificate(institution1, certData2);
+        
+        // All should be in institution's list
+        uint256[] memory certs = certNFT.getCertificatesByInstitution(institution1);
+        assertEq(certs.length, 2);
+    }
 }
 
