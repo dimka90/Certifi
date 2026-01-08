@@ -749,5 +749,36 @@ contract CertificationNftTest is Test {
         Institution memory inst = _getInstitutionData(institution1);
         assertTrue(inst.isAuthorized);
     }
+    
+    function test_DeauthorizeInstitution_OnlyOwnerCanDeauthorize() public {
+        _setupAuthorizedInstitution(institution1);
+        
+        // Non-owner should not be able to deauthorize
+        vm.expectRevert();
+        vm.prank(institution1);
+        certNFT.deauthorizeInstitution(institution1);
+    }
+    
+    function test_DeauthorizeInstitution_NotRegistered_Reverts() public {
+        // Try to deauthorize an institution that hasn't been registered
+        vm.expectRevert();
+        certNFT.deauthorizeInstitution(institution1);
+    }
+    
+    function test_DeauthorizeInstitution_NotAuthorized_Reverts() public {
+        // Register but don't authorize
+        _registerInstitution(
+            institution1,
+            INSTITUTION_NAME,
+            INSTITUTION_ID,
+            INSTITUTION_EMAIL,
+            INSTITUTION_COUNTRY,
+            InstitutionType.University
+        );
+        
+        // Try to deauthorize - should revert
+        vm.expectRevert();
+        certNFT.deauthorizeInstitution(institution1);
+    }
 }
 
