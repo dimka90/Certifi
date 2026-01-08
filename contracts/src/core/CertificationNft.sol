@@ -13,6 +13,7 @@ contract CertificateNFT is ERC721URIStorage {
     uint256 private _tokenIdCounter;
     uint256 public constant MAX_BATCH_SIZE = 50;
     
+    address[] public institutionAddresses; // Added tracking
     mapping(address => Institution) public institutions;
     mapping(uint256 => Certificate) public certificates;
     mapping(address => uint256[]) public studentCertificates;
@@ -62,6 +63,7 @@ contract CertificateNFT is ERC721URIStorage {
         });
         
         registeredInstitutions[msg.sender] = true;
+        institutionAddresses.push(msg.sender); // TRACK
         
         emit InstitutionRegistered(msg.sender, _name, _institutionID, block.timestamp);
     }
@@ -82,6 +84,10 @@ contract CertificateNFT is ERC721URIStorage {
         institutions[_institution].isAuthorized = false;
         
         emit InstitutionDeauthorized(_institution, block.timestamp);
+    }
+
+    function getInstitutionCount() external view returns (uint256) {
+        return institutionAddresses.length;
     }
 
     function _issueCertificate(CertificateData memory data) internal returns (uint256) {
