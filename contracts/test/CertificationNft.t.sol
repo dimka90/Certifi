@@ -1104,5 +1104,187 @@ contract CertificationNftTest is Test {
         
         assertTrue(certNFT.isRevoked(tokenId));
     }
+    
+    function test_DeauthorizeInstitution_MultipleInstitutions() public {
+        _setupAuthorizedInstitution(institution1);
+        _setupAuthorizedInstitution(institution2);
+        
+        // Deauthorize one institution
+        certNFT.deauthorizeInstitution(institution1);
+        
+        // Other institution should still be authorized
+        Institution memory inst1 = _getInstitutionData(institution1);
+        Institution memory inst2 = _getInstitutionData(institution2);
+        assertFalse(inst1.isAuthorized);
+        assertTrue(inst2.isAuthorized);
+    }
+    
+    function test_DeauthorizeInstitution_AfterIssuingCertificates() public {
+        _setupAuthorizedInstitution(institution1);
+        
+        // Issue a certificate
+        CertificateData memory certData = _createCertificateData(
+            student1,
+            "John Doe",
+            "STU-001",
+            "Bachelor of Science"
+        );
+        
+        uint256 tokenId = _issueCertificate(institution1, certData);
+        
+        // Deauthorize institution
+        certNFT.deauthorizeInstitution(institution1);
+        
+        // Certificate should still exist and be valid
+        (, bool isValid) = certNFT.verifyCertificate(tokenId);
+        assertTrue(isValid);
+        
+        // But cannot issue new certificates
+        CertificateData memory certData2 = _createCertificateData(
+            student2,
+            "Jane Smith",
+            "STU-002",
+            "Master of Arts"
+        );
+        
+        vm.expectRevert();
+        vm.prank(institution1);
+        certNFT.issueCertificate(certData2);
+    }
+    
+    function test_GetCertificatesByInstitution_LargeNumberOfCertificates() public {
+        _setupAuthorizedInstitution(institution1);
+        
+        // Issue multiple certificates
+        uint256[] memory expectedTokenIds = new uint256[](5);
+        for (uint256 i = 0; i < 5; i++) {
+            CertificateData memory certData = _createCertificateData(
+                address(uint160(uint256(keccak256(abi.encodePacked("student", i))))),
+                string(abi.encodePacked("Student ", i)),
+                string(abi.encodePacked("STU-", i)),
+                "Degree"
+            );
+            expectedTokenIds[i] = _issueCertificate(institution1, certData);
+        }
+        
+        uint256[] memory certs = certNFT.getCertificatesByInstitution(institution1);
+        assertEq(certs.length, 5);
+        
+        // Verify all token IDs are present
+        for (uint256 i = 0; i < 5; i++) {
+            assertEq(certs[i], expectedTokenIds[i]);
+        }
+    }
+    
+    function test_GetCertificatesByInstitution_UnauthorizedInstitution() public {
+        // Register but don't authorize
+        _registerInstitution(
+            institution1,
+            INSTITUTION_NAME,
+            INSTITUTION_ID,
+            INSTITUTION_EMAIL,
+            INSTITUTION_COUNTRY,
+            InstitutionType.University
+        );
+        
+        // Should return empty array even if not authorized
+        uint256[] memory certs = certNFT.getCertificatesByInstitution(institution1);
+        assertEq(certs.length, 0);
+    }
+    
+    function test_GetCertificatesByInstitution_AfterReauthorization() public {
+        _setupAuthorizedInstitution(institution1);
+        
+        // Issue certificate
+        CertificateData memory certData = _createCertificateData(
+            student1,
+            "John Doe",
+            "STU-001",
+            "Bachelor of Science"
+        );
+        
+        uint256 tokenId1 = _issueCertificate(institution1, certData);
+        
+        // Deauthorize and reauthorize
+        certNFT.deauthorizeInstitution(institution1);
+        certNFT.authorizeInstitution(institution1);
+        
+        // Issue another certificate
+        uint256 tokenId2 = _issueCertificate(institution1, certData);
+        
+        // Both certificates should be in the list
+        uint256[] memory certs = certNFT.getCertificatesByInstitution(institution1);
+        assertEq(certs.length, 2);
+        assertEq(certs[0], tokenId1);
+        assertEq(certs[1], tokenId2);
+    }
+    
+    function test_TransferOwnership_MultipleTransfers() public {
+        address owner1 = address(0x999);
+        address owner2 = address(0x888);
+        address owner3 = address(0x777);
+        
+        // First transfer
+        certNFT.transferOwnership(owner1);
+        assertEq(certNFT.owner(), owner1);
+        
+        // Second transfer
+        vm.prank(owner1);
+        certNFT.transferOwnership(owner2);
+        assertEq(certNFT.owner(), owner2);
+        
+        // Third transfer
+        vm.prank(owner2);
+        certNFT.transferOwnership(owner3);
+        assertEq(certNFT.owner(), owner3);
+    }
+    
+    function test_TransferOwnership_NewOwnerCanManageAllInstitutions() public {
+        address newOwner = address(0x999);
+        
+        // Setup multiple institutions
+        _setupAuthorizedInstitution(institution1);
+        _setupAuthorizedInstitution(institution2);
+        
+        // Transfer ownership
+        certNFT.transferOwnership(newOwner);
+        
+        // New owner can deauthorize both
+        vm.prank(newOwner);
+        certNFT.deauthorizeInstitution(institution1);
+        
+        vm.prank(newOwner);
+        certNFT.deauthorizeInstitution(institution2);
+        
+        Institution memory inst1 = _getInstitutionData(institution1);
+        Institution memory inst2 = _getInstitutionData(institution2);
+        assertFalse(inst1.isAuthorized);
+        assertFalse(inst2.isAuthorized);
+    }
+    
+    function test_TransferOwnership_PreservesExistingState() public {
+        address newOwner = address(0x999);
+        
+        // Setup and issue certificate
+        _setupAuthorizedInstitution(institution1);
+        CertificateData memory certData = _createCertificateData(
+            student1,
+            "John Doe",
+            "STU-001",
+            "Bachelor of Science"
+        );
+        
+        uint256 tokenId = _issueCertificate(institution1, certData);
+        
+        // Transfer ownership
+        certNFT.transferOwnership(newOwner);
+        
+        // All existing state should be preserved
+        assertEq(certNFT.ownerOf(tokenId), student1);
+        assertEq(certNFT.getTotalCertificatesIssued(), 1);
+        
+        uint256[] memory certs = certNFT.getCertificatesByInstitution(institution1);
+        assertEq(certs.length, 1);
+    }
 }
 
