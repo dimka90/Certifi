@@ -715,5 +715,39 @@ contract CertificationNftTest is Test {
         // Verify total certificates
         assertEq(certNFT.getTotalCertificatesIssued(), 2);
     }
+    
+    // ============ deauthorizeInstitution Tests ============
+    
+    function test_DeauthorizeInstitution_Success() public {
+        // Setup authorized institution
+        _setupAuthorizedInstitution(institution1);
+        
+        // Verify it's authorized
+        Institution memory instBefore = _getInstitutionData(institution1);
+        assertTrue(instBefore.isAuthorized);
+        
+        // Deauthorize the institution
+        vm.expectEmit(true, false, false, true);
+        emit InstitutionDeauthorized(institution1, block.timestamp);
+        
+        certNFT.deauthorizeInstitution(institution1);
+        
+        // Verify it's no longer authorized
+        Institution memory instAfter = _getInstitutionData(institution1);
+        assertFalse(instAfter.isAuthorized);
+    }
+    
+    function test_DeauthorizeInstitution_CanReauthorize() public {
+        _setupAuthorizedInstitution(institution1);
+        
+        // Deauthorize
+        certNFT.deauthorizeInstitution(institution1);
+        
+        // Can authorize again
+        certNFT.authorizeInstitution(institution1);
+        
+        Institution memory inst = _getInstitutionData(institution1);
+        assertTrue(inst.isAuthorized);
+    }
 }
 
