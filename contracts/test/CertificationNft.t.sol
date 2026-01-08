@@ -22,8 +22,10 @@ contract CertificationNftTest is Test {
     
     event InstitutionRegistered(address indexed institution, string name, string institutionID, uint256 timestamp);
     event InstitutionAuthorized(address indexed institution, uint256 timestamp);
+    event InstitutionDeauthorized(address indexed institution, uint256 timestamp);
     event CertificateIssued(uint256 indexed tokenId, address indexed student, address indexed institution, string degreeTitle, uint256 timestamp);
     event CertificateRevoked(uint256 indexed tokenId, address indexed institution, string reason, uint256 timestamp);
+    event OwnershipTransferred(address indexed previousOwner, address indexed newOwner);
     
     function setUp() public {
         owner = address(this);
@@ -86,6 +88,17 @@ contract CertificationNftTest is Test {
     // Helper function to authorize an institution
     function _authorizeInstitution(address institution) internal {
         certNFT.authorizeInstitution(institution);
+    }
+    
+    // Helper function to deauthorize an institution
+    function _deauthorizeInstitution(address institution) internal {
+        certNFT.deauthorizeInstitution(institution);
+    }
+    
+    // Helper function to issue a certificate and return token ID
+    function _issueCertificate(address institution, CertificateData memory certData) internal returns (uint256) {
+        vm.prank(institution);
+        return certNFT.issueCertificate(certData);
     }
     
     // Helper function to setup authorized institution
