@@ -1817,5 +1817,47 @@ contract CertificationNftTest is Test {
         assertEq(cert1.studentName, "John Doe");
         assertEq(cert2.studentName, "Jane Smith");
     }
+    
+    // ============ Additional registerInstitution Comprehensive Tests ============
+    
+    function test_RegisterInstitution_AllInstitutionTypes() public {
+        InstitutionType[] memory types = new InstitutionType[](8);
+        types[0] = InstitutionType.University;
+        types[1] = InstitutionType.Polytechnic;
+        types[2] = InstitutionType.CollegeOfEducation;
+        types[3] = InstitutionType.TechnicalCollege;
+        types[4] = InstitutionType.SecondarySchool;
+        types[5] = InstitutionType.PrimarySchool;
+        types[6] = InstitutionType.TrainingInstitute;
+        types[7] = InstitutionType.VocationalCenter;
+        
+        for (uint256 i = 0; i < types.length; i++) {
+            address inst = address(uint160(i + 100));
+            vm.prank(inst);
+            certNFT.registerInstitution(
+                string(abi.encodePacked("Institution ", i)),
+                string(abi.encodePacked("ID-", i)),
+                string(abi.encodePacked("email", i, "@test.com")),
+                "Country",
+                types[i]
+            );
+            
+            Institution memory registered = certNFT.getInstitution(inst);
+            assertTrue(uint8(registered.institutionType) == uint8(types[i]));
+        }
+    }
+    
+    function test_RegisterInstitution_EmailAndCountryCanBeEmpty() public {
+        vm.prank(institution1);
+        certNFT.registerInstitution(
+            INSTITUTION_NAME,
+            INSTITUTION_ID,
+            "", // Empty email is allowed
+            "", // Empty country is allowed
+            InstitutionType.University
+        );
+        
+        assertTrue(certNFT.registeredInstitutions(institution1));
+    }
 }
 
