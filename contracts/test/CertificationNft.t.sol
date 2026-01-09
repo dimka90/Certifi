@@ -1324,5 +1324,40 @@ contract CertificationNftTest is Test {
         // Certificate should be revoked
         assertTrue(certNFT.isRevoked(tokenId));
     }
+    
+    function test_IsRevoked_NonExistentCertificate_Reverts() public {
+        // Should revert for non-existent certificate
+        vm.expectRevert();
+        certNFT.isRevoked(999);
+    }
+    
+    function test_IsRevoked_MultipleCertificates() public {
+        _setupAuthorizedInstitution(institution1);
+        
+        CertificateData memory certData1 = _createCertificateData(
+            student1,
+            "John Doe",
+            "STU-001",
+            "Bachelor of Science"
+        );
+        
+        CertificateData memory certData2 = _createCertificateData(
+            student2,
+            "Jane Smith",
+            "STU-002",
+            "Master of Arts"
+        );
+        
+        uint256 tokenId1 = _issueCertificate(institution1, certData1);
+        uint256 tokenId2 = _issueCertificate(institution1, certData2);
+        
+        // Revoke only one
+        vm.prank(institution1);
+        certNFT.revokeCertificate(tokenId1, "Revocation reason");
+        
+        // Check both
+        assertTrue(certNFT.isRevoked(tokenId1));
+        assertFalse(certNFT.isRevoked(tokenId2));
+    }
 }
 
