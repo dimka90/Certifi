@@ -1686,5 +1686,56 @@ contract CertificationNftTest is Test {
         vm.expectRevert();
         certNFT.getInstitution(institution1);
     }
+    
+    function test_GetInstitution_AfterAuthorization() public {
+        _setupAuthorizedInstitution(institution1);
+        
+        Institution memory inst = certNFT.getInstitution(institution1);
+        assertTrue(inst.isAuthorized);
+        assertEq(inst.totalCertificatesIssued, 0);
+    }
+    
+    function test_GetInstitution_AfterIssuingCertificates() public {
+        _setupAuthorizedInstitution(institution1);
+        
+        CertificateData memory certData = _createCertificateData(
+            student1,
+            "John Doe",
+            "STU-001",
+            "Bachelor of Science"
+        );
+        
+        _issueCertificate(institution1, certData);
+        
+        Institution memory inst = certNFT.getInstitution(institution1);
+        assertEq(inst.totalCertificatesIssued, 1);
+    }
+    
+    function test_GetInstitution_MultipleInstitutions() public {
+        _registerInstitution(
+            institution1,
+            "University A",
+            "UNIV-001",
+            "info@univa.edu",
+            "USA",
+            InstitutionType.University
+        );
+        
+        _registerInstitution(
+            institution2,
+            "Polytechnic B",
+            "POLY-002",
+            "info@polyb.edu",
+            "Canada",
+            InstitutionType.Polytechnic
+        );
+        
+        Institution memory inst1 = certNFT.getInstitution(institution1);
+        Institution memory inst2 = certNFT.getInstitution(institution2);
+        
+        assertEq(inst1.name, "University A");
+        assertEq(inst2.name, "Polytechnic B");
+        assertTrue(uint8(inst1.institutionType) != uint8(inst2.institutionType));
+    }
 }
 
