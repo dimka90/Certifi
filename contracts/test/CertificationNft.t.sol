@@ -1971,5 +1971,49 @@ contract CertificationNftTest is Test {
             assertTrue(uint8(cert.faculty) == uint8(faculties[i]));
         }
     }
+    
+    // ============ Additional revokeCertificate Comprehensive Tests ============
+    
+    function test_RevokeCertificate_BatchRevocation() public {
+        _setupAuthorizedInstitution(institution1);
+        
+        uint256[] memory tokenIds = new uint256[](5);
+        for (uint256 i = 0; i < 5; i++) {
+            CertificateData memory certData = _createCertificateData(
+                address(uint160(i + 400)),
+                string(abi.encodePacked("Student ", i)),
+                string(abi.encodePacked("STU-", i)),
+                "Degree"
+            );
+            tokenIds[i] = _issueCertificate(institution1, certData);
+        }
+        
+        // Revoke all
+        for (uint256 i = 0; i < 5; i++) {
+            vm.prank(institution1);
+            certNFT.revokeCertificate(tokenIds[i], "Batch revocation");
+            assertTrue(certNFT.isRevoked(tokenIds[i]));
+        }
+    }
+    
+    function test_RevokeCertificate_DifferentReasons() public {
+        _setupAuthorizedInstitution(institution1);
+        
+        CertificateData memory certData = _createCertificateData(
+            student1,
+            "John Doe",
+            "STU-001",
+            "Bachelor of Science"
+        );
+        
+        uint256 tokenId = _issueCertificate(institution1, certData);
+        
+        string memory reason1 = "Academic misconduct";
+        vm.prank(institution1);
+        certNFT.revokeCertificate(tokenId, reason1);
+        
+        Certificate memory cert = certNFT.getCertificate(tokenId);
+        assertEq(cert.revocationReason, reason1);
+    }
 }
 
