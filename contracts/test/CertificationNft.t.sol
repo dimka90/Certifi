@@ -1859,5 +1859,49 @@ contract CertificationNftTest is Test {
         
         assertTrue(certNFT.registeredInstitutions(institution1));
     }
+    
+    // ============ Additional authorizeInstitution Comprehensive Tests ============
+    
+    function test_AuthorizeInstitution_BatchAuthorization() public {
+        address[] memory institutions = new address[](5);
+        for (uint256 i = 0; i < 5; i++) {
+            institutions[i] = address(uint160(i + 100));
+            _registerInstitution(
+                institutions[i],
+                string(abi.encodePacked("Institution ", i)),
+                string(abi.encodePacked("ID-", i)),
+                string(abi.encodePacked("email", i, "@test.com")),
+                "Country",
+                InstitutionType.University
+            );
+        }
+        
+        // Authorize all
+        for (uint256 i = 0; i < 5; i++) {
+            certNFT.authorizeInstitution(institutions[i]);
+            Institution memory inst = certNFT.getInstitution(institutions[i]);
+            assertTrue(inst.isAuthorized);
+        }
+    }
+    
+    function test_AuthorizeInstitution_AuthorizationTimestamp() public {
+        _registerInstitution(
+            institution1,
+            INSTITUTION_NAME,
+            INSTITUTION_ID,
+            INSTITUTION_EMAIL,
+            INSTITUTION_COUNTRY,
+            InstitutionType.University
+        );
+        
+        uint256 beforeTime = block.timestamp;
+        vm.warp(beforeTime);
+        
+        certNFT.authorizeInstitution(institution1);
+        
+        // Registration date should be before authorization
+        Institution memory inst = certNFT.getInstitution(institution1);
+        assertLe(inst.registrationDate, beforeTime);
+    }
 }
 
