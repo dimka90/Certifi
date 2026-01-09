@@ -1903,5 +1903,73 @@ contract CertificationNftTest is Test {
         Institution memory inst = certNFT.getInstitution(institution1);
         assertLe(inst.registrationDate, beforeTime);
     }
+    
+    // ============ Additional issueCertificate Comprehensive Tests ============
+    
+    function test_IssueCertificate_AllGradeClassifications() public {
+        _setupAuthorizedInstitution(institution1);
+        
+        Classification[] memory grades = new Classification[](8);
+        grades[0] = Classification.FirstClass;
+        grades[1] = Classification.SecondClassUpper;
+        grades[2] = Classification.SecondClassLower;
+        grades[3] = Classification.ThirdClass;
+        grades[4] = Classification.Pass;
+        grades[5] = Classification.Distinction;
+        grades[6] = Classification.Credit;
+        grades[7] = Classification.Merit;
+        
+        for (uint256 i = 0; i < grades.length; i++) {
+            CertificateData memory certData = CertificateData({
+                studentWallet: address(uint160(i + 200)),
+                studentName: string(abi.encodePacked("Student ", i)),
+                studentID: string(abi.encodePacked("STU-", i)),
+                degreeTitle: "Degree",
+                grade: grades[i],
+                duration: "4 years",
+                cgpa: "3.5",
+                faculty: Faculty.Engineering,
+                tokenURI: string(abi.encodePacked("https://ipfs.io/ipfs/", i))
+            });
+            
+            uint256 tokenId = _issueCertificate(institution1, certData);
+            Certificate memory cert = certNFT.getCertificate(tokenId);
+            assertTrue(uint8(cert.grade) == uint8(grades[i]));
+        }
+    }
+    
+    function test_IssueCertificate_AllFaculties() public {
+        _setupAuthorizedInstitution(institution1);
+        
+        Faculty[] memory faculties = new Faculty[](10);
+        faculties[0] = Faculty.Science;
+        faculties[1] = Faculty.Engineering;
+        faculties[2] = Faculty.Arts;
+        faculties[3] = Faculty.Medicine;
+        faculties[4] = Faculty.Law;
+        faculties[5] = Faculty.SocialSciences;
+        faculties[6] = Faculty.Education;
+        faculties[7] = Faculty.Agriculture;
+        faculties[8] = Faculty.Management;
+        faculties[9] = Faculty.Technology;
+        
+        for (uint256 i = 0; i < faculties.length; i++) {
+            CertificateData memory certData = CertificateData({
+                studentWallet: address(uint160(i + 300)),
+                studentName: string(abi.encodePacked("Student ", i)),
+                studentID: string(abi.encodePacked("STU-", i)),
+                degreeTitle: "Degree",
+                grade: Classification.FirstClass,
+                duration: "4 years",
+                cgpa: "3.5",
+                faculty: faculties[i],
+                tokenURI: string(abi.encodePacked("https://ipfs.io/ipfs/", i))
+            });
+            
+            uint256 tokenId = _issueCertificate(institution1, certData);
+            Certificate memory cert = certNFT.getCertificate(tokenId);
+            assertTrue(uint8(cert.faculty) == uint8(faculties[i]));
+        }
+    }
 }
 
