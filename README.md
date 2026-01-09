@@ -123,3 +123,7 @@ This project is licensed under the MIT License.
 - **Soulbound Tokens**: Certificates are now non-transferable (bound to student wallets).
 - **Batch Issuance**: Institutions can now issue up to 50 certificates in a single transaction.
 - **Expiration**: Certificates now support expiration dates and validation checks.
+- **Enhanced Dashboard**: Modular dashboard with improved analytics and activity feed.
+- **Institution Settings**: New settings page for notification preferences and security management.
+- **Improved UX**: New search and filter components for certificate management.
+- **Notification System**: Global toast notification system for user interactions.
