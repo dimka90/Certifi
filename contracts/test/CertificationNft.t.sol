@@ -1359,5 +1359,47 @@ contract CertificationNftTest is Test {
         assertTrue(certNFT.isRevoked(tokenId1));
         assertFalse(certNFT.isRevoked(tokenId2));
     }
+    
+    // ============ getCertificatesByStudent Tests ============
+    
+    function test_GetCertificatesByStudent_EmptyList() public {
+        // Student with no certificates
+        uint256[] memory certs = certNFT.getCertificatesByStudent(student1);
+        assertEq(certs.length, 0);
+    }
+    
+    function test_GetCertificatesByStudent_SingleCertificate() public {
+        _setupAuthorizedInstitution(institution1);
+        
+        CertificateData memory certData = _createCertificateData(
+            student1,
+            "John Doe",
+            "STU-001",
+            "Bachelor of Science"
+        );
+        
+        uint256 tokenId = _issueCertificate(institution1, certData);
+        
+        // Get certificates for student
+        uint256[] memory certs = certNFT.getCertificatesByStudent(student1);
+        assertEq(certs.length, 1);
+        assertEq(certs[0], tokenId);
+    }
+    
+    function test_GetCertificatesByStudent_ReturnsCorrectTokenId() public {
+        _setupAuthorizedInstitution(institution1);
+        
+        CertificateData memory certData = _createCertificateData(
+            student1,
+            "John Doe",
+            "STU-001",
+            "Bachelor of Science"
+        );
+        
+        uint256 expectedTokenId = _issueCertificate(institution1, certData);
+        
+        uint256[] memory certs = certNFT.getCertificatesByStudent(student1);
+        assertEq(certs[0], expectedTokenId);
+    }
 }
 
