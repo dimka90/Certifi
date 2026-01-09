@@ -1657,5 +1657,34 @@ contract CertificationNftTest is Test {
         assertEq(student1Certs.length + student2Certs.length, 2);
         assertEq(instCerts.length, 2);
     }
+    
+    // ============ getInstitution Comprehensive Tests ============
+    
+    function test_GetInstitution_ReturnsAllFields() public {
+        _registerInstitution(
+            institution1,
+            INSTITUTION_NAME,
+            INSTITUTION_ID,
+            INSTITUTION_EMAIL,
+            INSTITUTION_COUNTRY,
+            InstitutionType.University
+        );
+        
+        Institution memory inst = certNFT.getInstitution(institution1);
+        
+        assertEq(inst.name, INSTITUTION_NAME);
+        assertEq(inst.institutionID, INSTITUTION_ID);
+        assertEq(inst.walletAddress, institution1);
+        assertEq(inst.email, INSTITUTION_EMAIL);
+        assertEq(inst.country, INSTITUTION_COUNTRY);
+        assertTrue(uint8(inst.institutionType) == uint8(InstitutionType.University));
+        assertFalse(inst.isAuthorized);
+        assertEq(inst.totalCertificatesIssued, 0);
+    }
+    
+    function test_GetInstitution_NotRegistered_Reverts() public {
+        vm.expectRevert();
+        certNFT.getInstitution(institution1);
+    }
 }
 
