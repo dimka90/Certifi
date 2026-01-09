@@ -1502,5 +1502,52 @@ contract CertificationNftTest is Test {
         assertEq(certs[0], tokenId1);
         assertEq(certs[1], tokenId2);
     }
+    
+    // ============ getTotalCertificatesIssued Tests ============
+    
+    function test_GetTotalCertificatesIssued_InitialState() public {
+        // Initially should be 0
+        assertEq(certNFT.getTotalCertificatesIssued(), 0);
+    }
+    
+    function test_GetTotalCertificatesIssued_AfterSingleCertificate() public {
+        _setupAuthorizedInstitution(institution1);
+        
+        CertificateData memory certData = _createCertificateData(
+            student1,
+            "John Doe",
+            "STU-001",
+            "Bachelor of Science"
+        );
+        
+        _issueCertificate(institution1, certData);
+        
+        // Should be 1
+        assertEq(certNFT.getTotalCertificatesIssued(), 1);
+    }
+    
+    function test_GetTotalCertificatesIssued_AfterMultipleCertificates() public {
+        _setupAuthorizedInstitution(institution1);
+        
+        CertificateData memory certData1 = _createCertificateData(
+            student1,
+            "John Doe",
+            "STU-001",
+            "Bachelor of Science"
+        );
+        
+        CertificateData memory certData2 = _createCertificateData(
+            student2,
+            "Jane Smith",
+            "STU-002",
+            "Master of Arts"
+        );
+        
+        _issueCertificate(institution1, certData1);
+        _issueCertificate(institution1, certData2);
+        
+        // Should be 2
+        assertEq(certNFT.getTotalCertificatesIssued(), 2);
+    }
 }
 
