@@ -1737,5 +1737,36 @@ contract CertificationNftTest is Test {
         assertEq(inst2.name, "Polytechnic B");
         assertTrue(uint8(inst1.institutionType) != uint8(inst2.institutionType));
     }
+    
+    // ============ getCertificate Comprehensive Tests ============
+    
+    function test_GetCertificate_ReturnsAllFields() public {
+        _setupAuthorizedInstitution(institution1);
+        
+        CertificateData memory certData = _createCertificateData(
+            student1,
+            "John Doe",
+            "STU-001",
+            "Bachelor of Science"
+        );
+        
+        uint256 tokenId = _issueCertificate(institution1, certData);
+        
+        Certificate memory cert = certNFT.getCertificate(tokenId);
+        
+        assertEq(cert.studentName, "John Doe");
+        assertEq(cert.studentID, "STU-001");
+        assertEq(cert.studentWallet, student1);
+        assertEq(cert.degreeTitle, "Bachelor of Science");
+        assertEq(cert.issuingInstitution, institution1);
+        assertFalse(cert.isRevoked);
+        assertEq(cert.revocationDate, 0);
+        assertEq(cert.revocationReason, "");
+    }
+    
+    function test_GetCertificate_NonExistent_Reverts() public {
+        vm.expectRevert();
+        certNFT.getCertificate(999);
+    }
 }
 
