@@ -1286,5 +1286,43 @@ contract CertificationNftTest is Test {
         uint256[] memory certs = certNFT.getCertificatesByInstitution(institution1);
         assertEq(certs.length, 1);
     }
+    
+    // ============ isRevoked Tests ============
+    
+    function test_IsRevoked_ReturnsFalseForValidCertificate() public {
+        _setupAuthorizedInstitution(institution1);
+        
+        CertificateData memory certData = _createCertificateData(
+            student1,
+            "John Doe",
+            "STU-001",
+            "Bachelor of Science"
+        );
+        
+        uint256 tokenId = _issueCertificate(institution1, certData);
+        
+        // Certificate should not be revoked
+        assertFalse(certNFT.isRevoked(tokenId));
+    }
+    
+    function test_IsRevoked_ReturnsTrueForRevokedCertificate() public {
+        _setupAuthorizedInstitution(institution1);
+        
+        CertificateData memory certData = _createCertificateData(
+            student1,
+            "John Doe",
+            "STU-001",
+            "Bachelor of Science"
+        );
+        
+        uint256 tokenId = _issueCertificate(institution1, certData);
+        
+        // Revoke the certificate
+        vm.prank(institution1);
+        certNFT.revokeCertificate(tokenId, "Revocation reason");
+        
+        // Certificate should be revoked
+        assertTrue(certNFT.isRevoked(tokenId));
+    }
 }
 
