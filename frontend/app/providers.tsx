@@ -20,6 +20,7 @@ import {
 } from "@tanstack/react-query";
 import { ReactNode } from 'react';
 import { Toaster } from 'react-hot-toast';
+import { ToastProvider } from './providers/ToastProvider';
 
 // Get project ID from environment or use a development fallback
 const projectId = process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID || 'certifi-dev-project';
@@ -30,7 +31,7 @@ if (typeof window !== 'undefined') {
   process.env.NEXT_PUBLIC_WALLETCONNECT_DISABLE_ANALYTICS = 'true';
   // Disable Coinbase analytics
   process.env.NEXT_PUBLIC_COINBASE_DISABLE_ANALYTICS = 'true';
-  
+
   // Suppress console errors from analytics
   const originalError = console.error;
   console.error = (...args) => {
@@ -47,10 +48,10 @@ if (typeof window !== 'undefined') {
     }
     originalError.apply(console, args);
   };
-  
+
   // Block analytics requests silently
   const originalFetch = window.fetch;
-  window.fetch = function(...args) {
+  window.fetch = function (...args) {
     const url = args[0]?.toString() || '';
     if (
       url.includes('pulse.walletconnect.org') ||
@@ -100,31 +101,33 @@ export function Providers({ children }: ProvidersProps) {
           // Disable additional tracking features
           coolMode={false}
         >
-          {children}
-          <Toaster
-            position="top-right"
-            toastOptions={{
-              duration: 4000,
-              style: {
-                background: '#363636',
-                color: '#fff',
-              },
-              success: {
-                duration: 3000,
-                iconTheme: {
-                  primary: '#10B981',
-                  secondary: '#fff',
+          <ToastProvider>
+            {children}
+            <Toaster
+              position="top-right"
+              toastOptions={{
+                className: '!bg-zinc-900 !text-white !border !border-white/10 !backdrop-blur-xl',
+                duration: 4000,
+                style: {
+                  background: '#18181b',
+                  color: '#fff',
+                  border: '1px solid rgba(255,255,255,0.1)',
                 },
-              },
-              error: {
-                duration: 5000,
-                iconTheme: {
-                  primary: '#EF4444',
-                  secondary: '#fff',
+                success: {
+                  iconTheme: {
+                    primary: '#10B981',
+                    secondary: '#fff',
+                  },
                 },
-              },
-            }}
-          />
+                error: {
+                  iconTheme: {
+                    primary: '#EF4444',
+                    secondary: '#fff',
+                  },
+                },
+              }}
+            />
+          </ToastProvider>
         </RainbowKitProvider>
       </QueryClientProvider>
     </WagmiProvider>
