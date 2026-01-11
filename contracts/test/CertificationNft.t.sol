@@ -2196,5 +2196,52 @@ contract CertificationNftTest is Test {
         assertEq(certNFT.getCertificatesByStudent(student1).length, 1);
         assertEq(certNFT.getCertificatesByStudent(student2).length, 1);
     }
+    
+    // ============ Stress Tests and Large Batch Scenarios ============
+    
+    function test_Stress_ManyInstitutions() public {
+        // Register and authorize 10 institutions
+        for (uint256 i = 0; i < 10; i++) {
+            address inst = address(uint160(i + 500));
+            _registerInstitution(
+                inst,
+                string(abi.encodePacked("Institution ", i)),
+                string(abi.encodePacked("ID-", i)),
+                string(abi.encodePacked("email", i, "@test.com")),
+                "Country",
+                InstitutionType.University
+            );
+            certNFT.authorizeInstitution(inst);
+        }
+        
+        // Verify all are authorized
+        for (uint256 i = 0; i < 10; i++) {
+            address inst = address(uint160(i + 500));
+            Institution memory institution = certNFT.getInstitution(inst);
+            assertTrue(institution.isAuthorized);
+        }
+    }
+    
+    function test_Stress_ManyCertificatesFromOneInstitution() public {
+        _setupAuthorizedInstitution(institution1);
+        
+        // Issue 10 certificates
+        for (uint256 i = 0; i < 10; i++) {
+            CertificateData memory certData = _createCertificateData(
+                address(uint160(i + 600)),
+                string(abi.encodePacked("Student ", i)),
+                string(abi.encodePacked("STU-", i)),
+                "Degree"
+            );
+            _issueCertificate(institution1, certData);
+        }
+        
+        // Verify count
+        assertEq(certNFT.getTotalCertificatesIssued(), 10);
+        assertEq(certNFT.getCertificatesByInstitution(institution1).length, 10);
+        
+        Institution memory inst = certNFT.getInstitution(institution1);
+        assertEq(inst.totalCertificatesIssued, 10);
+    }
 }
 
