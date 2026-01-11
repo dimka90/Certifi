@@ -2015,5 +2015,55 @@ contract CertificationNftTest is Test {
         Certificate memory cert = certNFT.getCertificate(tokenId);
         assertEq(cert.revocationReason, reason1);
     }
+    
+    // ============ Additional verifyCertificate Comprehensive Tests ============
+    
+    function test_VerifyCertificate_AllFieldsMatch() public {
+        _setupAuthorizedInstitution(institution1);
+        
+        CertificateData memory certData = _createCertificateData(
+            student1,
+            "John Doe",
+            "STU-001",
+            "Bachelor of Science"
+        );
+        
+        uint256 tokenId = _issueCertificate(institution1, certData);
+        
+        (Certificate memory cert, bool isValid) = certNFT.verifyCertificate(tokenId);
+        
+        assertTrue(isValid);
+        assertEq(cert.studentName, certData.studentName);
+        assertEq(cert.studentID, certData.studentID);
+        assertEq(cert.studentWallet, certData.studentWallet);
+        assertEq(cert.degreeTitle, certData.degreeTitle);
+    }
+    
+    function test_VerifyCertificate_MultipleValidCertificates() public {
+        _setupAuthorizedInstitution(institution1);
+        
+        CertificateData memory certData1 = _createCertificateData(
+            student1,
+            "John Doe",
+            "STU-001",
+            "Bachelor of Science"
+        );
+        
+        CertificateData memory certData2 = _createCertificateData(
+            student2,
+            "Jane Smith",
+            "STU-002",
+            "Master of Arts"
+        );
+        
+        uint256 tokenId1 = _issueCertificate(institution1, certData1);
+        uint256 tokenId2 = _issueCertificate(institution1, certData2);
+        
+        (, bool isValid1) = certNFT.verifyCertificate(tokenId1);
+        (, bool isValid2) = certNFT.verifyCertificate(tokenId2);
+        
+        assertTrue(isValid1);
+        assertTrue(isValid2);
+    }
 }
 
