@@ -117,13 +117,11 @@ npm run dev
 This project is licensed under the MIT License.
 
 ## Recent Updates
-- **Emergency Pause**: Contract can be paused by admin for safety.
-- **Metadata Updates**: Correct typos in issued certificates without revoking.
-- **Batch Revocation**: Efficiently revoke multiple credentials in one go.
-- **Soulbound Tokens**: Certificates are now non-transferable (bound to student wallets).
-- **Batch Issuance**: Institutions can now issue up to 50 certificates in a single transaction.
-- **Expiration**: Certificates now support expiration dates and validation checks.
-- **Enhanced Dashboard**: Modular dashboard with improved analytics and activity feed.
-- **Institution Settings**: New settings page for notification preferences and security management.
-- **Improved UX**: New search and filter components for certificate management.
-- **Notification System**: Global toast notification system for user interactions.
+- **Verification Stats**: Real-time analytics for certificate verifications and success rates.
+- **Bulk Verification**: Verify multiple certificates simultaneously via batch processing.
+- **Search History**: Local tracking of recently verified certificates for quick access.
+- **Export Utilities**: Export certificate data to CSV and print-optimized views.
+- **Certificate Preview**: Premium animated modal for detailed credential inspection.
+- **Developer Utilities**: Rate limiting, custom hooks (useCertificate, useDebounce), and type-safe event handling.
+- **Accessibility & UX**: Focus management, screen reader support, and improved loading states with skeletons.
+- **Theme Support**: Integrated dark/light mode theme management.
