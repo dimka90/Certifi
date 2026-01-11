@@ -2137,5 +2137,64 @@ contract CertificationNftTest is Test {
         (, bool isValid) = certNFT.verifyCertificate(tokenId1);
         assertTrue(isValid);
     }
+    
+    function test_Integration_OwnershipTransferMaintainsState() public {
+        address newOwner = address(0x999);
+        
+        _setupAuthorizedInstitution(institution1);
+        
+        CertificateData memory certData = _createCertificateData(
+            student1,
+            "John Doe",
+            "STU-001",
+            "Bachelor of Science"
+        );
+        
+        uint256 tokenId = _issueCertificate(institution1, certData);
+        
+        // Transfer ownership
+        certNFT.transferOwnership(newOwner);
+        
+        // All state should be preserved
+        assertEq(certNFT.ownerOf(tokenId), student1);
+        assertEq(certNFT.getTotalCertificatesIssued(), 1);
+        uint256[] memory studentCerts = certNFT.getCertificatesByStudent(student1);
+        assertEq(studentCerts.length, 1);
+        
+        // New owner can still manage
+        vm.prank(newOwner);
+        certNFT.revokeCertificate(tokenId, "Owner revocation");
+        assertTrue(certNFT.isRevoked(tokenId));
+    }
+    
+    function test_Integration_MultipleInstitutionsMultipleStudents() public {
+        _setupAuthorizedInstitution(institution1);
+        _setupAuthorizedInstitution(institution2);
+        
+        // Issue certificates from both institutions to different students
+        CertificateData memory certData1 = _createCertificateData(
+            student1,
+            "John Doe",
+            "STU-001",
+            "Bachelor of Science"
+        );
+        
+        CertificateData memory certData2 = _createCertificateData(
+            student2,
+            "Jane Smith",
+            "STU-002",
+            "Master of Arts"
+        );
+        
+        uint256 tokenId1 = _issueCertificate(institution1, certData1);
+        uint256 tokenId2 = _issueCertificate(institution2, certData2);
+        
+        // Verify counts match
+        assertEq(certNFT.getTotalCertificatesIssued(), 2);
+        assertEq(certNFT.getCertificatesByInstitution(institution1).length, 1);
+        assertEq(certNFT.getCertificatesByInstitution(institution2).length, 1);
+        assertEq(certNFT.getCertificatesByStudent(student1).length, 1);
+        assertEq(certNFT.getCertificatesByStudent(student2).length, 1);
+    }
 }
 
