@@ -2243,5 +2243,65 @@ contract CertificationNftTest is Test {
         Institution memory inst = certNFT.getInstitution(institution1);
         assertEq(inst.totalCertificatesIssued, 10);
     }
+    
+    // ============ State Transition Tests ============
+    
+    function test_StateTransition_InstitutionLifecycle() public {
+        // State 1: Not registered
+        vm.expectRevert();
+        certNFT.getInstitution(institution1);
+        
+        // State 2: Registered but not authorized
+        _registerInstitution(
+            institution1,
+            INSTITUTION_NAME,
+            INSTITUTION_ID,
+            INSTITUTION_EMAIL,
+            INSTITUTION_COUNTRY,
+            InstitutionType.University
+        );
+        
+        Institution memory inst = certNFT.getInstitution(institution1);
+        assertFalse(inst.isAuthorized);
+        
+        // State 3: Authorized
+        certNFT.authorizeInstitution(institution1);
+        inst = certNFT.getInstitution(institution1);
+        assertTrue(inst.isAuthorized);
+        
+        // State 4: Deauthorized
+        certNFT.deauthorizeInstitution(institution1);
+        inst = certNFT.getInstitution(institution1);
+        assertFalse(inst.isAuthorized);
+        
+        // State 5: Reauthorized
+        certNFT.authorizeInstitution(institution1);
+        inst = certNFT.getInstitution(institution1);
+        assertTrue(inst.isAuthorized);
+    }
+    
+    function test_StateTransition_CertificateLifecycle() public {
+        _setupAuthorizedInstitution(institution1);
+        
+        CertificateData memory certData = _createCertificateData(
+            student1,
+            "John Doe",
+            "STU-001",
+            "Bachelor of Science"
+        );
+        
+        // State 1: Issued and valid
+        uint256 tokenId = _issueCertificate(institution1, certData);
+        assertFalse(certNFT.isRevoked(tokenId));
+        (, bool isValid) = certNFT.verifyCertificate(tokenId);
+        assertTrue(isValid);
+        
+        // State 2: Revoked
+        vm.prank(institution1);
+        certNFT.revokeCertificate(tokenId, "Revocation reason");
+        assertTrue(certNFT.isRevoked(tokenId));
+        (, bool isValidAfter) = certNFT.verifyCertificate(tokenId);
+        assertFalse(isValidAfter);
+    }
 }
 
