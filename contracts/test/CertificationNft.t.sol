@@ -2303,5 +2303,107 @@ contract CertificationNftTest is Test {
         (, bool isValidAfter) = certNFT.verifyCertificate(tokenId);
         assertFalse(isValidAfter);
     }
+    
+    // ============ Final Comprehensive Edge Cases ============
+    
+    function test_EdgeCase_ReauthorizeAfterDeauthorizeCanIssue() public {
+        _setupAuthorizedInstitution(institution1);
+        
+        // Issue certificate
+        CertificateData memory certData1 = _createCertificateData(
+            student1,
+            "John Doe",
+            "STU-001",
+            "Bachelor of Science"
+        );
+        
+        _issueCertificate(institution1, certData1);
+        
+        // Deauthorize
+        certNFT.deauthorizeInstitution(institution1);
+        
+        // Cannot issue
+        CertificateData memory certData2 = _createCertificateData(
+            student2,
+            "Jane Smith",
+            "STU-002",
+            "Master of Arts"
+        );
+        
+        vm.expectRevert();
+        vm.prank(institution1);
+        certNFT.issueCertificate(certData2);
+        
+        // Reauthorize
+        certNFT.authorizeInstitution(institution1);
+        
+        // Can issue again
+        uint256 tokenId2 = _issueCertificate(institution1, certData2);
+        assertEq(tokenId2, 2);
+    }
+    
+    function test_EdgeCase_TotalCountIncludesRevoked() public {
+        _setupAuthorizedInstitution(institution1);
+        
+        // Issue multiple certificates
+        CertificateData memory certData1 = _createCertificateData(
+            student1,
+            "John Doe",
+            "STU-001",
+            "Bachelor of Science"
+        );
+        
+        CertificateData memory certData2 = _createCertificateData(
+            student2,
+            "Jane Smith",
+            "STU-002",
+            "Master of Arts"
+        );
+        
+        uint256 tokenId1 = _issueCertificate(institution1, certData1);
+        uint256 tokenId2 = _issueCertificate(institution1, certData2);
+        
+        assertEq(certNFT.getTotalCertificatesIssued(), 2);
+        
+        // Revoke one
+        vm.prank(institution1);
+        certNFT.revokeCertificate(tokenId1, "Revocation");
+        
+        // Total should still be 2
+        assertEq(certNFT.getTotalCertificatesIssued(), 2);
+        
+        // Both should still be in lists
+        assertEq(certNFT.getCertificatesByStudent(student1).length, 1);
+        assertEq(certNFT.getCertificatesByInstitution(institution1).length, 2);
+    }
+    
+    function test_EdgeCase_OwnerCanRevokeAnyCertificate() public {
+        _setupAuthorizedInstitution(institution1);
+        _setupAuthorizedInstitution(institution2);
+        
+        CertificateData memory certData1 = _createCertificateData(
+            student1,
+            "John Doe",
+            "STU-001",
+            "Bachelor of Science"
+        );
+        
+        CertificateData memory certData2 = _createCertificateData(
+            student2,
+            "Jane Smith",
+            "STU-002",
+            "Master of Arts"
+        );
+        
+        uint256 tokenId1 = _issueCertificate(institution1, certData1);
+        uint256 tokenId2 = _issueCertificate(institution2, certData2);
+        
+        // Owner can revoke certificates from any institution
+        certNFT.revokeCertificate(tokenId1, "Owner revocation");
+        certNFT.revokeCertificate(tokenId2, "Owner revocation");
+        
+        assertTrue(certNFT.isRevoked(tokenId1));
+        assertTrue(certNFT.isRevoked(tokenId2));
+    }
 }
 
