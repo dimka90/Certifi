@@ -2065,5 +2065,77 @@ contract CertificationNftTest is Test {
         assertTrue(isValid1);
         assertTrue(isValid2);
     }
+    
+    // ============ Cross-Function Integration Tests ============
+    
+    function test_Integration_RegisterAuthorizeIssueRevoke() public {
+        // Register institution
+        _registerInstitution(
+            institution1,
+            INSTITUTION_NAME,
+            INSTITUTION_ID,
+            INSTITUTION_EMAIL,
+            INSTITUTION_COUNTRY,
+            InstitutionType.University
+        );
+        
+        // Authorize
+        certNFT.authorizeInstitution(institution1);
+        
+        // Issue certificate
+        CertificateData memory certData = _createCertificateData(
+            student1,
+            "John Doe",
+            "STU-001",
+            "Bachelor of Science"
+        );
+        
+        uint256 tokenId = _issueCertificate(institution1, certData);
+        
+        // Verify it's valid
+        (, bool isValid) = certNFT.verifyCertificate(tokenId);
+        assertTrue(isValid);
+        
+        // Revoke
+        vm.prank(institution1);
+        certNFT.revokeCertificate(tokenId, "Revocation reason");
+        
+        // Verify it's now invalid
+        (, bool isValidAfter) = certNFT.verifyCertificate(tokenId);
+        assertFalse(isValidAfter);
+    }
+    
+    function test_Integration_DeauthorizePreventsIssuance() public {
+        _setupAuthorizedInstitution(institution1);
+        
+        // Issue one certificate
+        CertificateData memory certData1 = _createCertificateData(
+            student1,
+            "John Doe",
+            "STU-001",
+            "Bachelor of Science"
+        );
+        
+        uint256 tokenId1 = _issueCertificate(institution1, certData1);
+        
+        // Deauthorize
+        certNFT.deauthorizeInstitution(institution1);
+        
+        // Cannot issue more
+        CertificateData memory certData2 = _createCertificateData(
+            student2,
+            "Jane Smith",
+            "STU-002",
+            "Master of Arts"
+        );
+        
+        vm.expectRevert();
+        vm.prank(institution1);
+        certNFT.issueCertificate(certData2);
+        
+        // But existing certificate still valid
+        (, bool isValid) = certNFT.verifyCertificate(tokenId1);
+        assertTrue(isValid);
+    }
 }
 
