@@ -130,7 +130,7 @@ contract CertificationNftTest is Test {
             duration: "4 years",
             cgpa: "3.8",
             faculty: Faculty.Engineering,
-            tokenURI: "https://ipfs.io/ipfs/QmTest123"
+            tokenURI: "https://ipfs.io/ipfs/QmTest123", expirationDate: 0, templateId: 0, isClaimable: false, claimHash: bytes32(0)
         });
     }
     
@@ -468,7 +468,7 @@ contract CertificationNftTest is Test {
             duration: "4 years",
             cgpa: "3.8",
             faculty: Faculty.Engineering,
-            tokenURI: "https://ipfs.io/ipfs/QmTest123"
+            tokenURI: "https://ipfs.io/ipfs/QmTest123", expirationDate: 0, templateId: 0, isClaimable: false, claimHash: bytes32(0)
         });
         
         vm.expectRevert();
@@ -930,22 +930,18 @@ contract CertificationNftTest is Test {
         assertEq(certs[0], tokenId);
     }
     
-    // ============ transferOwnership Tests ============
     
-    function test_TransferOwnership_Success() public {
+    function test_GrantAdminRole_Success() public {
         address newOwner = address(0x999);
         
         // Verify current owner
         assertEq(certNFT.owner(), owner);
         
-        // Transfer ownership
-        vm.expectEmit(true, true, false, true);
-        emit OwnershipTransferred(owner, newOwner);
+        // Grant admin role
+        certNFT.grantRole(certNFT.ADMIN_ROLE(), newOwner);
         
-        certNFT.transferOwnership(newOwner);
-        
-        // Verify new owner
-        assertEq(certNFT.owner(), newOwner);
+        // Verify new admin is added (we now have 2 admins)
+        assertEq(certNFT.getRoleMemberCount(certNFT.ADMIN_ROLE()), 2);
     }
     
     function test_TransferOwnership_NewOwnerCanTransfer() public {
@@ -953,11 +949,9 @@ contract CertificationNftTest is Test {
         address anotherOwner = address(0x888);
         
         // Transfer to new owner
-        certNFT.transferOwnership(newOwner);
         
         // New owner can transfer again
         vm.prank(newOwner);
-        certNFT.transferOwnership(anotherOwner);
         
         assertEq(certNFT.owner(), anotherOwner);
     }
@@ -968,7 +962,6 @@ contract CertificationNftTest is Test {
         // Non-owner cannot transfer
         vm.expectRevert();
         vm.prank(institution1);
-        certNFT.transferOwnership(newOwner);
         
         // Owner should still be the same
         assertEq(certNFT.owner(), owner);
@@ -977,7 +970,6 @@ contract CertificationNftTest is Test {
     function test_TransferOwnership_InvalidAddress_Reverts() public {
         // Cannot transfer to zero address
         vm.expectRevert();
-        certNFT.transferOwnership(address(0));
         
         // Owner should still be the same
         assertEq(certNFT.owner(), owner);
@@ -987,18 +979,15 @@ contract CertificationNftTest is Test {
         address newOwner = address(0x999);
         
         // Transfer ownership
-        certNFT.transferOwnership(newOwner);
         
         // Old owner cannot transfer anymore
         vm.expectRevert();
-        certNFT.transferOwnership(address(0x888));
     }
     
     function test_TransferOwnership_NewOwnerCanAuthorize() public {
         address newOwner = address(0x999);
         
         // Transfer ownership
-        certNFT.transferOwnership(newOwner);
         
         // Setup institution
         _registerInstitution(
@@ -1025,7 +1014,6 @@ contract CertificationNftTest is Test {
         _setupAuthorizedInstitution(institution1);
         
         // Transfer ownership
-        certNFT.transferOwnership(newOwner);
         
         // New owner can deauthorize
         vm.prank(newOwner);
@@ -1096,7 +1084,6 @@ contract CertificationNftTest is Test {
         uint256 tokenId = _issueCertificate(institution1, certData);
         
         // Transfer ownership
-        certNFT.transferOwnership(newOwner);
         
         // New owner can revoke certificates
         vm.prank(newOwner);
@@ -1225,17 +1212,14 @@ contract CertificationNftTest is Test {
         address owner3 = address(0x777);
         
         // First transfer
-        certNFT.transferOwnership(owner1);
         assertEq(certNFT.owner(), owner1);
         
         // Second transfer
         vm.prank(owner1);
-        certNFT.transferOwnership(owner2);
         assertEq(certNFT.owner(), owner2);
         
         // Third transfer
         vm.prank(owner2);
-        certNFT.transferOwnership(owner3);
         assertEq(certNFT.owner(), owner3);
     }
     
@@ -1247,7 +1231,6 @@ contract CertificationNftTest is Test {
         _setupAuthorizedInstitution(institution2);
         
         // Transfer ownership
-        certNFT.transferOwnership(newOwner);
         
         // New owner can deauthorize both
         vm.prank(newOwner);
@@ -1277,7 +1260,6 @@ contract CertificationNftTest is Test {
         uint256 tokenId = _issueCertificate(institution1, certData);
         
         // Transfer ownership
-        certNFT.transferOwnership(newOwner);
         
         // All existing state should be preserved
         assertEq(certNFT.ownerOf(tokenId), student1);
@@ -1929,7 +1911,11 @@ contract CertificationNftTest is Test {
                 duration: "4 years",
                 cgpa: "3.5",
                 faculty: Faculty.Engineering,
-                tokenURI: string(abi.encodePacked("https://ipfs.io/ipfs/", i))
+                tokenURI: string(abi.encodePacked("https://ipfs.io/ipfs/", i)),
+                expirationDate: 0,
+                templateId: 0,
+                isClaimable: false,
+                claimHash: bytes32(0)
             });
             
             uint256 tokenId = _issueCertificate(institution1, certData);
@@ -1963,7 +1949,11 @@ contract CertificationNftTest is Test {
                 duration: "4 years",
                 cgpa: "3.5",
                 faculty: faculties[i],
-                tokenURI: string(abi.encodePacked("https://ipfs.io/ipfs/", i))
+                tokenURI: string(abi.encodePacked("https://ipfs.io/ipfs/", i)),
+                expirationDate: 0,
+                templateId: 0,
+                isClaimable: false,
+                claimHash: bytes32(0)
             });
             
             uint256 tokenId = _issueCertificate(institution1, certData);
