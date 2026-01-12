@@ -35,3 +35,10 @@ enum Classification {
     Credit,
     Merit
 }
+
+enum VerificationStatus {
+    Unverified,
+    Verified,
+    Pending,
+    Rejected
+}
