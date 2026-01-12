@@ -646,6 +646,105 @@ contract CertificateNFT is ERC721URIStorage, Pausable {
         _;
     }
 
+    // Certificate Lifecycle Management
+    function renewCertificate(
+        uint256 oldTokenId, 
+        CertificateData memory newData,
+        uint256 newExpirationDate
+    ) external onlyAuthorizedInstitution returns (uint256) {
+        if (!_exists(oldTokenId)) revert CertificateDoesNotExist();
+        
+        Certificate memory oldCert = certificates[oldTokenId];
+        if (oldCert.issuingInstitution != msg.sender) revert NotIssuingInstitution();
+        
+        // Check if certificate is renewable (not revoked and near expiration)
+        if (oldCert.isRevoked) revert CertificateNotRenewable();
+        if (oldCert.expirationDate != 0 && block.timestamp < oldCert.expirationDate - 30 days) {
+            revert CertificateNotRenewable();
+        }
+        
+        // Issue new certificate
+        newData.expirationDate = newExpirationDate;
+        uint256 newTokenId = _issueCertificate(newData);
+        
+        // Link certificates
+        certificates[newTokenId].renewalOf = oldTokenId;
+        
+        emit CertificateRenewed(oldTokenId, newTokenId, block.timestamp);
+        
+        return newTokenId;
+    }
+    
+    function amendCertificate(
+        uint256 tokenId,
+        string memory amendmentType,
+        bytes memory amendmentData
+    ) external {
+        if (!_exists(tokenId)) revert CertificateDoesNotExist();
+        
+        Certificate storage cert = certificates[tokenId];
+        if (cert.issuingInstitution != msg.sender && msg.sender != owner) {
+            revert NotIssuingInstitution();
+        }
+        
+        if (cert.isRevoked) revert AmendmentNotAllowed();
+        
+        // Record amendment (in a real implementation, this would update specific fields)
+        // For now, we'll just emit an event to track the amendment
+        
+        emit CertificateAmended(tokenId, amendmentType, block.timestamp);
+        
+        updateAnalytics("totalAmendments", 1);
+    }
+    
+    function getCertificateRenewalChain(uint256 tokenId) 
+        external 
+        view 
+        certificateExists(tokenId) 
+        returns (uint256[] memory) 
+    {
+        uint256[] memory chain = new uint256[](10); // Max chain length
+        uint256 current = tokenId;
+        uint256 count = 0;
+        
+        // Follow the renewal chain backwards
+        while (current != 0 && count < 10) {
+            chain[count] = current;
+            current = certificates[current].renewalOf;
+            count++;
+        }
+        
+        // Resize array to actual length
+        uint256[] memory result = new uint256[](count);
+        for (uint256 i = 0; i < count; i++) {
+            result[i] = chain[i];
+        }
+        
+        return result;
+    }
+    
+    function checkCertificateExpiration(uint256 tokenId) 
+        external 
+        view 
+        certificateExists(tokenId) 
+        returns (bool isExpired, uint256 expirationDate, uint256 daysUntilExpiration) 
+    {
+        Certificate memory cert = certificates[tokenId];
+        
+        if (cert.expirationDate == 0) {
+            return (false, 0, type(uint256).max);
+        }
+        
+        isExpired = block.timestamp >= cert.expirationDate;
+        expirationDate = cert.expirationDate;
+        
+        if (!isExpired) {
+            daysUntilExpiration = (cert.expirationDate - block.timestamp) / 1 days;
+        } else {
+            daysUntilExpiration = 0;
+        }
+    }
+
     function updateTokenURI(uint256 tokenId, string memory newTokenURI) external whenNotPaused {
         if (msg.sender != owner && msg.sender != certificates[tokenId].issuingInstitution) {
             revert NotIssuingInstitution();
