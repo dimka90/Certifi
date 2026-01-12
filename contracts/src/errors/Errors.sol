@@ -30,3 +30,21 @@ error InvalidAddress();
 error EmptyString();
 error ContractPaused(); // Added
 error InvalidIndex(); // Added
+
+// Role Errors
+error AccessDenied(bytes32 role);
+error UnauthorizedVerifier();
+
+// Template Errors
+error TemplateDoesNotExist();
+error TemplateNotActive();
+error InvalidTemplateData();
+
+// Verificaton Errors
+error VerificationExpired();
+error AlreadyVerified();
+
+// Claim Errors
+error CertificateAlreadyClaimed();
+error InvalidClaimCode();
+error NotClaimable();
