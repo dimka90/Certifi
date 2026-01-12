@@ -310,11 +310,24 @@ contract CertificateNFT is ERC721URIStorage, Pausable {
             expirationDate: data.expirationDate
         });
         
+        // Generate verification code
+        string memory verificationCode = this.generateVerificationCode(newTokenId);
+        verificationCodes[newTokenId] = verificationCode;
+        codeToTokenId[verificationCode] = newTokenId;
+        
         studentCertificates[data.studentWallet].push(newTokenId);
         institutionCertificates[msg.sender].push(newTokenId);
         institutions[msg.sender].totalCertificatesIssued++;
         
+        // Update analytics
+        updateAnalytics("totalCertificatesIssued", 1);
+        updateAnalytics("certificatesThisMonth", 1);
+        
+        // Log security event
+        logSecurityEvent("certificate_issued", msg.sender, abi.encodePacked(newTokenId));
+        
         emit CertificateIssued(newTokenId, data.studentWallet, msg.sender, data.degreeTitle, block.timestamp);
+        emit VerificationCodeGenerated(newTokenId, verificationCode, block.timestamp);
         
         return newTokenId;
     }
@@ -1030,6 +1043,13 @@ contract CertificateNFT is ERC721URIStorage, Pausable {
         cert.isRevoked = true;
         cert.revocationDate = block.timestamp;
         cert.revocationReason = reason;
+
+        // Update analytics
+        updateAnalytics("totalRevocations", 1);
+        updateAnalytics("revocationsThisMonth", 1);
+        
+        // Log security event
+        logSecurityEvent("certificate_revoked", msg.sender, abi.encodePacked(tokenId, reason));
 
         emit CertificateRevoked(tokenId, msg.sender, reason, block.timestamp);
     }
