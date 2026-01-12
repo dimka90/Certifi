@@ -2,6 +2,7 @@
 pragma solidity ^0.8.20;
 
 import "@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol";
+import "@openzeppelin/contracts/token/ERC721/utils/ERC721Holder.sol";
 import "@openzeppelin/contracts/security/Pausable.sol";
 import "@openzeppelin/contracts/access/AccessControlEnumerable.sol";
 import "../types/Enums.sol";
@@ -9,7 +10,7 @@ import "../types/Structs.sol";
 import "../events/Events.sol";
 import "../errors/Errors.sol";
 
-contract CertificateNFT is ERC721URIStorage, Pausable, AccessControlEnumerable {
+contract CertificateNFT is ERC721URIStorage, Pausable, AccessControlEnumerable, ERC721Holder {
     
     bytes32 public constant ADMIN_ROLE = keccak256("ADMIN_ROLE");
     bytes32 public constant ISSUER_ROLE = keccak256("ISSUER_ROLE");
