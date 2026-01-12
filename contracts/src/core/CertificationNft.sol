@@ -469,6 +469,99 @@ contract CertificateNFT is ERC721URIStorage, Pausable {
         return reportData;
     }
 
+    // Enhanced Verification System
+    function generateVerificationCode(uint256 tokenId) 
+        external 
+        view 
+        certificateExists(tokenId) 
+        returns (string memory) 
+    {
+        // Generate a unique verification code based on token ID and block data
+        bytes32 hash = keccak256(abi.encodePacked(tokenId, block.timestamp, address(this)));
+        return string(abi.encodePacked("CERT-", _toHexString(uint256(hash))));
+    }
+    
+    function _toHexString(uint256 value) internal pure returns (string memory) {
+        if (value == 0) return "0";
+        
+        uint256 temp = value;
+        uint256 digits;
+        while (temp != 0) {
+            digits++;
+            temp /= 16;
+        }
+        
+        bytes memory buffer = new bytes(digits);
+        while (value != 0) {
+            digits -= 1;
+            buffer[digits] = bytes1(uint8(48 + uint256(value % 16)));
+            value /= 16;
+        }
+        
+        return string(buffer);
+    }
+    
+    function verifyByCode(string memory code) 
+        external 
+        view 
+        returns (VerificationResult memory) 
+    {
+        uint256 tokenId = codeToTokenId[code];
+        
+        VerificationResult memory result;
+        result.verificationCode = code;
+        result.verificationTime = block.timestamp;
+        
+        if (tokenId == 0) {
+            result.isValid = false;
+            result.exists = false;
+            return result;
+        }
+        
+        result.tokenId = tokenId;
+        result.exists = true;
+        
+        Certificate memory cert = certificates[tokenId];
+        result.isRevoked = cert.isRevoked;
+        result.isExpired = cert.expirationDate != 0 && block.timestamp >= cert.expirationDate;
+        result.isValid = !result.isRevoked && !result.isExpired;
+        
+        return result;
+    }
+    
+    function getVerificationHistory(uint256 tokenId) 
+        external 
+        view 
+        certificateExists(tokenId) 
+        returns (VerificationAttempt[] memory) 
+    {
+        return verificationHistory[tokenId];
+    }
+    
+    function recordVerificationAttempt(
+        uint256 tokenId, 
+        address verifier, 
+        bool successful, 
+        string memory method
+    ) internal {
+        VerificationAttempt memory attempt = VerificationAttempt({
+            timestamp: block.timestamp,
+            verifier: verifier,
+            successful: successful,
+            method: method
+        });
+        
+        verificationHistory[tokenId].push(attempt);
+        verificationCounts[tokenId]++;
+        
+        updateAnalytics("totalVerifications", 1);
+        if (successful) {
+            updateAnalytics("successfulVerifications", 1);
+        }
+        
+        emit CertificateVerified(tokenId, verifier, method, successful, block.timestamp);
+    }
+
     function updateTokenURI(uint256 tokenId, string memory newTokenURI) external whenNotPaused {
         if (msg.sender != owner && msg.sender != certificates[tokenId].issuingInstitution) {
             revert NotIssuingInstitution();
