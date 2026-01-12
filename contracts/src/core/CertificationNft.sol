@@ -745,6 +745,73 @@ contract CertificateNFT is ERC721URIStorage, Pausable {
         }
     }
 
+    // Enhanced Error Handling and Debugging
+    function getSystemStatus() 
+        external 
+        view 
+        returns (
+            uint256 totalCertificates,
+            uint256 totalInstitutions,
+            uint256 totalTemplates,
+            uint256 pendingOperations,
+            bool contractPaused,
+            uint256 currentSignatureThreshold
+        ) 
+    {
+        totalCertificates = _tokenIdCounter;
+        totalInstitutions = institutionAddresses.length;
+        totalTemplates = _templateIdCounter;
+        
+        // Count pending operations
+        uint256 pending = 0;
+        for (uint256 i = 1; i <= _operationIdCounter; i++) {
+            if (!pendingOperations[i].executed) {
+                pending++;
+            }
+        }
+        pendingOperations = pending;
+        
+        contractPaused = paused();
+        currentSignatureThreshold = signatureThreshold;
+    }
+    
+    function validateCertificateData(CertificateData memory data) 
+        external 
+        pure 
+        returns (bool isValid, string[] memory errors) 
+    {
+        string[] memory errorList = new string[](10);
+        uint256 errorCount = 0;
+        
+        if (data.studentWallet == address(0)) {
+            errorList[errorCount] = "Invalid student wallet address";
+            errorCount++;
+        }
+        
+        if (bytes(data.studentName).length == 0) {
+            errorList[errorCount] = "Student name cannot be empty";
+            errorCount++;
+        }
+        
+        if (bytes(data.degreeTitle).length == 0) {
+            errorList[errorCount] = "Degree title cannot be empty";
+            errorCount++;
+        }
+        
+        if (bytes(data.tokenURI).length == 0) {
+            errorList[errorCount] = "Token URI cannot be empty";
+            errorCount++;
+        }
+        
+        // Resize errors array to actual count
+        string[] memory finalErrors = new string[](errorCount);
+        for (uint256 i = 0; i < errorCount; i++) {
+            finalErrors[i] = errorList[i];
+        }
+        
+        return (errorCount == 0, finalErrors);
+    }
+
     function updateTokenURI(uint256 tokenId, string memory newTokenURI) external whenNotPaused {
         if (msg.sender != owner && msg.sender != certificates[tokenId].issuingInstitution) {
             revert NotIssuingInstitution();
