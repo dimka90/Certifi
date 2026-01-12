@@ -145,6 +145,74 @@ contract CertificateNFT is ERC721URIStorage, Pausable {
         return institutionTemplates[institution];
     }
 
+    // Multi-Signature Functions
+    function proposeOperation(bytes memory operationData, OperationType opType) 
+        external 
+        returns (uint256) 
+    {
+        if (!authorizedSigners[msg.sender]) revert NotAuthorizedSigner();
+        
+        _operationIdCounter++;
+        uint256 newOperationId = _operationIdCounter;
+        
+        MultiSigOperation storage operation = pendingOperations[newOperationId];
+        operation.id = newOperationId;
+        operation.operationData = operationData;
+        operation.proposer = msg.sender;
+        operation.proposedAt = block.timestamp;
+        operation.requiredSignatures = signatureThreshold;
+        operation.executed = false;
+        
+        emit OperationProposed(newOperationId, msg.sender, operationData, block.timestamp);
+        
+        return newOperationId;
+    }
+    
+    function signOperation(uint256 operationId) external {
+        if (!authorizedSigners[msg.sender]) revert NotAuthorizedSigner();
+        if (pendingOperations[operationId].id == 0) revert OperationNotFound();
+        if (pendingOperations[operationId].executed) revert OperationAlreadyExecuted();
+        if (operationSignatures[operationId][msg.sender]) revert AlreadySigned();
+        
+        operationSignatures[operationId][msg.sender] = true;
+        pendingOperations[operationId].signers.push(msg.sender);
+        
+        uint256 signatureCount = pendingOperations[operationId].signers.length;
+        
+        emit OperationSigned(operationId, msg.sender, signatureCount, block.timestamp);
+        
+        // Auto-execute if threshold reached
+        if (signatureCount >= signatureThreshold) {
+            _executeOperation(operationId);
+        }
+    }
+    
+    function _executeOperation(uint256 operationId) internal {
+        MultiSigOperation storage operation = pendingOperations[operationId];
+        operation.executed = true;
+        operation.executedAt = block.timestamp;
+        
+        emit OperationExecuted(operationId, msg.sender, block.timestamp);
+    }
+    
+    function setSignatureThreshold(uint256 newThreshold) external onlyOwner {
+        if (newThreshold == 0) revert InvalidThreshold();
+        
+        uint256 oldThreshold = signatureThreshold;
+        signatureThreshold = newThreshold;
+        
+        emit SignatureThresholdUpdated(oldThreshold, newThreshold, block.timestamp);
+    }
+    
+    function addAuthorizedSigner(address signer) external onlyOwner {
+        if (signer == address(0)) revert InvalidAddress();
+        authorizedSigners[signer] = true;
+    }
+    
+    function removeAuthorizedSigner(address signer) external onlyOwner {
+        authorizedSigners[signer] = false;
+    }
+
     function pause() external onlyOwner {
         _pause();
     }
