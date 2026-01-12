@@ -14,12 +14,43 @@ contract CertificateNFT is ERC721URIStorage, Pausable {
     uint256 private _tokenIdCounter;
     uint256 public constant MAX_BATCH_SIZE = 50;
     
+    // Existing storage
     address[] public institutionAddresses;
     mapping(address => Institution) public institutions;
     mapping(uint256 => Certificate) public certificates;
     mapping(address => uint256[]) public studentCertificates;
     mapping(address => uint256[]) public institutionCertificates;
     mapping(address => bool) public registeredInstitutions;
+    
+    // Template Management Storage
+    uint256 private _templateIdCounter;
+    mapping(uint256 => CertificateTemplate) public templates;
+    mapping(address => uint256[]) public institutionTemplates;
+    mapping(uint256 => bool) public activeTemplates;
+    
+    // Multi-Signature Storage
+    uint256 private _operationIdCounter;
+    uint256 public signatureThreshold = 2;
+    mapping(uint256 => MultiSigOperation) public pendingOperations;
+    mapping(uint256 => mapping(address => bool)) public operationSignatures;
+    mapping(address => bool) public authorizedSigners;
+    
+    // Analytics Storage
+    mapping(string => uint256) public analyticsCounters;
+    mapping(uint256 => IssuanceStats) public dailyStats;
+    mapping(uint256 => VerificationStats) public verificationStats;
+    
+    // Verification Enhancement Storage
+    mapping(uint256 => string) public verificationCodes;
+    mapping(string => uint256) public codeToTokenId;
+    mapping(uint256 => VerificationAttempt[]) public verificationHistory;
+    mapping(uint256 => uint256) public verificationCounts;
+    
+    // Role-Based Access Control Storage
+    mapping(bytes32 => mapping(uint256 => bool)) public rolePermissions;
+    mapping(address => bytes32[]) public userRoles;
+    mapping(bytes32 => bool) public validRoles;
+    mapping(bytes32 => string) public roleNames;
     
     modifier onlyOwner() {
         if (msg.sender != owner) revert NotOwner();
@@ -38,6 +69,80 @@ contract CertificateNFT is ERC721URIStorage, Pausable {
     
     constructor() ERC721("Educational Certificate", "CERTIFI") {
         owner = msg.sender;
+        authorizedSigners[msg.sender] = true;
+    }
+
+    // Template Management Functions
+    function createTemplate(
+        string memory _name,
+        TemplateField[] memory _requiredFields,
+        TemplateField[] memory _optionalFields,
+        ValidationRule[] memory _validationRules
+    ) external onlyAuthorizedInstitution returns (uint256) {
+        if (bytes(_name).length == 0) revert EmptyString();
+        
+        _templateIdCounter++;
+        uint256 newTemplateId = _templateIdCounter;
+        
+        CertificateTemplate storage template = templates[newTemplateId];
+        template.id = newTemplateId;
+        template.name = _name;
+        template.creator = msg.sender;
+        template.createdAt = block.timestamp;
+        template.version = 1;
+        template.isActive = true;
+        
+        // Store fields and rules
+        for (uint256 i = 0; i < _requiredFields.length; i++) {
+            template.requiredFields.push(_requiredFields[i]);
+        }
+        for (uint256 i = 0; i < _optionalFields.length; i++) {
+            template.optionalFields.push(_optionalFields[i]);
+        }
+        for (uint256 i = 0; i < _validationRules.length; i++) {
+            template.validationRules.push(_validationRules[i]);
+        }
+        
+        institutionTemplates[msg.sender].push(newTemplateId);
+        activeTemplates[newTemplateId] = true;
+        
+        emit TemplateCreated(newTemplateId, msg.sender, _name, block.timestamp);
+        
+        return newTemplateId;
+    }
+    
+    function validateAgainstTemplate(uint256 templateId, CertificateData memory data) 
+        external 
+        view 
+        returns (bool) 
+    {
+        if (!activeTemplates[templateId]) revert TemplateNotActive();
+        
+        CertificateTemplate storage template = templates[templateId];
+        
+        // Basic validation - in a real implementation, this would be more comprehensive
+        if (bytes(data.studentName).length == 0) return false;
+        if (data.studentWallet == address(0)) return false;
+        if (bytes(data.degreeTitle).length == 0) return false;
+        
+        return true;
+    }
+    
+    function getTemplate(uint256 templateId) 
+        external 
+        view 
+        returns (CertificateTemplate memory) 
+    {
+        if (templates[templateId].id == 0) revert TemplateNotFound();
+        return templates[templateId];
+    }
+    
+    function getTemplatesByInstitution(address institution) 
+        external 
+        view 
+        returns (uint256[] memory) 
+    {
+        return institutionTemplates[institution];
     }
 
     function pause() external onlyOwner {
