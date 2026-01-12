@@ -400,6 +400,75 @@ contract CertificateNFT is ERC721URIStorage, Pausable {
         analyticsCounters["totalCertificatesInChunks"] += totalProcessed;
     }
 
+    // Analytics and Reporting Functions
+    function getIssuanceStats(uint256 fromTime, uint256 toTime) 
+        external 
+        view 
+        returns (IssuanceStats memory) 
+    {
+        if (fromTime > toTime) revert InvalidTimeRange();
+        
+        IssuanceStats memory stats;
+        stats.totalIssued = _tokenIdCounter;
+        stats.periodStart = fromTime;
+        stats.periodEnd = toTime;
+        
+        // Count revoked certificates
+        uint256 revokedCount = 0;
+        for (uint256 i = 1; i <= _tokenIdCounter; i++) {
+            if (certificates[i].isRevoked) {
+                revokedCount++;
+            }
+        }
+        
+        stats.totalRevoked = revokedCount;
+        stats.activeCount = stats.totalIssued - stats.totalRevoked;
+        
+        return stats;
+    }
+    
+    function getVerificationStats(uint256 fromTime, uint256 toTime) 
+        external 
+        view 
+        returns (VerificationStats memory) 
+    {
+        if (fromTime > toTime) revert InvalidTimeRange();
+        
+        VerificationStats memory stats;
+        stats.totalVerifications = analyticsCounters["totalVerifications"];
+        stats.uniqueVerifications = analyticsCounters["uniqueVerifications"];
+        stats.periodStart = fromTime;
+        stats.periodEnd = toTime;
+        
+        if (stats.uniqueVerifications > 0) {
+            stats.averageVerificationsPerCertificate = stats.totalVerifications / stats.uniqueVerifications;
+        }
+        
+        return stats;
+    }
+    
+    function updateAnalytics(string memory metricType, uint256 value) internal {
+        analyticsCounters[metricType] += value;
+        emit AnalyticsUpdated(metricType, analyticsCounters[metricType], block.timestamp);
+    }
+    
+    function generateReport(string memory reportType, uint256 periodStart, uint256 periodEnd) 
+        external 
+        view 
+        returns (bytes memory) 
+    {
+        if (periodStart > periodEnd) revert InvalidTimeRange();
+        
+        // Generate basic report data
+        IssuanceStats memory issuanceStats = this.getIssuanceStats(periodStart, periodEnd);
+        VerificationStats memory verificationStats = this.getVerificationStats(periodStart, periodEnd);
+        
+        // In a real implementation, this would format the data appropriately
+        bytes memory reportData = abi.encode(issuanceStats, verificationStats);
+        
+        return reportData;
+    }
+
     function updateTokenURI(uint256 tokenId, string memory newTokenURI) external whenNotPaused {
         if (msg.sender != owner && msg.sender != certificates[tokenId].issuingInstitution) {
             revert NotIssuingInstitution();
