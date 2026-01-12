@@ -901,6 +901,105 @@ contract CertificateNFT is ERC721URIStorage, Pausable {
         return (cert, valid);
     }
 
+    // Security and Audit Enhancement Functions
+    mapping(bytes32 => bool) public auditTrail;
+    mapping(address => uint256) public lastAccessTime;
+    mapping(string => uint256) public securityMetrics;
+    
+    function logSecurityEvent(
+        string memory eventType,
+        address actor,
+        bytes memory eventData
+    ) internal {
+        bytes32 eventHash = keccak256(abi.encodePacked(
+            eventType,
+            actor,
+            eventData,
+            block.timestamp
+        ));
+        
+        auditTrail[eventHash] = true;
+        lastAccessTime[actor] = block.timestamp;
+        securityMetrics[eventType]++;
+        
+        emit AnalyticsUpdated(eventType, securityMetrics[eventType], block.timestamp);
+    }
+    
+    function validateDataIntegrity(uint256 tokenId) 
+        external 
+        view 
+        certificateExists(tokenId) 
+        returns (bool isValid, string[] memory issues) 
+    {
+        Certificate memory cert = certificates[tokenId];
+        string[] memory issueList = new string[](5);
+        uint256 issueCount = 0;
+        
+        // Check basic data integrity
+        if (cert.studentWallet == address(0)) {
+            issueList[issueCount] = "Invalid student wallet";
+            issueCount++;
+        }
+        
+        if (bytes(cert.studentName).length == 0) {
+            issueList[issueCount] = "Empty student name";
+            issueCount++;
+        }
+        
+        if (cert.issuingInstitution == address(0)) {
+            issueList[issueCount] = "Invalid issuing institution";
+            issueCount++;
+        }
+        
+        if (!registeredInstitutions[cert.issuingInstitution]) {
+            issueList[issueCount] = "Institution not registered";
+            issueCount++;
+        }
+        
+        // Resize issues array
+        string[] memory finalIssues = new string[](issueCount);
+        for (uint256 i = 0; i < issueCount; i++) {
+            finalIssues[i] = issueList[i];
+        }
+        
+        return (issueCount == 0, finalIssues);
+    }
+    
+    function generateAuditReport(uint256 fromTime, uint256 toTime) 
+        external 
+        view 
+        returns (bytes memory) 
+    {
+        if (fromTime > toTime) revert InvalidTimeRange();
+        
+        // Collect audit data
+        uint256 totalCertificates = _tokenIdCounter;
+        uint256 totalInstitutions = institutionAddresses.length;
+        uint256 totalTemplates = _templateIdCounter;
+        uint256 totalOperations = _operationIdCounter;
+        
+        // Security metrics
+        uint256 totalVerifications = securityMetrics["verification"];
+        uint256 totalRevocations = securityMetrics["revocation"];
+        uint256 totalAmendments = securityMetrics["amendment"];
+        
+        // Encode audit report
+        bytes memory auditData = abi.encode(
+            totalCertificates,
+            totalInstitutions,
+            totalTemplates,
+            totalOperations,
+            totalVerifications,
+            totalRevocations,
+            totalAmendments,
+            fromTime,
+            toTime,
+            block.timestamp
+        );
+        
+        return auditData;
+    }
+
     function updateTokenURI(uint256 tokenId, string memory newTokenURI) external whenNotPaused {
         if (msg.sender != owner && msg.sender != certificates[tokenId].issuingInstitution) {
             revert NotIssuingInstitution();
