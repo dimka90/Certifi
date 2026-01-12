@@ -562,6 +562,90 @@ contract CertificateNFT is ERC721URIStorage, Pausable {
         emit CertificateVerified(tokenId, verifier, method, successful, block.timestamp);
     }
 
+    // Role-Based Access Control Functions
+    function createRole(string memory roleName, uint256[] memory permissions) 
+        external 
+        onlyOwner 
+        returns (bytes32) 
+    {
+        if (bytes(roleName).length == 0) revert EmptyString();
+        
+        bytes32 roleId = keccak256(abi.encodePacked(roleName, block.timestamp));
+        
+        if (validRoles[roleId]) revert RoleAlreadyAssigned();
+        
+        validRoles[roleId] = true;
+        roleNames[roleId] = roleName;
+        
+        for (uint256 i = 0; i < permissions.length; i++) {
+            rolePermissions[roleId][permissions[i]] = true;
+        }
+        
+        emit RoleCreated(roleId, roleName, block.timestamp);
+        
+        return roleId;
+    }
+    
+    function assignRole(address user, bytes32 roleId) external onlyOwner {
+        if (user == address(0)) revert InvalidAddress();
+        if (!validRoles[roleId]) revert RoleNotFound();
+        
+        // Check if user already has this role
+        bytes32[] memory currentRoles = userRoles[user];
+        for (uint256 i = 0; i < currentRoles.length; i++) {
+            if (currentRoles[i] == roleId) revert RoleAlreadyAssigned();
+        }
+        
+        userRoles[user].push(roleId);
+        
+        emit RoleAssigned(user, roleId, block.timestamp);
+    }
+    
+    function revokeRole(address user, bytes32 roleId) external onlyOwner {
+        if (user == address(0)) revert InvalidAddress();
+        
+        bytes32[] storage roles = userRoles[user];
+        for (uint256 i = 0; i < roles.length; i++) {
+            if (roles[i] == roleId) {
+                roles[i] = roles[roles.length - 1];
+                roles.pop();
+                emit RoleRevoked(user, roleId, block.timestamp);
+                return;
+            }
+        }
+        
+        revert RoleNotFound();
+    }
+    
+    function hasPermission(address user, uint256 permission) 
+        external 
+        view 
+        returns (bool) 
+    {
+        bytes32[] memory roles = userRoles[user];
+        
+        for (uint256 i = 0; i < roles.length; i++) {
+            if (rolePermissions[roles[i]][permission]) {
+                return true;
+            }
+        }
+        
+        return false;
+    }
+    
+    function getUserRoles(address user) 
+        external 
+        view 
+        returns (bytes32[] memory) 
+    {
+        return userRoles[user];
+    }
+    
+    modifier hasRequiredPermission(uint256 permission) {
+        if (!this.hasPermission(msg.sender, permission)) revert InsufficientPermissions();
+        _;
+    }
+
     function updateTokenURI(uint256 tokenId, string memory newTokenURI) external whenNotPaused {
         if (msg.sender != owner && msg.sender != certificates[tokenId].issuingInstitution) {
             revert NotIssuingInstitution();
