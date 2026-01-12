@@ -337,6 +337,69 @@ contract CertificateNFT is ERC721URIStorage, Pausable {
         emit BatchCertificateIssued(msg.sender, dataList.length, block.timestamp);
     }
 
+    // Enhanced Batch Operations
+    function issueCertificateBatchOptimized(
+        CertificateData[] calldata dataList
+    ) external onlyAuthorizedInstitution {
+        if (dataList.length == 0) revert BatchSizeCheckFailed();
+        
+        uint256 processed = 0;
+        uint256 chunkSize = dataList.length > MAX_BATCH_SIZE ? MAX_BATCH_SIZE : dataList.length;
+        
+        for (uint256 i = 0; i < dataList.length; i += chunkSize) {
+            uint256 end = i + chunkSize > dataList.length ? dataList.length : i + chunkSize;
+            
+            for (uint256 j = i; j < end; j++) {
+                _issueCertificate(dataList[j]);
+                processed++;
+            }
+        }
+        
+        // Update analytics
+        analyticsCounters["totalBatchOperations"]++;
+        analyticsCounters["totalCertificatesInBatches"] += processed;
+        
+        emit BatchCertificateIssued(msg.sender, processed, block.timestamp);
+    }
+    
+    function estimateBatchGas(CertificateData[] calldata dataList) 
+        external 
+        view 
+        returns (uint256) 
+    {
+        // Simplified gas estimation - in production, this would be more sophisticated
+        uint256 baseGasPerCertificate = 150000; // Estimated gas per certificate
+        uint256 batchOverhead = 50000; // Fixed overhead for batch operation
+        
+        return (dataList.length * baseGasPerCertificate) + batchOverhead;
+    }
+    
+    function processBatchInChunks(
+        CertificateData[] calldata dataList,
+        uint256 chunkSize
+    ) external onlyAuthorizedInstitution {
+        if (dataList.length == 0) revert BatchSizeCheckFailed();
+        if (chunkSize == 0 || chunkSize > MAX_BATCH_SIZE) revert InvalidIndex();
+        
+        uint256 totalProcessed = 0;
+        
+        for (uint256 i = 0; i < dataList.length; i += chunkSize) {
+            uint256 end = i + chunkSize > dataList.length ? dataList.length : i + chunkSize;
+            
+            for (uint256 j = i; j < end; j++) {
+                _issueCertificate(dataList[j]);
+                totalProcessed++;
+            }
+            
+            // Emit chunk completion event
+            emit BatchCertificateIssued(msg.sender, end - i, block.timestamp);
+        }
+        
+        // Update analytics
+        analyticsCounters["totalChunkedOperations"]++;
+        analyticsCounters["totalCertificatesInChunks"] += totalProcessed;
+    }
+
     function updateTokenURI(uint256 tokenId, string memory newTokenURI) external whenNotPaused {
         if (msg.sender != owner && msg.sender != certificates[tokenId].issuingInstitution) {
             revert NotIssuingInstitution();
