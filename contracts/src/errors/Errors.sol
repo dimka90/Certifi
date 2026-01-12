@@ -31,20 +31,38 @@ error EmptyString();
 error ContractPaused(); // Added
 error InvalidIndex(); // Added
 
-// Role Errors
-error AccessDenied(bytes32 role);
-error UnauthorizedVerifier();
-
 // Template Errors
-error TemplateDoesNotExist();
-error TemplateNotActive();
+error TemplateNotFound();
+error TemplateAlreadyExists();
+error TemplateValidationFailed();
 error InvalidTemplateData();
+error TemplateNotActive();
 
-// Verificaton Errors
+// Multi-Signature Errors
+error OperationNotFound();
+error OperationAlreadyExecuted();
+error InsufficientSignatures();
+error AlreadySigned();
+error NotAuthorizedSigner();
+error InvalidThreshold();
+
+// Analytics Errors
+error InvalidTimeRange();
+error AnalyticsNotAvailable();
+error InsufficientData();
+
+// Verification Errors
+error InvalidVerificationCode();
 error VerificationExpired();
-error AlreadyVerified();
+error VerificationMethodNotSupported();
 
-// Claim Errors
-error CertificateAlreadyClaimed();
-error InvalidClaimCode();
-error NotClaimable();
+// Role and Access Control Errors
+error RoleNotFound();
+error InsufficientPermissions();
+error RoleAlreadyAssigned();
+error InvalidRoleData();
+
+// Lifecycle Errors
+error CertificateNotRenewable();
+error AmendmentNotAllowed();
+error InvalidAmendmentData();

@@ -62,3 +62,82 @@ struct CertificateData {
     bool isClaimable;
     bytes32 claimHash;
 }
+
+// Enhanced structures for new features
+struct CertificateTemplate {
+    uint256 id;
+    string name;
+    address creator;
+    uint256 createdAt;
+    uint256 version;
+    TemplateField[] requiredFields;
+    TemplateField[] optionalFields;
+    ValidationRule[] validationRules;
+    bool isActive;
+}
+
+struct TemplateField {
+    string fieldName;
+    string fieldType;
+    bool required;
+    string defaultValue;
+}
+
+struct ValidationRule {
+    string fieldName;
+    string ruleType;
+    string ruleValue;
+    string errorMessage;
+}
+
+struct MultiSigOperation {
+    uint256 id;
+    bytes operationData;
+    address proposer;
+    uint256 proposedAt;
+    uint256 requiredSignatures;
+    address[] signers;
+    bool executed;
+    uint256 executedAt;
+}
+
+struct IssuanceStats {
+    uint256 totalIssued;
+    uint256 totalRevoked;
+    uint256 activeCount;
+    uint256 periodStart;
+    uint256 periodEnd;
+}
+
+struct VerificationStats {
+    uint256 totalVerifications;
+    uint256 uniqueVerifications;
+    uint256 averageVerificationsPerCertificate;
+    uint256 periodStart;
+    uint256 periodEnd;
+}
+
+struct VerificationResult {
+    bool isValid;
+    bool exists;
+    bool isRevoked;
+    bool isExpired;
+    uint256 tokenId;
+    string verificationCode;
+    uint256 verificationTime;
+}
+
+struct VerificationAttempt {
+    uint256 timestamp;
+    address verifier;
+    bool successful;
+    string method;
+}
+
+struct ErrorResponse {
+    uint256 errorCode;
+    string errorMessage;
+    string[] violatedRules;
+    bytes additionalData;
+    uint256 timestamp;
+}

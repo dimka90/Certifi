@@ -36,9 +36,29 @@ enum Classification {
     Merit
 }
 
-enum VerificationStatus {
-    Unverified,
-    Verified,
-    Pending,
-    Rejected
+// Enhanced enums for new features
+enum RoleType {
+    SUPER_ADMIN,
+    INSTITUTION_ADMIN,
+    CERTIFICATE_ISSUER,
+    CERTIFICATE_VERIFIER,
+    AUDITOR,
+    VIEWER
+}
+
+enum OperationType {
+    AUTHORIZE_INSTITUTION,
+    DEAUTHORIZE_INSTITUTION,
+    UPDATE_TEMPLATE,
+    REVOKE_CERTIFICATE,
+    TRANSFER_OWNERSHIP,
+    UPDATE_MULTI_SIG_THRESHOLD
+}
+
+enum VerificationMethod {
+    QR_CODE,
+    TOKEN_ID,
+    VERIFICATION_CODE,
+    MOBILE_APP,
+    WEB_INTERFACE
 }
