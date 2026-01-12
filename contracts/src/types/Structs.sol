@@ -15,6 +15,16 @@ struct Institution {
     uint256 totalCertificatesIssued;
 }
 
+struct CertificateTemplate {
+    uint256 templateId;
+    string name;
+    string degreeTitle;
+    Faculty faculty;
+    string baseURI;
+    bool isActive;
+    address creator;
+}
+
 struct Certificate {
     string studentName;
     string studentID;
@@ -30,6 +40,11 @@ struct Certificate {
     uint256 revocationDate;
     string revocationReason;
     uint256 expirationDate;
+    uint256 templateId;
+    uint256 version;
+    bool isClaimable;
+    bool isClaimed;
+    bytes32 claimHash;
 }
 
 struct CertificateData {
@@ -43,4 +58,7 @@ struct CertificateData {
     Faculty faculty;
     string tokenURI;
     uint256 expirationDate; // Added field
+    uint256 templateId;
+    bool isClaimable;
+    bytes32 claimHash;
 }
