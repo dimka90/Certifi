@@ -33,8 +33,8 @@ contract InteractScript is Script {
             );
         }
 
-        // Transaction 2: Authorize (if sender is owner)
-        if (certContract.owner() == deployerAddress) {
+        // Transaction 2: Authorize (if sender is admin)
+        if (certContract.hasRole(certContract.ADMIN_ROLE(), deployerAddress)) {
             // Check if already authorized
             Institution memory inst = certContract.getInstitution(deployerAddress);
             if (!inst.isAuthorized) {
@@ -59,7 +59,11 @@ contract InteractScript is Script {
                 duration: "2024-2025",
                 cgpa: "3.9",
                 faculty: Faculty.Technology,
-                tokenURI: "ipfs://bafybeigdyrzt5sfp7udm7hu76uh7y26nf3efuylqabf3v6v3r7zscz2hyu"
+                tokenURI: "ipfs://bafybeigdyrzt5sfp7udm7hu76uh7y26nf3efuylqabf3v6v3r7zscz2hyu",
+                expirationDate: 0,
+                templateId: 0,
+                isClaimable: false,
+                claimHash: bytes32(0)
             });
             
             try certContract.issueCertificate(data) returns (uint256 tokenId) {
