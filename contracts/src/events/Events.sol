@@ -12,3 +12,10 @@ event BatchCertificateIssued(address indexed institution, uint256 count, uint256
 // New Events
 event MetadataUpdated(uint256 indexed tokenId, string newTokenURI, uint256 timestamp);
 event InstitutionDetailsUpdated(address indexed institution, string name, string email, uint256 timestamp);
+
+// Advanced Features Events
+event TemplateCreated(uint256 indexed templateId, address indexed institution, string name);
+event TemplateUpdated(uint256 indexed templateId, bool isActive);
+event OfficialVerification(uint256 indexed tokenId, address indexed verifier, bool status, uint256 timestamp);
+event CertificateClaimed(uint256 indexed tokenId, address indexed student, uint256 timestamp);
+event MetadataVersioned(uint256 indexed tokenId, uint256 version, string tokenURI);
