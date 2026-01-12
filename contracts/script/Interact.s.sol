@@ -11,7 +11,9 @@ contract InteractScript is Script {
         uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
         address deployerAddress = vm.addr(deployerPrivateKey);
         
-        CertificateNFT certContract = CertificateNFT(0x33A21018CF5Ccf399f98DeDfc29eAa1AbEEF0AAB);
+        // Try to get address from environment variable, fallback to the latest deployment
+        address contractAddr = vm.envOr("CONTRACT_ADDRESS", address(0x14a4751fE6a7C2eD2F939E164da05dc25b913688));
+        CertificateNFT certContract = CertificateNFT(contractAddr);
         
         console.log("Interacting with CertificateNFT at:", address(certContract));
         console.log("Sender address:", deployerAddress);
@@ -33,8 +35,8 @@ contract InteractScript is Script {
             );
         }
 
-        // Transaction 2: Authorize (if sender is owner)
-        if (certContract.owner() == deployerAddress) {
+        // Transaction 2: Authorize (if sender is admin)
+        if (certContract.hasRole(certContract.ADMIN_ROLE(), deployerAddress)) {
             // Check if already authorized
             Institution memory inst = certContract.getInstitution(deployerAddress);
             if (!inst.isAuthorized) {
@@ -43,6 +45,15 @@ contract InteractScript is Script {
             } else {
                 console.log("Institution already authorized.");
             }
+
+            // Transaction 2.5: Create a Template
+            console.log("TX 2.5: Creating Certificate Template...");
+            certContract.createTemplate(
+                "Blockchain Engineering 2024",
+                "BE-2024",
+                Faculty.Technology,
+                "ipfs://bafybeicdyrzt5sfp7udm7hu76uh7y26nf3efuylqabf3v6v3r7zscz2hyu/"
+            );
         }
 
         // Transactions 3-10: Issue Certificates
@@ -59,7 +70,11 @@ contract InteractScript is Script {
                 duration: "2024-2025",
                 cgpa: "3.9",
                 faculty: Faculty.Technology,
-                tokenURI: "ipfs://bafybeigdyrzt5sfp7udm7hu76uh7y26nf3efuylqabf3v6v3r7zscz2hyu"
+                tokenURI: "ipfs://bafybeigdyrzt5sfp7udm7hu76uh7y26nf3efuylqabf3v6v3r7zscz2hyu",
+                expirationDate: 0,
+                templateId: 1, // Use the template created in TX 2.5
+                isClaimable: i % 2 == 0, // Make every other certificate claimable
+                claimHash: i % 2 == 0 ? keccak256(abi.encodePacked("SECRET", i)) : bytes32(0)
             });
             
             try certContract.issueCertificate(data) returns (uint256 tokenId) {

@@ -11,3 +11,8 @@ node_modules/
 *.log
 .DS_Store
 Thumbs.db
+
+# Foundry
+contracts/out/
+contracts/cache/
+contracts/broadcast/
