@@ -812,6 +812,95 @@ contract CertificateNFT is ERC721URIStorage, Pausable {
         return (errorCount == 0, finalErrors);
     }
 
+    // Standardized API Functions with Consistent Patterns
+    function getInstitutionInfo(address institutionAddress) 
+        external 
+        view 
+        returns (
+            Institution memory institution,
+            uint256[] memory templateIds,
+            uint256[] memory certificateIds,
+            bool isRegistered,
+            bool isAuthorized
+        ) 
+    {
+        isRegistered = registeredInstitutions[institutionAddress];
+        
+        if (!isRegistered) {
+            return (institution, templateIds, certificateIds, false, false);
+        }
+        
+        institution = institutions[institutionAddress];
+        templateIds = institutionTemplates[institutionAddress];
+        certificateIds = institutionCertificates[institutionAddress];
+        isAuthorized = institution.isAuthorized;
+    }
+    
+    function getCertificateInfo(uint256 tokenId) 
+        external 
+        view 
+        returns (
+            Certificate memory certificate,
+            bool exists,
+            bool isValid,
+            string memory verificationCode,
+            uint256 verificationCount
+        ) 
+    {
+        exists = _exists(tokenId);
+        
+        if (!exists) {
+            return (certificate, false, false, "", 0);
+        }
+        
+        certificate = certificates[tokenId];
+        verificationCode = verificationCodes[tokenId];
+        verificationCount = verificationCounts[tokenId];
+        
+        isValid = !certificate.isRevoked && 
+                  (certificate.expirationDate == 0 || block.timestamp < certificate.expirationDate);
+    }
+    
+    function getTemplateInfo(uint256 templateId) 
+        external 
+        view 
+        returns (
+            CertificateTemplate memory template,
+            bool exists,
+            bool isActive,
+            uint256 usageCount
+        ) 
+    {
+        exists = templates[templateId].id != 0;
+        
+        if (!exists) {
+            return (template, false, false, 0);
+        }
+        
+        template = templates[templateId];
+        isActive = activeTemplates[templateId];
+        
+        // Count how many certificates use this template
+        usageCount = 0;
+        for (uint256 i = 1; i <= _tokenIdCounter; i++) {
+            if (certificates[i].templateId == templateId) {
+                usageCount++;
+            }
+        }
+    }
+    
+    // Backwards Compatibility Functions
+    function verifyCertificate(uint256 tokenId) 
+        external 
+        view 
+        certificateExists(tokenId) 
+        returns (Certificate memory certificate, bool isValid) 
+    {
+        Certificate memory cert = certificates[tokenId];
+        bool valid = !cert.isRevoked && _exists(tokenId) && (cert.expirationDate == 0 || block.timestamp < cert.expirationDate);
+        return (cert, valid);
+    }
+
     function updateTokenURI(uint256 tokenId, string memory newTokenURI) external whenNotPaused {
         if (msg.sender != owner && msg.sender != certificates[tokenId].issuingInstitution) {
             revert NotIssuingInstitution();
