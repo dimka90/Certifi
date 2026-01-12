@@ -63,7 +63,11 @@ contract FullFlow is Script {
                 faculty: Faculty.Engineering,
                 tokenURI: string(
                     abi.encodePacked("ipfs://QmCertificate", vm.toString(i))
-                )
+                ),
+                expirationDate: 0,
+                templateId: 0,
+                isClaimable: false,
+                claimHash: bytes32(0)
             });
 
             try certContract.issueCertificate(certData) returns (uint256 tokenId) {
