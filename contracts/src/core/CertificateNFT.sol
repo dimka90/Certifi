@@ -699,4 +699,98 @@ contract CertificateNFT is ERC721URIStorage, Pausable, AccessControlEnumerable, 
     {
         return institutionCertificates[institution];
     }
+    
+    // ============ BATCH OPERATIONS ============
+    
+    /**
+     * @dev Issue certificates in batch
+     * @param dataList Array of certificate data
+     */
+    function issueCertificateBatch(
+        CertificateData[] calldata dataList
+    ) external onlyAuthorizedInstitution {
+        if (dataList.length == 0 || dataList.length > MAX_BATCH_SIZE) revert BatchSizeCheckFailed();
+        
+        for (uint256 i = 0; i < dataList.length; i++) {
+            _issueCertificate(dataList[i]);
+        }
+        
+        emit BatchCertificateIssued(msg.sender, dataList.length, block.timestamp);
+    }
+    
+    /**
+     * @dev Issue certificates in batch with optimization
+     * @param dataList Array of certificate data
+     */
+    function issueCertificateBatchOptimized(
+        CertificateData[] calldata dataList
+    ) external onlyAuthorizedInstitution {
+        if (dataList.length == 0) revert BatchSizeCheckFailed();
+        
+        uint256 processed = 0;
+        uint256 chunkSize = dataList.length > MAX_BATCH_SIZE ? MAX_BATCH_SIZE : dataList.length;
+        
+        for (uint256 i = 0; i < dataList.length; i += chunkSize) {
+            uint256 end = i + chunkSize > dataList.length ? dataList.length : i + chunkSize;
+            
+            for (uint256 j = i; j < end; j++) {
+                _issueCertificate(dataList[j]);
+                processed++;
+            }
+        }
+        
+        // Update analytics
+        analyticsCounters["totalBatchOperations"]++;
+        analyticsCounters["totalCertificatesInBatches"] += processed;
+        
+        emit BatchCertificateIssued(msg.sender, processed, block.timestamp);
+    }
+    
+    /**
+     * @dev Estimate gas cost for batch operation
+     * @param dataList Array of certificate data
+     * @return Estimated gas cost
+     */
+    function estimateBatchGas(CertificateData[] calldata dataList) 
+        external 
+        view 
+        returns (uint256) 
+    {
+        // Simplified gas estimation - in production, this would be more sophisticated
+        uint256 baseGasPerCertificate = 150000; // Estimated gas per certificate
+        uint256 batchOverhead = 50000; // Fixed overhead for batch operation
+        
+        return (dataList.length * baseGasPerCertificate) + batchOverhead;
+    }
+    
+    /**
+     * @dev Process batch in chunks
+     * @param dataList Array of certificate data
+     * @param chunkSize Size of each chunk
+     */
+    function processBatchInChunks(
+        CertificateData[] calldata dataList,
+        uint256 chunkSize
+    ) external onlyAuthorizedInstitution {
+        if (dataList.length == 0) revert BatchSizeCheckFailed();
+        if (chunkSize == 0 || chunkSize > MAX_BATCH_SIZE) revert InvalidIndex();
+        
+        uint256 totalProcessed = 0;
+        
+        for (uint256 i = 0; i < dataList.length; i += chunkSize) {
+            uint256 end = i + chunkSize > dataList.length ? dataList.length : i + chunkSize;
+            
+            for (uint256 j = i; j < end; j++) {
+                _issueCertificate(dataList[j]);
+                totalProcessed++;
+            }
+            
+            // Emit chunk completion event
+            emit BatchCertificateIssued(msg.sender, end - i, block.timestamp);
+        }
+        
+        // Update analytics
+        analyticsCounters["totalChunkedOperations"]++;
+        analyticsCounters["totalCertificatesInChunks"] += totalProcessed;
+    }
 }
