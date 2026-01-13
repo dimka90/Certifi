@@ -269,4 +269,74 @@ contract CertificateNFT is ERC721URIStorage, Pausable, AccessControlEnumerable, 
     function getAllInstitutions() external view returns (address[] memory) {
         return institutionAddresses;
     }
+    
+    /**
+     * @dev Authorize a registered institution to issue certificates
+     * @param _institution Address of the institution to authorize
+     */
+    function authorizeInstitution(address _institution) external onlyAdmin {
+        if (!registeredInstitutions[_institution]) revert InstitutionNotRegistered();
+        if (institutions[_institution].isAuthorized) revert InstitutionAlreadyAuthorized();
+        
+        institutions[_institution].isAuthorized = true;
+        _grantRole(ISSUER_ROLE, _institution);
+        
+        // Log security event
+        logSecurityEvent("institution_authorized", msg.sender, abi.encodePacked(_institution));
+        
+        emit InstitutionAuthorized(_institution, block.timestamp);
+    }
+    
+    /**
+     * @dev Deauthorize an institution from issuing certificates
+     * @param _institution Address of the institution to deauthorize
+     */
+    function deauthorizeInstitution(address _institution) external onlyAdmin {
+        if (!registeredInstitutions[_institution]) revert InstitutionNotRegistered();
+        if (!institutions[_institution].isAuthorized) revert InstitutionNotAuthorized();
+        
+        institutions[_institution].isAuthorized = false;
+        _revokeRole(ISSUER_ROLE, _institution);
+        
+        // Log security event
+        logSecurityEvent("institution_deauthorized", msg.sender, abi.encodePacked(_institution));
+        
+        emit InstitutionDeauthorized(_institution, block.timestamp);
+    }
+    
+    /**
+     * @dev Check if an institution is authorized
+     * @param _institution Address to check
+     * @return True if institution is authorized
+     */
+    function isInstitutionAuthorized(address _institution) external view returns (bool) {
+        return registeredInstitutions[_institution] && institutions[_institution].isAuthorized;
+    }
+    
+    // ============ SECURITY AND AUDIT ============
+    
+    /**
+     * @dev Log security events for audit trail
+     * @param eventType Type of security event
+     * @param actor Address performing the action
+     * @param eventData Additional event data
+     */
+    function logSecurityEvent(
+        string memory eventType,
+        address actor,
+        bytes memory eventData
+    ) internal {
+        bytes32 eventHash = keccak256(abi.encodePacked(
+            eventType,
+            actor,
+            eventData,
+            block.timestamp
+        ));
+        
+        auditTrail[eventHash] = true;
+        lastAccessTime[actor] = block.timestamp;
+        securityMetrics[eventType]++;
+        
+        emit AnalyticsUpdated(eventType, securityMetrics[eventType], block.timestamp);
+    }
 }
