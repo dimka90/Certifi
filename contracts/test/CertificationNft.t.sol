@@ -2686,6 +2686,9 @@ contract CertificationNftTest is Test {
     function test_Timestamp_RevocationDateSetCorrectly() public {
         _setupAuthorizedInstitution(institution1);
         
+        uint256 issueTime = block.timestamp;
+        vm.warp(issueTime);
+        
         CertificateData memory certData = _createCertificateData(
             student1,
             "John Doe",
@@ -2695,14 +2698,15 @@ contract CertificationNftTest is Test {
         
         uint256 tokenId = _issueCertificate(institution1, certData);
         
-        uint256 beforeRevoke = block.timestamp;
-        vm.warp(beforeRevoke);
+        // Advance time before revocation
+        uint256 revokeTime = issueTime + 100;
+        vm.warp(revokeTime);
         
         vm.prank(institution1);
         certNFT.revokeCertificate(tokenId, "Revocation reason");
         
         Certificate memory cert = certNFT.getCertificate(tokenId);
-        assertEq(cert.revocationDate, beforeRevoke);
+        assertEq(cert.revocationDate, revokeTime);
         assertGt(cert.revocationDate, cert.issueDate);
     }
     
