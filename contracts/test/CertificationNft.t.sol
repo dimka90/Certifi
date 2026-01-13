@@ -2613,5 +2613,53 @@ contract CertificationNftTest is Test {
         Institution memory instAfter = certNFT.getInstitution(institution1);
         assertEq(instAfter.totalCertificatesIssued, 1);
     }
+    
+    // ============ Complex Multi-Student Scenarios ============
+    
+    function test_MultiStudent_OneStudentMultipleCertificates() public {
+        _setupAuthorizedInstitution(institution1);
+        
+        address student = student1;
+        uint256[] memory tokenIds = new uint256[](3);
+        
+        for (uint256 i = 0; i < 3; i++) {
+            CertificateData memory certData = _createCertificateData(
+                student,
+                "John Doe",
+                string(abi.encodePacked("STU-", i)),
+                string(abi.encodePacked("Degree ", i))
+            );
+            tokenIds[i] = _issueCertificate(institution1, certData);
+        }
+        
+        uint256[] memory studentCerts = certNFT.getCertificatesByStudent(student);
+        assertEq(studentCerts.length, 3);
+        
+        for (uint256 i = 0; i < 3; i++) {
+            assertEq(studentCerts[i], tokenIds[i]);
+        }
+    }
+    
+    function test_MultiStudent_MultipleStudentsOneInstitution() public {
+        _setupAuthorizedInstitution(institution1);
+        
+        address[] memory students = new address[](5);
+        for (uint256 i = 0; i < 5; i++) {
+            students[i] = address(uint160(i + 800));
+            CertificateData memory certData = _createCertificateData(
+                students[i],
+                string(abi.encodePacked("Student ", i)),
+                string(abi.encodePacked("STU-", i)),
+                "Degree"
+            );
+            _issueCertificate(institution1, certData);
+        }
+        
+        assertEq(certNFT.getCertificatesByInstitution(institution1).length, 5);
+        
+        for (uint256 i = 0; i < 5; i++) {
+            assertEq(certNFT.getCertificatesByStudent(students[i]).length, 1);
+        }
+    }
 }
 
