@@ -1253,4 +1253,112 @@ contract CertificateNFT is ERC721URIStorage, Pausable, AccessControlEnumerable, 
         totalTemplates = _templateIdCounter;
         contractPaused = paused();
     }
+    
+    // ============ CERTIFICATE LIFECYCLE MANAGEMENT ============
+    
+    /**
+     * @dev Check certificate expiration status
+     * @param tokenId Token ID to check
+     * @return isExpired Whether certificate is expired
+     * @return expirationDate Expiration timestamp
+     * @return daysUntilExpiration Days until expiration (0 if expired)
+     */
+    function checkCertificateExpiration(uint256 tokenId) 
+        external 
+        view 
+        certificateExists(tokenId) 
+        returns (bool isExpired, uint256 expirationDate, uint256 daysUntilExpiration) 
+    {
+        Certificate memory cert = certificates[tokenId];
+        
+        if (cert.expirationDate == 0) {
+            return (false, 0, type(uint256).max);
+        }
+        
+        isExpired = block.timestamp >= cert.expirationDate;
+        expirationDate = cert.expirationDate;
+        
+        if (!isExpired) {
+            daysUntilExpiration = (cert.expirationDate - block.timestamp) / 1 days;
+        } else {
+            daysUntilExpiration = 0;
+        }
+    }
+    
+    /**
+     * @dev Update certificate metadata URI
+     * @param tokenId Token ID
+     * @param newTokenURI New metadata URI
+     */
+    function updateTokenURI(uint256 tokenId, string memory newTokenURI) external whenNotPaused {
+        Certificate storage cert = certificates[tokenId];
+        if (msg.sender != cert.issuingInstitution && !hasRole(ADMIN_ROLE, msg.sender)) {
+            revert NotIssuingInstitution();
+        }
+        if (bytes(newTokenURI).length == 0) revert InvalidTokenURI();
+        
+        cert.version++;
+        _setTokenURI(tokenId, newTokenURI);
+        
+        emit MetadataVersioned(tokenId, cert.version, newTokenURI);
+    }
+    
+    /**
+     * @dev Get certificates by range
+     * @param start Start token ID
+     * @param end End token ID
+     * @return Array of certificates
+     */
+    function getCertificatesByRange(uint256 start, uint256 end) external view returns (Certificate[] memory) {
+        if (start > end || end > _tokenIdCounter) revert InvalidIndex();
+        uint256 size = end - start + 1;
+        Certificate[] memory result = new Certificate[](size);
+        for (uint256 i = 0; i < size; i++) {
+            result[i] = certificates[start + i];
+        }
+        return result;
+    }
+    
+    /**
+     * @dev Validate certificate data
+     * @param data Certificate data to validate
+     * @return isValid Whether data is valid
+     * @return errors Array of validation errors
+     */
+    function validateCertificateData(CertificateData memory data) 
+        external 
+        pure 
+        returns (bool isValid, string[] memory errors) 
+    {
+        string[] memory errorList = new string[](10);
+        uint256 errorCount = 0;
+        
+        if (data.studentWallet == address(0)) {
+            errorList[errorCount] = "Invalid student wallet address";
+            errorCount++;
+        }
+        
+        if (bytes(data.studentName).length == 0) {
+            errorList[errorCount] = "Student name cannot be empty";
+            errorCount++;
+        }
+        
+        if (bytes(data.degreeTitle).length == 0) {
+            errorList[errorCount] = "Degree title cannot be empty";
+            errorCount++;
+        }
+        
+        if (bytes(data.tokenURI).length == 0) {
+            errorList[errorCount] = "Token URI cannot be empty";
+            errorCount++;
+        }
+        
+        // Resize errors array to actual count
+        string[] memory finalErrors = new string[](errorCount);
+        for (uint256 i = 0; i < errorCount; i++) {
+            finalErrors[i] = errorList[i];
+        }
+        
+        return (errorCount == 0, finalErrors);
+    }
 }
