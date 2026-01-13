@@ -10,17 +10,27 @@ import "../types/Structs.sol";
 import "../events/Events.sol";
 import "../errors/Errors.sol";
 
+/**
+ * @title CertificateNFT
+ * @dev ERC721-based certificate NFT system for educational institutions
+ * @notice This contract implements a soulbound token system for academic certificates
+ */
 contract CertificateNFT is ERC721URIStorage, Pausable, AccessControlEnumerable, ERC721Holder {
     
+    // Role constants
     bytes32 public constant ADMIN_ROLE = keccak256("ADMIN_ROLE");
     bytes32 public constant ISSUER_ROLE = keccak256("ISSUER_ROLE");
     bytes32 public constant VERIFIER_ROLE = keccak256("VERIFIER_ROLE");
 
-    uint256 private _tokenIdCounter;
-    uint256 private _templateIdCounter;
+    // System constants
     uint256 public constant MAX_BATCH_SIZE = 50;
     
-    // Existing storage
+    // Counters
+    uint256 private _tokenIdCounter;
+    uint256 private _templateIdCounter;
+    uint256 private _operationIdCounter;
+    
+    // Core storage mappings
     address[] public institutionAddresses;
     mapping(address => Institution) public institutions;
     mapping(uint256 => Certificate) public certificates;
@@ -30,13 +40,10 @@ contract CertificateNFT is ERC721URIStorage, Pausable, AccessControlEnumerable, 
     mapping(address => bool) public registeredInstitutions;
     
     // Template Management Storage
-    uint256 private _templateIdCounter;
-    mapping(uint256 => CertificateTemplate) public templates;
     mapping(address => uint256[]) public institutionTemplates;
     mapping(uint256 => bool) public activeTemplates;
     
     // Multi-Signature Storage
-    uint256 private _operationIdCounter;
     uint256 public signatureThreshold = 2;
     mapping(uint256 => MultiSigOperation) public pendingOperations;
     mapping(uint256 => mapping(address => bool)) public operationSignatures;
@@ -59,27 +66,290 @@ contract CertificateNFT is ERC721URIStorage, Pausable, AccessControlEnumerable, 
     mapping(bytes32 => bool) public validRoles;
     mapping(bytes32 => string) public roleNames;
     
+    // Official verification storage
+    mapping(uint256 => mapping(address => VerificationStatus)) public officialVerifications;
+    
+    // Security and audit storage
+    mapping(bytes32 => bool) public auditTrail;
+    mapping(address => uint256) public lastAccessTime;
+    mapping(string => uint256) public securityMetrics;
+    
+    /**
+     * @dev Modifier to restrict access to contract owner
+     */
     modifier onlyOwner() {
-        if (msg.sender != owner) revert NotOwner();
+        if (!hasRole(DEFAULT_ADMIN_ROLE, msg.sender)) revert NotOwner();
         _;
     }
     
+    /**
+     * @dev Modifier to restrict access to admin role
+     */
+    modifier onlyAdmin() {
+        if (!hasRole(ADMIN_ROLE, msg.sender)) revert AccessDenied(ADMIN_ROLE);
+        _;
+    }
+    
+    /**
+     * @dev Modifier to restrict access to authorized institutions
+     */
     modifier onlyAuthorizedInstitution() {
         if (!institutions[msg.sender].isAuthorized) revert NotAuthorizedInstitution();
         _;
     }
     
+    /**
+     * @dev Modifier to check if certificate exists
+     */
     modifier certificateExists(uint256 tokenId) {
         if (!_exists(tokenId)) revert CertificateDoesNotExist();
         _;
     }
     
+    /**
+     * @dev Constructor initializes the contract with proper roles
+     */
     constructor() ERC721("Educational Certificate", "CERTIFI") {
-        owner = msg.sender;
+        _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
+        _grantRole(ADMIN_ROLE, msg.sender);
         authorizedSigners[msg.sender] = true;
     }
 
-    // Template Management Functions
+    /**
+     * @dev Pause contract operations (admin only)
+     */
+    function pause() external onlyAdmin {
+        _pause();
+    }
+
+    /**
+     * @dev Unpause contract operations (admin only)
+     */
+    function unpause() external onlyAdmin {
+        _unpause();
+    }
+    
+    /**
+     * @dev Get total number of certificates issued
+     */
+    function getTotalCertificatesIssued() external view returns (uint256) {
+        return _tokenIdCounter;
+    }
+    
+    /**
+     * @dev Check if token exists
+     */
+    function _exists(uint256 tokenId) internal view override returns (bool) {
+        return _ownerOf(tokenId) != address(0);
+    }
+    
+    /**
+     * @dev Override _beforeTokenTransfer to implement soulbound characteristics
+     */
+    function _beforeTokenTransfer(
+        address from,
+        address to,
+        uint256 firstTokenId,
+        uint256 batchSize
+    ) internal virtual override {
+        super._beforeTokenTransfer(from, to, firstTokenId, batchSize);
+        
+        // Allow minting (from == 0) and claiming (from == address(this))
+        if (from != address(0) && from != address(this) && to != address(0)) {
+            revert SoulboundTokenNoTransfer();
+        }
+
+        if (from != address(0)) {
+            if (certificates[firstTokenId].isRevoked) revert CertificateAlreadyRevoked();
+        }
+    }
+
+    /**
+     * @dev Override supportsInterface for multiple inheritance
+     */
+    function supportsInterface(bytes4 interfaceId) 
+        public 
+        view 
+        virtual 
+        override(ERC721URIStorage, AccessControlEnumerable) 
+        returns (bool) 
+    {
+        return super.supportsInterface(interfaceId);
+    }
+
+    // ============ INSTITUTION MANAGEMENT ============
+    
+    /**
+     * @dev Register a new educational institution
+     * @param _name Institution name
+     * @param _institutionID Unique institution identifier
+     * @param _email Contact email
+     * @param _country Country of operation
+     * @param _institutionType Type of educational institution
+     */
+    function registerInstitution(
+        string memory _name,
+        string memory _institutionID,
+        string memory _email,
+        string memory _country,
+        InstitutionType _institutionType
+    ) external whenNotPaused {
+        if (registeredInstitutions[msg.sender]) revert InstitutionAlreadyRegistered();
+        if (bytes(_name).length == 0) revert EmptyString();
+        if (bytes(_institutionID).length == 0) revert InvalidInstitutionID();
+        
+        institutions[msg.sender] = Institution({
+            name: _name,
+            institutionID: _institutionID,
+            walletAddress: msg.sender,
+            email: _email,
+            country: _country,
+            institutionType: _institutionType,
+            registrationDate: block.timestamp,
+            isAuthorized: false,
+            totalCertificatesIssued: 0
+        });
+        
+        registeredInstitutions[msg.sender] = true;
+        institutionAddresses.push(msg.sender);
+        
+        emit InstitutionRegistered(msg.sender, _name, _institutionID, block.timestamp);
+    }
+    
+    /**
+     * @dev Get institution information
+     * @param institutionAddress Address of the institution
+     * @return institution Institution data
+     * @return templateIds Array of template IDs created by institution
+     * @return certificateIds Array of certificate IDs issued by institution
+     * @return isRegistered Whether institution is registered
+     * @return isAuthorized Whether institution is authorized
+     */
+    function getInstitutionInfo(address institutionAddress) 
+        external 
+        view 
+        returns (
+            Institution memory institution,
+            uint256[] memory templateIds,
+            uint256[] memory certificateIds,
+            bool isRegistered,
+            bool isAuthorized
+        ) 
+    {
+        isRegistered = registeredInstitutions[institutionAddress];
+        
+        if (!isRegistered) {
+            return (institution, templateIds, certificateIds, false, false);
+        }
+        
+        institution = institutions[institutionAddress];
+        templateIds = institutionTemplates[institutionAddress];
+        certificateIds = institutionCertificates[institutionAddress];
+        isAuthorized = institution.isAuthorized;
+    }
+    
+    /**
+     * @dev Get institution by address
+     * @param _addr Institution address
+     * @return Institution data
+     */
+    function getInstitution(address _addr) 
+        external 
+        view 
+        returns (Institution memory) 
+    {
+        if (!registeredInstitutions[_addr]) revert InstitutionNotRegistered();
+        return institutions[_addr];
+    }
+    
+    /**
+     * @dev Get all registered institution addresses
+     * @return Array of institution addresses
+     */
+    function getAllInstitutions() external view returns (address[] memory) {
+        return institutionAddresses;
+    }
+    
+    /**
+     * @dev Authorize a registered institution to issue certificates
+     * @param _institution Address of the institution to authorize
+     */
+    function authorizeInstitution(address _institution) external onlyAdmin {
+        if (!registeredInstitutions[_institution]) revert InstitutionNotRegistered();
+        if (institutions[_institution].isAuthorized) revert InstitutionAlreadyAuthorized();
+        
+        institutions[_institution].isAuthorized = true;
+        _grantRole(ISSUER_ROLE, _institution);
+        
+        // Log security event
+        logSecurityEvent("institution_authorized", msg.sender, abi.encodePacked(_institution));
+        
+        emit InstitutionAuthorized(_institution, block.timestamp);
+    }
+    
+    /**
+     * @dev Deauthorize an institution from issuing certificates
+     * @param _institution Address of the institution to deauthorize
+     */
+    function deauthorizeInstitution(address _institution) external onlyAdmin {
+        if (!registeredInstitutions[_institution]) revert InstitutionNotRegistered();
+        if (!institutions[_institution].isAuthorized) revert InstitutionNotAuthorized();
+        
+        institutions[_institution].isAuthorized = false;
+        _revokeRole(ISSUER_ROLE, _institution);
+        
+        // Log security event
+        logSecurityEvent("institution_deauthorized", msg.sender, abi.encodePacked(_institution));
+        
+        emit InstitutionDeauthorized(_institution, block.timestamp);
+    }
+    
+    /**
+     * @dev Check if an institution is authorized
+     * @param _institution Address to check
+     * @return True if institution is authorized
+     */
+    function isInstitutionAuthorized(address _institution) external view returns (bool) {
+        return registeredInstitutions[_institution] && institutions[_institution].isAuthorized;
+    }
+    
+    // ============ SECURITY AND AUDIT ============
+    
+    /**
+     * @dev Log security events for audit trail
+     * @param eventType Type of security event
+     * @param actor Address performing the action
+     * @param eventData Additional event data
+     */
+    function logSecurityEvent(
+        string memory eventType,
+        address actor,
+        bytes memory eventData
+    ) internal {
+        bytes32 eventHash = keccak256(abi.encodePacked(
+            eventType,
+            actor,
+            eventData,
+            block.timestamp
+        ));
+        
+        auditTrail[eventHash] = true;
+        lastAccessTime[actor] = block.timestamp;
+        securityMetrics[eventType]++;
+        
+        emit AnalyticsUpdated(eventType, securityMetrics[eventType], block.timestamp);
+    }
+    
+    // ============ TEMPLATE MANAGEMENT ============
+    
+    /**
+     * @dev Create a new certificate template
+     * @param _name Template name
+     * @param _requiredFields Array of required fields
+     * @param _optionalFields Array of optional fields
+     * @param _validationRules Array of validation rules
+     * @return Template ID
+     */
     function createTemplate(
         string memory _name,
         TemplateField[] memory _requiredFields,
@@ -118,6 +388,12 @@ contract CertificateNFT is ERC721URIStorage, Pausable, AccessControlEnumerable, 
         return newTemplateId;
     }
     
+    /**
+     * @dev Validate certificate data against a template
+     * @param templateId Template ID to validate against
+     * @param data Certificate data to validate
+     * @return True if validation passes
+     */
     function validateAgainstTemplate(uint256 templateId, CertificateData memory data) 
         external 
         view 
@@ -135,6 +411,47 @@ contract CertificateNFT is ERC721URIStorage, Pausable, AccessControlEnumerable, 
         return true;
     }
     
+    /**
+     * @dev Get template information
+     * @param templateId Template ID
+     * @return template Template data
+     * @return exists Whether template exists
+     * @return isActive Whether template is active
+     * @return usageCount Number of certificates using this template
+     */
+    function getTemplateInfo(uint256 templateId) 
+        external 
+        view 
+        returns (
+            CertificateTemplate memory template,
+            bool exists,
+            bool isActive,
+            uint256 usageCount
+        ) 
+    {
+        exists = templates[templateId].id != 0;
+        
+        if (!exists) {
+            return (template, false, false, 0);
+        }
+        
+        template = templates[templateId];
+        isActive = activeTemplates[templateId];
+        
+        // Count how many certificates use this template
+        usageCount = 0;
+        for (uint256 i = 1; i <= _tokenIdCounter; i++) {
+            if (certificates[i].templateId == templateId) {
+                usageCount++;
+            }
+        }
+    }
+    
+    /**
+     * @dev Get template by ID
+     * @param templateId Template ID
+     * @return Template data
+     */
     function getTemplate(uint256 templateId) 
         external 
         view 
@@ -144,6 +461,11 @@ contract CertificateNFT is ERC721URIStorage, Pausable, AccessControlEnumerable, 
         return templates[templateId];
     }
     
+    /**
+     * @dev Get templates created by an institution
+     * @param institution Institution address
+     * @return Array of template IDs
+     */
     function getTemplatesByInstitution(address institution) 
         external 
         view 
@@ -151,174 +473,39 @@ contract CertificateNFT is ERC721URIStorage, Pausable, AccessControlEnumerable, 
     {
         return institutionTemplates[institution];
     }
-
-    // Multi-Signature Functions
-    function proposeOperation(bytes memory operationData, OperationType opType) 
-        external 
-        returns (uint256) 
-    {
-        if (!authorizedSigners[msg.sender]) revert NotAuthorizedSigner();
-        
-        _operationIdCounter++;
-        uint256 newOperationId = _operationIdCounter;
-        
-        MultiSigOperation storage operation = pendingOperations[newOperationId];
-        operation.id = newOperationId;
-        operation.operationData = operationData;
-        operation.proposer = msg.sender;
-        operation.proposedAt = block.timestamp;
-        operation.requiredSignatures = signatureThreshold;
-        operation.executed = false;
-        
-        emit OperationProposed(newOperationId, msg.sender, operationData, block.timestamp);
-        
-        return newOperationId;
-    }
     
-    function signOperation(uint256 operationId) external {
-        if (!authorizedSigners[msg.sender]) revert NotAuthorizedSigner();
-        if (pendingOperations[operationId].id == 0) revert OperationNotFound();
-        if (pendingOperations[operationId].executed) revert OperationAlreadyExecuted();
-        if (operationSignatures[operationId][msg.sender]) revert AlreadySigned();
-        
-        operationSignatures[operationId][msg.sender] = true;
-        pendingOperations[operationId].signers.push(msg.sender);
-        
-        uint256 signatureCount = pendingOperations[operationId].signers.length;
-        
-        emit OperationSigned(operationId, msg.sender, signatureCount, block.timestamp);
-        
-        // Auto-execute if threshold reached
-        if (signatureCount >= signatureThreshold) {
-            _executeOperation(operationId);
-        }
-    }
-    
-    function _executeOperation(uint256 operationId) internal {
-        MultiSigOperation storage operation = pendingOperations[operationId];
-        operation.executed = true;
-        operation.executedAt = block.timestamp;
-        
-        emit OperationExecuted(operationId, msg.sender, block.timestamp);
-    }
-    
-    function setSignatureThreshold(uint256 newThreshold) external onlyOwner {
-        if (newThreshold == 0) revert InvalidThreshold();
-        
-        uint256 oldThreshold = signatureThreshold;
-        signatureThreshold = newThreshold;
-        
-        emit SignatureThresholdUpdated(oldThreshold, newThreshold, block.timestamp);
-    }
-    
-    function addAuthorizedSigner(address signer) external onlyOwner {
-        if (signer == address(0)) revert InvalidAddress();
-        authorizedSigners[signer] = true;
-    }
-    
-    function removeAuthorizedSigner(address signer) external onlyOwner {
-        authorizedSigners[signer] = false;
-    }
-
-    function pause() external onlyAdmin {
-        _pause();
-    }
-
-    function unpause() external onlyAdmin {
-        _unpause();
-    }
-    
-    function registerInstitution(
-        string memory _name,
-        string memory _institutionID,
-        string memory _email,
-        string memory _country,
-        InstitutionType _institutionType
-    ) external whenNotPaused {
-        if (registeredInstitutions[msg.sender]) revert InstitutionAlreadyRegistered();
-        if (bytes(_name).length == 0) revert EmptyString();
-        if (bytes(_institutionID).length == 0) revert InvalidInstitutionID();
-        
-        institutions[msg.sender] = Institution({
-            name: _name,
-            institutionID: _institutionID,
-            walletAddress: msg.sender,
-            email: _email,
-            country: _country,
-            institutionType: _institutionType,
-            registrationDate: block.timestamp,
-            isAuthorized: false,
-            totalCertificatesIssued: 0
-        });
-        
-        registeredInstitutions[msg.sender] = true;
-        institutionAddresses.push(msg.sender);
-        
-        emit InstitutionRegistered(msg.sender, _name, _institutionID, block.timestamp);
-    }
-    
-    function authorizeInstitution(address _institution) external onlyAdmin {
-        if (!registeredInstitutions[_institution]) revert InstitutionNotRegistered();
-        if (institutions[_institution].isAuthorized) revert InstitutionAlreadyAuthorized();
-        
-        institutions[_institution].isAuthorized = true;
-        _grantRole(ISSUER_ROLE, _institution);
-        
-        emit InstitutionAuthorized(_institution, block.timestamp);
-    }
-    
-    function deauthorizeInstitution(address _institution) external onlyAdmin {
-        if (!registeredInstitutions[_institution]) revert InstitutionNotRegistered();
-        if (!institutions[_institution].isAuthorized) revert InstitutionNotAuthorized();
-        
-        institutions[_institution].isAuthorized = false;
-        _revokeRole(ISSUER_ROLE, _institution);
-        
-        emit InstitutionDeauthorized(_institution, block.timestamp);
-    }
-
-    function createTemplate(
-        string memory name,
-        string memory degreeTitle,
-        Faculty faculty,
-        string memory baseURI
-    ) external onlyAuthorizedInstitution returns (uint256) {
-        _templateIdCounter++;
-        uint256 templateId = _templateIdCounter;
-        
-        templates[templateId] = CertificateTemplate({
-            templateId: templateId,
-            name: name,
-            degreeTitle: degreeTitle,
-            faculty: faculty,
-            baseURI: baseURI,
-            isActive: true,
-            creator: msg.sender
-        });
-        
-        emit TemplateCreated(templateId, msg.sender, name);
-        return templateId;
-    }
-
+    /**
+     * @dev Toggle template active status
+     * @param templateId Template ID to toggle
+     */
     function toggleTemplate(uint256 templateId) external {
         if (templates[templateId].creator != msg.sender && !hasRole(ADMIN_ROLE, msg.sender)) {
             revert AccessDenied(ADMIN_ROLE);
         }
-        templates[templateId].isActive = !templates[templateId].isActive;
-        emit TemplateUpdated(templateId, templates[templateId].isActive);
+        
+        activeTemplates[templateId] = !activeTemplates[templateId];
+        emit TemplateUpdated(templateId, activeTemplates[templateId]);
     }
-
+    
+    // ============ CERTIFICATE ISSUANCE ============
+    
+    /**
+     * @dev Internal function to issue a certificate
+     * @param data Certificate data
+     * @return Token ID of the issued certificate
+     */
     function _issueCertificate(CertificateData memory data) internal whenNotPaused returns (uint256) {
         if (data.studentWallet == address(0) && !data.isClaimable) revert InvalidStudentAddress();
         if (bytes(data.studentName).length == 0) revert EmptyString();
+        if (bytes(data.degreeTitle).length == 0) revert EmptyString();
         
         string memory finalTokenURI = data.tokenURI;
         if (data.templateId != 0) {
             CertificateTemplate storage template = templates[data.templateId];
             if (!template.isActive) revert TemplateNotActive();
-            // Use baseURI from template if tokenURI is empty
-            if (bytes(finalTokenURI).length == 0) {
-                finalTokenURI = template.baseURI;
+            // Validate against template
+            if (!this.validateAgainstTemplate(data.templateId, data)) {
+                revert TemplateValidationFailed();
             }
         }
         
@@ -327,7 +514,7 @@ contract CertificateNFT is ERC721URIStorage, Pausable, AccessControlEnumerable, 
         _tokenIdCounter++;
         uint256 newTokenId = _tokenIdCounter;
         
-        // If claimable, we don't mint to student yet, or we mint to contract/issuer
+        // If claimable, mint to contract, otherwise mint to student
         address recipient = data.isClaimable ? address(this) : data.studentWallet;
         _safeMint(recipient, newTokenId);
         _setTokenURI(newTokenId, finalTokenURI);
@@ -351,11 +538,12 @@ contract CertificateNFT is ERC721URIStorage, Pausable, AccessControlEnumerable, 
             version: 1,
             isClaimable: data.isClaimable,
             isClaimed: false,
-            claimHash: data.claimHash
+            claimHash: data.claimHash,
+            renewalOf: 0
         });
         
         // Generate verification code
-        string memory verificationCode = this.generateVerificationCode(newTokenId);
+        string memory verificationCode = generateVerificationCode(newTokenId);
         verificationCodes[newTokenId] = verificationCode;
         codeToTokenId[verificationCode] = newTokenId;
         
@@ -375,28 +563,149 @@ contract CertificateNFT is ERC721URIStorage, Pausable, AccessControlEnumerable, 
         
         return newTokenId;
     }
-   
+    
+    /**
+     * @dev Generate a unique verification code for a certificate
+     * @param tokenId Token ID
+     * @return Verification code string
+     */
+    function generateVerificationCode(uint256 tokenId) 
+        public 
+        view 
+        certificateExists(tokenId) 
+        returns (string memory) 
+    {
+        // Generate a unique verification code based on token ID and block data
+        bytes32 hash = keccak256(abi.encodePacked(tokenId, block.timestamp, address(this)));
+        return string(abi.encodePacked("CERT-", _toHexString(uint256(hash))));
+    }
+    
+    /**
+     * @dev Convert uint256 to hex string
+     * @param value Value to convert
+     * @return Hex string representation
+     */
+    function _toHexString(uint256 value) internal pure returns (string memory) {
+        if (value == 0) return "0";
+        
+        uint256 temp = value;
+        uint256 digits;
+        while (temp != 0) {
+            digits++;
+            temp /= 16;
+        }
+        
+        bytes memory buffer = new bytes(digits);
+        while (value != 0) {
+            digits -= 1;
+            buffer[digits] = bytes1(uint8(48 + uint256(value % 16)));
+            value /= 16;
+        }
+        
+        return string(buffer);
+    }
+    
+    /**
+     * @dev Update analytics counters
+     * @param metricType Type of metric
+     * @param value Value to add
+     */
+    function updateAnalytics(string memory metricType, uint256 value) internal {
+        analyticsCounters[metricType] += value;
+        emit AnalyticsUpdated(metricType, analyticsCounters[metricType], block.timestamp);
+    }
+    
+    /**
+     * @dev Issue a single certificate (public interface)
+     * @param data Certificate data
+     * @return Token ID of the issued certificate
+     */
     function issueCertificate(
         CertificateData memory data
     ) external onlyAuthorizedInstitution returns (uint256) {
         return _issueCertificate(data);
     }
-
-    function claimCertificate(uint256 tokenId, string calldata claimCode) external {
-        Certificate storage cert = certificates[tokenId];
-        if (!cert.isClaimable) revert NotClaimable();
-        if (cert.isClaimed) revert CertificateAlreadyClaimed();
-        if (keccak256(abi.encodePacked(claimCode)) != cert.claimHash) revert InvalidClaimCode();
+    
+    /**
+     * @dev Get certificate information
+     * @param tokenId Token ID
+     * @return certificate Certificate data
+     * @return exists Whether certificate exists
+     * @return isValid Whether certificate is valid (not revoked, not expired)
+     * @return verificationCode Verification code for the certificate
+     * @return verificationCount Number of times certificate has been verified
+     */
+    function getCertificateInfo(uint256 tokenId) 
+        external 
+        view 
+        returns (
+            Certificate memory certificate,
+            bool exists,
+            bool isValid,
+            string memory verificationCode,
+            uint256 verificationCount
+        ) 
+    {
+        exists = _exists(tokenId);
         
-        cert.isClaimed = true;
-        cert.studentWallet = msg.sender;
-        _transfer(address(this), msg.sender, tokenId);
+        if (!exists) {
+            return (certificate, false, false, "", 0);
+        }
         
-        studentCertificates[msg.sender].push(tokenId);
+        certificate = certificates[tokenId];
+        verificationCode = verificationCodes[tokenId];
+        verificationCount = verificationCounts[tokenId];
         
-        emit CertificateClaimed(tokenId, msg.sender, block.timestamp);
+        isValid = !certificate.isRevoked && 
+                  (certificate.expirationDate == 0 || block.timestamp < certificate.expirationDate);
     }
-
+    
+    /**
+     * @dev Get certificate by token ID
+     * @param tokenId Token ID
+     * @return Certificate data
+     */
+    function getCertificate(uint256 tokenId) 
+        external 
+        view 
+        certificateExists(tokenId) 
+        returns (Certificate memory) 
+    {
+        return certificates[tokenId];
+    }
+    
+    /**
+     * @dev Get certificates owned by a student
+     * @param student Student address
+     * @return Array of token IDs
+     */
+    function getCertificatesByStudent(address student) 
+        external 
+        view 
+        returns (uint256[] memory) 
+    {
+        return studentCertificates[student];
+    }
+    
+    /**
+     * @dev Get certificates issued by an institution
+     * @param institution Institution address
+     * @return Array of token IDs
+     */
+    function getCertificatesByInstitution(address institution) 
+        external 
+        view 
+        returns (uint256[] memory) 
+    {
+        return institutionCertificates[institution];
+    }
+    
+    // ============ BATCH OPERATIONS ============
+    
+    /**
+     * @dev Issue certificates in batch
+     * @param dataList Array of certificate data
+     */
     function issueCertificateBatch(
         CertificateData[] calldata dataList
     ) external onlyAuthorizedInstitution {
@@ -408,8 +717,11 @@ contract CertificateNFT is ERC721URIStorage, Pausable, AccessControlEnumerable, 
         
         emit BatchCertificateIssued(msg.sender, dataList.length, block.timestamp);
     }
-
-    // Enhanced Batch Operations
+    
+    /**
+     * @dev Issue certificates in batch with optimization
+     * @param dataList Array of certificate data
+     */
     function issueCertificateBatchOptimized(
         CertificateData[] calldata dataList
     ) external onlyAuthorizedInstitution {
@@ -434,6 +746,11 @@ contract CertificateNFT is ERC721URIStorage, Pausable, AccessControlEnumerable, 
         emit BatchCertificateIssued(msg.sender, processed, block.timestamp);
     }
     
+    /**
+     * @dev Estimate gas cost for batch operation
+     * @param dataList Array of certificate data
+     * @return Estimated gas cost
+     */
     function estimateBatchGas(CertificateData[] calldata dataList) 
         external 
         view 
@@ -446,6 +763,11 @@ contract CertificateNFT is ERC721URIStorage, Pausable, AccessControlEnumerable, 
         return (dataList.length * baseGasPerCertificate) + batchOverhead;
     }
     
+    /**
+     * @dev Process batch in chunks
+     * @param dataList Array of certificate data
+     * @param chunkSize Size of each chunk
+     */
     function processBatchInChunks(
         CertificateData[] calldata dataList,
         uint256 chunkSize
@@ -471,108 +793,203 @@ contract CertificateNFT is ERC721URIStorage, Pausable, AccessControlEnumerable, 
         analyticsCounters["totalChunkedOperations"]++;
         analyticsCounters["totalCertificatesInChunks"] += totalProcessed;
     }
-
-    // Analytics and Reporting Functions
-    function getIssuanceStats(uint256 fromTime, uint256 toTime) 
-        external 
-        view 
-        returns (IssuanceStats memory) 
-    {
-        if (fromTime > toTime) revert InvalidTimeRange();
+    
+    // ============ CERTIFICATE CLAIMING ============
+    
+    /**
+     * @dev Claim a certificate using claim code
+     * @param tokenId Token ID of the certificate to claim
+     * @param claimCode Claim code provided by the institution
+     */
+    function claimCertificate(uint256 tokenId, string calldata claimCode) external {
+        Certificate storage cert = certificates[tokenId];
+        if (!cert.isClaimable) revert NotClaimable();
+        if (cert.isClaimed) revert CertificateAlreadyClaimed();
+        if (keccak256(abi.encodePacked(claimCode)) != cert.claimHash) revert InvalidClaimCode();
         
-        IssuanceStats memory stats;
-        stats.totalIssued = _tokenIdCounter;
-        stats.periodStart = fromTime;
-        stats.periodEnd = toTime;
+        cert.isClaimed = true;
+        cert.studentWallet = msg.sender;
+        _transfer(address(this), msg.sender, tokenId);
         
-        // Count revoked certificates
-        uint256 revokedCount = 0;
-        for (uint256 i = 1; i <= _tokenIdCounter; i++) {
-            if (certificates[i].isRevoked) {
-                revokedCount++;
+        // Update student certificates array if not already present
+        bool alreadyInArray = false;
+        uint256[] storage studentCerts = studentCertificates[msg.sender];
+        for (uint256 i = 0; i < studentCerts.length; i++) {
+            if (studentCerts[i] == tokenId) {
+                alreadyInArray = true;
+                break;
             }
         }
-        
-        stats.totalRevoked = revokedCount;
-        stats.activeCount = stats.totalIssued - stats.totalRevoked;
-        
-        return stats;
-    }
-    
-    function getVerificationStats(uint256 fromTime, uint256 toTime) 
-        external 
-        view 
-        returns (VerificationStats memory) 
-    {
-        if (fromTime > toTime) revert InvalidTimeRange();
-        
-        VerificationStats memory stats;
-        stats.totalVerifications = analyticsCounters["totalVerifications"];
-        stats.uniqueVerifications = analyticsCounters["uniqueVerifications"];
-        stats.periodStart = fromTime;
-        stats.periodEnd = toTime;
-        
-        if (stats.uniqueVerifications > 0) {
-            stats.averageVerificationsPerCertificate = stats.totalVerifications / stats.uniqueVerifications;
+        if (!alreadyInArray) {
+            studentCertificates[msg.sender].push(tokenId);
         }
         
-        return stats;
+        // Update analytics
+        updateAnalytics("totalCertificatesClaimed", 1);
+        
+        // Log security event
+        logSecurityEvent("certificate_claimed", msg.sender, abi.encodePacked(tokenId));
+        
+        emit CertificateClaimed(tokenId, msg.sender, block.timestamp);
     }
     
-    function updateAnalytics(string memory metricType, uint256 value) internal {
-        analyticsCounters[metricType] += value;
-        emit AnalyticsUpdated(metricType, analyticsCounters[metricType], block.timestamp);
-    }
-    
-    function generateReport(string memory reportType, uint256 periodStart, uint256 periodEnd) 
-        external 
-        view 
-        returns (bytes memory) 
-    {
-        if (periodStart > periodEnd) revert InvalidTimeRange();
-        
-        // Generate basic report data
-        IssuanceStats memory issuanceStats = this.getIssuanceStats(periodStart, periodEnd);
-        VerificationStats memory verificationStats = this.getVerificationStats(periodStart, periodEnd);
-        
-        // In a real implementation, this would format the data appropriately
-        bytes memory reportData = abi.encode(issuanceStats, verificationStats);
-        
-        return reportData;
-    }
-
-    // Enhanced Verification System
-    function generateVerificationCode(uint256 tokenId) 
+    /**
+     * @dev Check if a certificate is claimable
+     * @param tokenId Token ID to check
+     * @return isClaimable Whether certificate can be claimed
+     * @return isClaimed Whether certificate has been claimed
+     * @return currentOwner Current owner of the certificate
+     */
+    function getClaimStatus(uint256 tokenId) 
         external 
         view 
         certificateExists(tokenId) 
-        returns (string memory) 
+        returns (bool isClaimable, bool isClaimed, address currentOwner) 
     {
-        // Generate a unique verification code based on token ID and block data
-        bytes32 hash = keccak256(abi.encodePacked(tokenId, block.timestamp, address(this)));
-        return string(abi.encodePacked("CERT-", _toHexString(uint256(hash))));
+        Certificate memory cert = certificates[tokenId];
+        isClaimable = cert.isClaimable;
+        isClaimed = cert.isClaimed;
+        currentOwner = ownerOf(tokenId);
     }
     
-    function _toHexString(uint256 value) internal pure returns (string memory) {
-        if (value == 0) return "0";
+    /**
+     * @dev Get all claimable certificates for a student
+     * @param studentWallet Student wallet address
+     * @return Array of claimable token IDs
+     */
+    function getClaimableCertificates(address studentWallet) 
+        external 
+        view 
+        returns (uint256[] memory) 
+    {
+        uint256[] memory allCerts = studentCertificates[studentWallet];
+        uint256 claimableCount = 0;
         
-        uint256 temp = value;
-        uint256 digits;
-        while (temp != 0) {
-            digits++;
-            temp /= 16;
+        // First pass: count claimable certificates
+        for (uint256 i = 0; i < allCerts.length; i++) {
+            Certificate memory cert = certificates[allCerts[i]];
+            if (cert.isClaimable && !cert.isClaimed) {
+                claimableCount++;
+            }
         }
         
-        bytes memory buffer = new bytes(digits);
-        while (value != 0) {
-            digits -= 1;
-            buffer[digits] = bytes1(uint8(48 + uint256(value % 16)));
-            value /= 16;
+        // Second pass: collect claimable certificates
+        uint256[] memory claimableCerts = new uint256[](claimableCount);
+        uint256 index = 0;
+        for (uint256 i = 0; i < allCerts.length; i++) {
+            Certificate memory cert = certificates[allCerts[i]];
+            if (cert.isClaimable && !cert.isClaimed) {
+                claimableCerts[index] = allCerts[i];
+                index++;
+            }
         }
         
-        return string(buffer);
+        return claimableCerts;
     }
     
+    // ============ CERTIFICATE REVOCATION ============
+    
+    /**
+     * @dev Revoke a certificate
+     * @param tokenId Token ID to revoke
+     * @param reason Reason for revocation
+     */
+    function revokeCertificate(uint256 tokenId, string memory reason) external whenNotPaused {
+        _revokeCertificate(tokenId, reason);
+    }
+    
+    /**
+     * @dev Revoke multiple certificates in batch
+     * @param tokenIds Array of token IDs to revoke
+     * @param reason Reason for revocation
+     */
+    function batchRevoke(uint256[] calldata tokenIds, string memory reason) external whenNotPaused {
+        if (tokenIds.length == 0 || tokenIds.length > MAX_BATCH_SIZE) revert BatchSizeCheckFailed();
+        for (uint256 i = 0; i < tokenIds.length; i++) {
+            _revokeCertificate(tokenIds[i], reason);
+        }
+    }
+    
+    /**
+     * @dev Internal function to revoke a certificate
+     * @param tokenId Token ID to revoke
+     * @param reason Reason for revocation
+     */
+    function _revokeCertificate(uint256 tokenId, string memory reason) internal {
+        Certificate storage cert = certificates[tokenId];
+        if (!_exists(tokenId)) revert CertificateDoesNotExist();
+        if (cert.issuingInstitution != msg.sender && !hasRole(ADMIN_ROLE, msg.sender)) {
+            revert NotIssuingInstitution();
+        }
+        if (cert.isRevoked) revert CertificateAlreadyRevoked();
+        if (bytes(reason).length == 0) revert EmptyString();
+
+        cert.isRevoked = true;
+        cert.revocationDate = block.timestamp;
+        cert.revocationReason = reason;
+
+        // Update analytics
+        updateAnalytics("totalRevocations", 1);
+        updateAnalytics("revocationsThisMonth", 1);
+        
+        // Log security event
+        logSecurityEvent("certificate_revoked", msg.sender, abi.encodePacked(tokenId, reason));
+
+        emit CertificateRevoked(tokenId, msg.sender, reason, block.timestamp);
+    }
+    
+    /**
+     * @dev Check if a certificate is revoked
+     * @param tokenId Token ID to check
+     * @return True if certificate is revoked
+     */
+    function isRevoked(uint256 tokenId) external view certificateExists(tokenId) returns (bool) {
+        return certificates[tokenId].isRevoked;
+    }
+    
+    /**
+     * @dev Get revocation information
+     * @param tokenId Token ID to check
+     * @return isRevoked Whether certificate is revoked
+     * @return revocationDate Timestamp of revocation
+     * @return revocationReason Reason for revocation
+     */
+    function getRevocationInfo(uint256 tokenId) 
+        external 
+        view 
+        certificateExists(tokenId) 
+        returns (bool isRevoked, uint256 revocationDate, string memory revocationReason) 
+    {
+        Certificate memory cert = certificates[tokenId];
+        isRevoked = cert.isRevoked;
+        revocationDate = cert.revocationDate;
+        revocationReason = cert.revocationReason;
+    }
+    
+    // ============ CERTIFICATE VERIFICATION ============
+    
+    /**
+     * @dev Verify a certificate by token ID
+     * @param tokenId Token ID to verify
+     * @return certificate Certificate data
+     * @return isValid Whether certificate is valid
+     */
+    function verifyCertificate(uint256 tokenId) 
+        external 
+        view 
+        certificateExists(tokenId) 
+        returns (Certificate memory certificate, bool isValid) 
+    {
+        Certificate memory cert = certificates[tokenId];
+        bool valid = !cert.isRevoked && (cert.expirationDate == 0 || block.timestamp < cert.expirationDate);
+        return (cert, valid);
+    }
+    
+    /**
+     * @dev Verify certificate by verification code
+     * @param code Verification code
+     * @return Verification result
+     */
     function verifyByCode(string memory code) 
         external 
         view 
@@ -601,21 +1018,21 @@ contract CertificateNFT is ERC721URIStorage, Pausable, AccessControlEnumerable, 
         return result;
     }
     
-    function getVerificationHistory(uint256 tokenId) 
-        external 
-        view 
-        certificateExists(tokenId) 
-        returns (VerificationAttempt[] memory) 
-    {
-        return verificationHistory[tokenId];
-    }
-    
+    /**
+     * @dev Record a verification attempt
+     * @param tokenId Token ID being verified
+     * @param verifier Address performing verification
+     * @param successful Whether verification was successful
+     * @param method Verification method used
+     */
     function recordVerificationAttempt(
         uint256 tokenId, 
         address verifier, 
         bool successful, 
         string memory method
-    ) internal {
+    ) external {
+        if (!_exists(tokenId)) revert CertificateDoesNotExist();
+        
         VerificationAttempt memory attempt = VerificationAttempt({
             timestamp: block.timestamp,
             verifier: verifier,
@@ -633,168 +1050,219 @@ contract CertificateNFT is ERC721URIStorage, Pausable, AccessControlEnumerable, 
         
         emit CertificateVerified(tokenId, verifier, method, successful, block.timestamp);
     }
-
-    // Role-Based Access Control Functions
-    function createRole(string memory roleName, uint256[] memory permissions) 
-        external 
-        onlyOwner 
-        returns (bytes32) 
-    {
-        if (bytes(roleName).length == 0) revert EmptyString();
-        
-        bytes32 roleId = keccak256(abi.encodePacked(roleName, block.timestamp));
-        
-        if (validRoles[roleId]) revert RoleAlreadyAssigned();
-        
-        validRoles[roleId] = true;
-        roleNames[roleId] = roleName;
-        
-        for (uint256 i = 0; i < permissions.length; i++) {
-            rolePermissions[roleId][permissions[i]] = true;
-        }
-        
-        emit RoleCreated(roleId, roleName, block.timestamp);
-        
-        return roleId;
-    }
     
-    function assignRole(address user, bytes32 roleId) external onlyOwner {
-        if (user == address(0)) revert InvalidAddress();
-        if (!validRoles[roleId]) revert RoleNotFound();
-        
-        // Check if user already has this role
-        bytes32[] memory currentRoles = userRoles[user];
-        for (uint256 i = 0; i < currentRoles.length; i++) {
-            if (currentRoles[i] == roleId) revert RoleAlreadyAssigned();
-        }
-        
-        userRoles[user].push(roleId);
-        
-        emit RoleAssigned(user, roleId, block.timestamp);
-    }
-    
-    function revokeRole(address user, bytes32 roleId) external onlyOwner {
-        if (user == address(0)) revert InvalidAddress();
-        
-        bytes32[] storage roles = userRoles[user];
-        for (uint256 i = 0; i < roles.length; i++) {
-            if (roles[i] == roleId) {
-                roles[i] = roles[roles.length - 1];
-                roles.pop();
-                emit RoleRevoked(user, roleId, block.timestamp);
-                return;
-            }
-        }
-        
-        revert RoleNotFound();
-    }
-    
-    function hasPermission(address user, uint256 permission) 
-        external 
-        view 
-        returns (bool) 
-    {
-        bytes32[] memory roles = userRoles[user];
-        
-        for (uint256 i = 0; i < roles.length; i++) {
-            if (rolePermissions[roles[i]][permission]) {
-                return true;
-            }
-        }
-        
-        return false;
-    }
-    
-    function getUserRoles(address user) 
-        external 
-        view 
-        returns (bytes32[] memory) 
-    {
-        return userRoles[user];
-    }
-    
-    modifier hasRequiredPermission(uint256 permission) {
-        if (!this.hasPermission(msg.sender, permission)) revert InsufficientPermissions();
-        _;
-    }
-
-    // Certificate Lifecycle Management
-    function renewCertificate(
-        uint256 oldTokenId, 
-        CertificateData memory newData,
-        uint256 newExpirationDate
-    ) external onlyAuthorizedInstitution returns (uint256) {
-        if (!_exists(oldTokenId)) revert CertificateDoesNotExist();
-        
-        Certificate memory oldCert = certificates[oldTokenId];
-        if (oldCert.issuingInstitution != msg.sender) revert NotIssuingInstitution();
-        
-        // Check if certificate is renewable (not revoked and near expiration)
-        if (oldCert.isRevoked) revert CertificateNotRenewable();
-        if (oldCert.expirationDate != 0 && block.timestamp < oldCert.expirationDate - 30 days) {
-            revert CertificateNotRenewable();
-        }
-        
-        // Issue new certificate
-        newData.expirationDate = newExpirationDate;
-        uint256 newTokenId = _issueCertificate(newData);
-        
-        // Link certificates
-        certificates[newTokenId].renewalOf = oldTokenId;
-        
-        emit CertificateRenewed(oldTokenId, newTokenId, block.timestamp);
-        
-        return newTokenId;
-    }
-    
-    function amendCertificate(
-        uint256 tokenId,
-        string memory amendmentType,
-        bytes memory amendmentData
-    ) external {
-        if (!_exists(tokenId)) revert CertificateDoesNotExist();
-        
-        Certificate storage cert = certificates[tokenId];
-        if (cert.issuingInstitution != msg.sender && msg.sender != owner) {
-            revert NotIssuingInstitution();
-        }
-        
-        if (cert.isRevoked) revert AmendmentNotAllowed();
-        
-        // Record amendment (in a real implementation, this would update specific fields)
-        // For now, we'll just emit an event to track the amendment
-        
-        emit CertificateAmended(tokenId, amendmentType, block.timestamp);
-        
-        updateAnalytics("totalAmendments", 1);
-    }
-    
-    function getCertificateRenewalChain(uint256 tokenId) 
+    /**
+     * @dev Get verification history for a certificate
+     * @param tokenId Token ID
+     * @return Array of verification attempts
+     */
+    function getVerificationHistory(uint256 tokenId) 
         external 
         view 
         certificateExists(tokenId) 
-        returns (uint256[] memory) 
+        returns (VerificationAttempt[] memory) 
     {
-        uint256[] memory chain = new uint256[](10); // Max chain length
-        uint256 current = tokenId;
-        uint256 count = 0;
-        
-        // Follow the renewal chain backwards
-        while (current != 0 && count < 10) {
-            chain[count] = current;
-            current = certificates[current].renewalOf;
-            count++;
-        }
-        
-        // Resize array to actual length
-        uint256[] memory result = new uint256[](count);
-        for (uint256 i = 0; i < count; i++) {
-            result[i] = chain[i];
-        }
-        
-        return result;
+        return verificationHistory[tokenId];
     }
     
+    /**
+     * @dev Official verification by authorized verifier
+     * @param tokenId Token ID to verify
+     * @param status Verification status
+     */
+    function officiallyVerify(uint256 tokenId, bool status) external {
+        if (!hasRole(VERIFIER_ROLE, msg.sender)) revert AccessDenied(VERIFIER_ROLE);
+        if (!_exists(tokenId)) revert CertificateDoesNotExist();
+        
+        officialVerifications[tokenId][msg.sender] = status ? VerificationStatus.Verified : VerificationStatus.Rejected;
+        
+        emit OfficialVerification(tokenId, msg.sender, status, block.timestamp);
+    }
+    
+    /**
+     * @dev Get official verification status
+     * @param tokenId Token ID
+     * @param verifier Verifier address
+     * @return Verification status
+     */
+    function getOfficialVerification(uint256 tokenId, address verifier) 
+        external 
+        view 
+        certificateExists(tokenId) 
+        returns (VerificationStatus) 
+    {
+        return officialVerifications[tokenId][verifier];
+    }
+    
+    // ============ SOULBOUND TOKEN UTILITIES ============
+    
+    /**
+     * @dev Check if a token transfer is allowed
+     * @param from Source address
+     * @param to Destination address
+     * @param tokenId Token ID
+     * @return True if transfer is allowed
+     */
+    function isTransferAllowed(address from, address to, uint256 tokenId) 
+        external 
+        view 
+        certificateExists(tokenId) 
+        returns (bool) 
+    {
+        // Allow minting (from == 0) and claiming (from == address(this))
+        if (from == address(0) || from == address(this)) {
+            return true;
+        }
+        
+        // Block all other transfers for soulbound characteristics
+        return false;
+    }
+    
+    /**
+     * @dev Get token transfer restrictions info
+     * @param tokenId Token ID
+     * @return isSoulbound Whether token is soulbound
+     * @return canTransfer Whether token can be transferred
+     * @return currentOwner Current owner address
+     */
+    function getTransferInfo(uint256 tokenId) 
+        external 
+        view 
+        certificateExists(tokenId) 
+        returns (bool isSoulbound, bool canTransfer, address currentOwner) 
+    {
+        currentOwner = ownerOf(tokenId);
+        isSoulbound = true; // All certificates are soulbound
+        canTransfer = false; // Transfers are not allowed except minting/claiming
+    }
+    
+    // ============ ANALYTICS AND REPORTING ============
+    
+    /**
+     * @dev Get issuance statistics for a time period
+     * @param fromTime Start timestamp
+     * @param toTime End timestamp
+     * @return Issuance statistics
+     */
+    function getIssuanceStats(uint256 fromTime, uint256 toTime) 
+        external 
+        view 
+        returns (IssuanceStats memory) 
+    {
+        if (fromTime > toTime) revert InvalidTimeRange();
+        
+        IssuanceStats memory stats;
+        stats.totalIssued = _tokenIdCounter;
+        stats.periodStart = fromTime;
+        stats.periodEnd = toTime;
+        
+        // Count revoked certificates
+        uint256 revokedCount = 0;
+        for (uint256 i = 1; i <= _tokenIdCounter; i++) {
+            if (certificates[i].isRevoked) {
+                revokedCount++;
+            }
+        }
+        
+        stats.totalRevoked = revokedCount;
+        stats.activeCount = stats.totalIssued - stats.totalRevoked;
+        
+        return stats;
+    }
+    
+    /**
+     * @dev Get verification statistics for a time period
+     * @param fromTime Start timestamp
+     * @param toTime End timestamp
+     * @return Verification statistics
+     */
+    function getVerificationStats(uint256 fromTime, uint256 toTime) 
+        external 
+        view 
+        returns (VerificationStats memory) 
+    {
+        if (fromTime > toTime) revert InvalidTimeRange();
+        
+        VerificationStats memory stats;
+        stats.totalVerifications = analyticsCounters["totalVerifications"];
+        stats.uniqueVerifications = analyticsCounters["uniqueVerifications"];
+        stats.periodStart = fromTime;
+        stats.periodEnd = toTime;
+        
+        if (stats.uniqueVerifications > 0) {
+            stats.averageVerificationsPerCertificate = stats.totalVerifications / stats.uniqueVerifications;
+        }
+        
+        return stats;
+    }
+    
+    /**
+     * @dev Generate a comprehensive report
+     * @param reportType Type of report to generate
+     * @param periodStart Start of reporting period
+     * @param periodEnd End of reporting period
+     * @return Encoded report data
+     */
+    function generateReport(string memory reportType, uint256 periodStart, uint256 periodEnd) 
+        external 
+        view 
+        returns (bytes memory) 
+    {
+        if (periodStart > periodEnd) revert InvalidTimeRange();
+        
+        // Generate basic report data
+        IssuanceStats memory issuanceStats = this.getIssuanceStats(periodStart, periodEnd);
+        VerificationStats memory verificationStats = this.getVerificationStats(periodStart, periodEnd);
+        
+        // In a real implementation, this would format the data appropriately
+        bytes memory reportData = abi.encode(issuanceStats, verificationStats);
+        
+        emit ReportGenerated(reportType, periodStart, periodEnd, block.timestamp);
+        
+        return reportData;
+    }
+    
+    /**
+     * @dev Get analytics counter value
+     * @param metricType Type of metric
+     * @return Current counter value
+     */
+    function getAnalyticsCounter(string memory metricType) external view returns (uint256) {
+        return analyticsCounters[metricType];
+    }
+    
+    /**
+     * @dev Get system status overview
+     * @return totalCertificates Total certificates issued
+     * @return totalInstitutions Total registered institutions
+     * @return totalTemplates Total templates created
+     * @return contractPaused Whether contract is paused
+     */
+    function getSystemStatus() 
+        external 
+        view 
+        returns (
+            uint256 totalCertificates,
+            uint256 totalInstitutions,
+            uint256 totalTemplates,
+            bool contractPaused
+        ) 
+    {
+        totalCertificates = _tokenIdCounter;
+        totalInstitutions = institutionAddresses.length;
+        totalTemplates = _templateIdCounter;
+        contractPaused = paused();
+    }
+    
+    // ============ CERTIFICATE LIFECYCLE MANAGEMENT ============
+    
+    /**
+     * @dev Check certificate expiration status
+     * @param tokenId Token ID to check
+     * @return isExpired Whether certificate is expired
+     * @return expirationDate Expiration timestamp
+     * @return daysUntilExpiration Days until expiration (0 if expired)
+     */
     function checkCertificateExpiration(uint256 tokenId) 
         external 
         view 
@@ -816,37 +1284,47 @@ contract CertificateNFT is ERC721URIStorage, Pausable, AccessControlEnumerable, 
             daysUntilExpiration = 0;
         }
     }
-
-    // Enhanced Error Handling and Debugging
-    function getSystemStatus() 
-        external 
-        view 
-        returns (
-            uint256 totalCertificates,
-            uint256 totalInstitutions,
-            uint256 totalTemplates,
-            uint256 pendingOperations,
-            bool contractPaused,
-            uint256 currentSignatureThreshold
-        ) 
-    {
-        totalCertificates = _tokenIdCounter;
-        totalInstitutions = institutionAddresses.length;
-        totalTemplates = _templateIdCounter;
-        
-        // Count pending operations
-        uint256 pending = 0;
-        for (uint256 i = 1; i <= _operationIdCounter; i++) {
-            if (!pendingOperations[i].executed) {
-                pending++;
-            }
+    
+    /**
+     * @dev Update certificate metadata URI
+     * @param tokenId Token ID
+     * @param newTokenURI New metadata URI
+     */
+    function updateTokenURI(uint256 tokenId, string memory newTokenURI) external whenNotPaused {
+        Certificate storage cert = certificates[tokenId];
+        if (msg.sender != cert.issuingInstitution && !hasRole(ADMIN_ROLE, msg.sender)) {
+            revert NotIssuingInstitution();
         }
-        pendingOperations = pending;
+        if (bytes(newTokenURI).length == 0) revert InvalidTokenURI();
         
-        contractPaused = paused();
-        currentSignatureThreshold = signatureThreshold;
+        cert.version++;
+        _setTokenURI(tokenId, newTokenURI);
+        
+        emit MetadataVersioned(tokenId, cert.version, newTokenURI);
     }
     
+    /**
+     * @dev Get certificates by range
+     * @param start Start token ID
+     * @param end End token ID
+     * @return Array of certificates
+     */
+    function getCertificatesByRange(uint256 start, uint256 end) external view returns (Certificate[] memory) {
+        if (start > end || end > _tokenIdCounter) revert InvalidIndex();
+        uint256 size = end - start + 1;
+        Certificate[] memory result = new Certificate[](size);
+        for (uint256 i = 0; i < size; i++) {
+            result[i] = certificates[start + i];
+        }
+        return result;
+    }
+    
+    /**
+     * @dev Validate certificate data
+     * @param data Certificate data to validate
+     * @return isValid Whether data is valid
+     * @return errors Array of validation errors
+     */
     function validateCertificateData(CertificateData memory data) 
         external 
         pure 
@@ -883,120 +1361,54 @@ contract CertificateNFT is ERC721URIStorage, Pausable, AccessControlEnumerable, 
         
         return (errorCount == 0, finalErrors);
     }
-
-    // Standardized API Functions with Consistent Patterns
-    function getInstitutionInfo(address institutionAddress) 
+    
+    // ============ ADDITIONAL UTILITIES ============
+    
+    /**
+     * @dev Generate audit report for security events
+     * @param fromTime Start timestamp
+     * @param toTime End timestamp
+     * @return Encoded audit data
+     */
+    function generateAuditReport(uint256 fromTime, uint256 toTime) 
         external 
         view 
-        returns (
-            Institution memory institution,
-            uint256[] memory templateIds,
-            uint256[] memory certificateIds,
-            bool isRegistered,
-            bool isAuthorized
-        ) 
+        returns (bytes memory) 
     {
-        isRegistered = registeredInstitutions[institutionAddress];
+        if (fromTime > toTime) revert InvalidTimeRange();
         
-        if (!isRegistered) {
-            return (institution, templateIds, certificateIds, false, false);
-        }
+        // Collect audit data
+        uint256 totalCertificates = _tokenIdCounter;
+        uint256 totalInstitutions = institutionAddresses.length;
+        uint256 totalTemplates = _templateIdCounter;
         
-        institution = institutions[institutionAddress];
-        templateIds = institutionTemplates[institutionAddress];
-        certificateIds = institutionCertificates[institutionAddress];
-        isAuthorized = institution.isAuthorized;
-    }
-    
-    function getCertificateInfo(uint256 tokenId) 
-        external 
-        view 
-        returns (
-            Certificate memory certificate,
-            bool exists,
-            bool isValid,
-            string memory verificationCode,
-            uint256 verificationCount
-        ) 
-    {
-        exists = _exists(tokenId);
+        // Security metrics
+        uint256 totalVerifications = securityMetrics["verification"];
+        uint256 totalRevocations = securityMetrics["revocation"];
+        uint256 totalAmendments = securityMetrics["amendment"];
         
-        if (!exists) {
-            return (certificate, false, false, "", 0);
-        }
-        
-        certificate = certificates[tokenId];
-        verificationCode = verificationCodes[tokenId];
-        verificationCount = verificationCounts[tokenId];
-        
-        isValid = !certificate.isRevoked && 
-                  (certificate.expirationDate == 0 || block.timestamp < certificate.expirationDate);
-    }
-    
-    function getTemplateInfo(uint256 templateId) 
-        external 
-        view 
-        returns (
-            CertificateTemplate memory template,
-            bool exists,
-            bool isActive,
-            uint256 usageCount
-        ) 
-    {
-        exists = templates[templateId].id != 0;
-        
-        if (!exists) {
-            return (template, false, false, 0);
-        }
-        
-        template = templates[templateId];
-        isActive = activeTemplates[templateId];
-        
-        // Count how many certificates use this template
-        usageCount = 0;
-        for (uint256 i = 1; i <= _tokenIdCounter; i++) {
-            if (certificates[i].templateId == templateId) {
-                usageCount++;
-            }
-        }
-    }
-    
-    // Backwards Compatibility Functions
-    function verifyCertificate(uint256 tokenId) 
-        external 
-        view 
-        certificateExists(tokenId) 
-        returns (Certificate memory certificate, bool isValid) 
-    {
-        Certificate memory cert = certificates[tokenId];
-        bool valid = !cert.isRevoked && _exists(tokenId) && (cert.expirationDate == 0 || block.timestamp < cert.expirationDate);
-        return (cert, valid);
-    }
-
-    // Security and Audit Enhancement Functions
-    mapping(bytes32 => bool) public auditTrail;
-    mapping(address => uint256) public lastAccessTime;
-    mapping(string => uint256) public securityMetrics;
-    
-    function logSecurityEvent(
-        string memory eventType,
-        address actor,
-        bytes memory eventData
-    ) internal {
-        bytes32 eventHash = keccak256(abi.encodePacked(
-            eventType,
-            actor,
-            eventData,
+        // Encode audit report
+        bytes memory auditData = abi.encode(
+            totalCertificates,
+            totalInstitutions,
+            totalTemplates,
+            totalVerifications,
+            totalRevocations,
+            totalAmendments,
+            fromTime,
+            toTime,
             block.timestamp
-        ));
+        );
         
-        auditTrail[eventHash] = true;
-        lastAccessTime[actor] = block.timestamp;
-        securityMetrics[eventType]++;
-        
-        emit AnalyticsUpdated(eventType, securityMetrics[eventType], block.timestamp);
+        return auditData;
     }
     
+    /**
+     * @dev Validate data integrity for a certificate
+     * @param tokenId Token ID to validate
+     * @return isValid Whether certificate data is valid
+     * @return issues Array of integrity issues found
+     */
     function validateDataIntegrity(uint256 tokenId) 
         external 
         view 
@@ -1037,187 +1449,12 @@ contract CertificateNFT is ERC721URIStorage, Pausable, AccessControlEnumerable, 
         return (issueCount == 0, finalIssues);
     }
     
-    function generateAuditReport(uint256 fromTime, uint256 toTime) 
-        external 
-        view 
-        returns (bytes memory) 
-    {
-        if (fromTime > toTime) revert InvalidTimeRange();
-        
-        // Collect audit data
-        uint256 totalCertificates = _tokenIdCounter;
-        uint256 totalInstitutions = institutionAddresses.length;
-        uint256 totalTemplates = _templateIdCounter;
-        uint256 totalOperations = _operationIdCounter;
-        
-        // Security metrics
-        uint256 totalVerifications = securityMetrics["verification"];
-        uint256 totalRevocations = securityMetrics["revocation"];
-        uint256 totalAmendments = securityMetrics["amendment"];
-        
-        // Encode audit report
-        bytes memory auditData = abi.encode(
-            totalCertificates,
-            totalInstitutions,
-            totalTemplates,
-            totalOperations,
-            totalVerifications,
-            totalRevocations,
-            totalAmendments,
-            fromTime,
-            toTime,
-            block.timestamp
-        );
-        
-        return auditData;
-    }
-
-    function updateTokenURI(uint256 tokenId, string memory newTokenURI) external whenNotPaused {
-        Certificate storage cert = certificates[tokenId];
-        if (msg.sender != owner() && msg.sender != cert.issuingInstitution) {
-            revert NotIssuingInstitution();
-        }
-        if (bytes(newTokenURI).length == 0) revert InvalidTokenURI();
-        
-        cert.version++;
-        _setTokenURI(tokenId, newTokenURI);
-        
-        emit MetadataVersioned(tokenId, cert.version, newTokenURI);
-    }
-    
-    function officiallyVerify(uint256 tokenId, bool status) external {
-        if (!hasRole(VERIFIER_ROLE, msg.sender)) revert AccessDenied(VERIFIER_ROLE);
-        if (!_exists(tokenId)) revert CertificateDoesNotExist();
-        
-        officialVerifications[tokenId][msg.sender] = status ? VerificationStatus.Verified : VerificationStatus.Rejected;
-        
-        emit OfficialVerification(tokenId, msg.sender, status, block.timestamp);
-    }
-
-    function batchRevoke(uint256[] calldata tokenIds, string memory reason) external whenNotPaused {
-        if (tokenIds.length == 0 || tokenIds.length > MAX_BATCH_SIZE) revert BatchSizeCheckFailed();
-        for (uint256 i = 0; i < tokenIds.length; i++) {
-            _revokeCertificate(tokenIds[i], reason);
-        }
-    }
-
-    function revokeCertificate(uint256 tokenId, string memory reason) external whenNotPaused {
-        _revokeCertificate(tokenId, reason);
-    }
-
-    function _revokeCertificate(uint256 tokenId, string memory reason) internal {
-        Certificate storage cert = certificates[tokenId];
-        if (!_exists(tokenId)) revert CertificateDoesNotExist();
-        if (cert.issuingInstitution != msg.sender && !hasRole(ADMIN_ROLE, msg.sender)) revert NotIssuingInstitution();
-        if (cert.isRevoked) revert CertificateAlreadyRevoked();
-        if (bytes(reason).length == 0) revert EmptyString();
-
-        cert.isRevoked = true;
-        cert.revocationDate = block.timestamp;
-        cert.revocationReason = reason;
-
-        // Update analytics
-        updateAnalytics("totalRevocations", 1);
-        updateAnalytics("revocationsThisMonth", 1);
-        
-        // Log security event
-        logSecurityEvent("certificate_revoked", msg.sender, abi.encodePacked(tokenId, reason));
-
-        emit CertificateRevoked(tokenId, msg.sender, reason, block.timestamp);
-    }
-    
-    function isRevoked(uint256 tokenId) external view certificateExists(tokenId) returns (bool) {
-        return certificates[tokenId].isRevoked;
-    }
-
-    function verifyCertificate(uint256 tokenId) 
-        external 
-        view 
-        certificateExists(tokenId) 
-        returns (Certificate memory certificate, bool isValid) 
-    {
-        Certificate memory cert = certificates[tokenId];
-        bool valid = !cert.isRevoked && (cert.expirationDate == 0 || block.timestamp < cert.expirationDate);
-        return (cert, valid);
-    }
-    
-    function getCertificatesByRange(uint256 start, uint256 end) external view returns (Certificate[] memory) {
-        if (start > end || end > _tokenIdCounter) revert InvalidIndex();
-        uint256 size = end - start + 1;
-        Certificate[] memory result = new Certificate[](size);
-        for (uint256 i = 0; i < size; i++) {
-            result[i] = certificates[start + i];
-        }
-        return result;
-    }
-
-    function getCertificatesByStudent(address student) 
-        external 
-        view 
-        returns (uint256[] memory) 
-    {
-        return studentCertificates[student];
-    }
-    
-    function getCertificatesByInstitution(address institution) 
-        external 
-        view 
-        returns (uint256[] memory) 
-    {
-        return institutionCertificates[institution];
-    }
-    
-    function getInstitution(address _addr) 
-        external 
-        view 
-        returns (Institution memory) 
-    {
-        if (!registeredInstitutions[_addr]) revert InstitutionNotRegistered();
-        return institutions[_addr];
-    }
-
-    function getCertificate(uint256 tokenId) 
-        external 
-        view 
-        certificateExists(tokenId) 
-        returns (Certificate memory) 
-    {
-        return certificates[tokenId];
-    }
-
-    function getTotalCertificatesIssued() external view returns (uint256) {
-        return _tokenIdCounter;
-    }
-    
+    /**
+     * @dev Emergency function to get contract owner
+     * @return Current contract owner (first admin)
+     */
     function owner() public view returns (address) {
-        if (getRoleMemberCount(ADMIN_ROLE) == 0) return address(0);
-        return getRoleMember(ADMIN_ROLE, 0);
-    }
-
-    function _exists(uint256 tokenId) internal view override returns (bool) {
-        return _ownerOf(tokenId) != address(0);
-    }
-    
-    function _beforeTokenTransfer(
-        address from,
-        address to,
-        uint256 firstTokenId,
-        uint256 batchSize
-    ) internal virtual override {
-        super._beforeTokenTransfer(from, to, firstTokenId, batchSize);
-        
-        // Allow minting (from == 0) and claiming (from == address(this))
-        if (from != address(0) && from != address(this) && to != address(0)) {
-            revert SoulboundTokenNoTransfer();
-        }
-
-        if (from != address(0)) {
-            if (certificates[firstTokenId].isRevoked) revert CertificateAlreadyRevoked();
-        }
-    }
-
-    function supportsInterface(bytes4 interfaceId) public view virtual override(ERC721URIStorage, AccessControlEnumerable) returns (bool) {
-        return super.supportsInterface(interfaceId);
+        if (getRoleMemberCount(DEFAULT_ADMIN_ROLE) == 0) return address(0);
+        return getRoleMember(DEFAULT_ADMIN_ROLE, 0);
     }
 }
-
