@@ -2471,5 +2471,84 @@ contract CertificationNftTest is Test {
         assertEq(cert1.cgpa, "3.5");
         assertEq(cert2.cgpa, "4.0");
     }
+    
+    // ============ Token URI and NFT Metadata Tests ============
+    
+    function test_TokenURI_SetCorrectly() public {
+        _setupAuthorizedInstitution(institution1);
+        
+        string memory expectedURI = "https://ipfs.io/ipfs/QmTestToken123";
+        CertificateData memory certData = CertificateData({
+            studentWallet: student1,
+            studentName: "John Doe",
+            studentID: "STU-001",
+            degreeTitle: "Bachelor of Science",
+            grade: Classification.FirstClass,
+            duration: "4 years",
+            cgpa: "3.8",
+            faculty: Faculty.Engineering,
+            tokenURI: expectedURI
+        });
+        
+        uint256 tokenId = _issueCertificate(institution1, certData);
+        
+        // Verify token URI is set
+        string memory actualURI = certNFT.tokenURI(tokenId);
+        assertEq(actualURI, expectedURI);
+    }
+    
+    function test_TokenURI_DifferentURIsForDifferentCertificates() public {
+        _setupAuthorizedInstitution(institution1);
+        
+        string memory uri1 = "https://ipfs.io/ipfs/QmToken1";
+        string memory uri2 = "https://ipfs.io/ipfs/QmToken2";
+        
+        CertificateData memory certData1 = CertificateData({
+            studentWallet: student1,
+            studentName: "John Doe",
+            studentID: "STU-001",
+            degreeTitle: "Degree",
+            grade: Classification.FirstClass,
+            duration: "4 years",
+            cgpa: "3.5",
+            faculty: Faculty.Engineering,
+            tokenURI: uri1
+        });
+        
+        CertificateData memory certData2 = CertificateData({
+            studentWallet: student2,
+            studentName: "Jane Smith",
+            studentID: "STU-002",
+            degreeTitle: "Degree",
+            grade: Classification.FirstClass,
+            duration: "4 years",
+            cgpa: "3.5",
+            faculty: Faculty.Engineering,
+            tokenURI: uri2
+        });
+        
+        uint256 tokenId1 = _issueCertificate(institution1, certData1);
+        uint256 tokenId2 = _issueCertificate(institution1, certData2);
+        
+        assertEq(certNFT.tokenURI(tokenId1), uri1);
+        assertEq(certNFT.tokenURI(tokenId2), uri2);
+    }
+    
+    function test_NFTOwnership_MatchesStudentWallet() public {
+        _setupAuthorizedInstitution(institution1);
+        
+        CertificateData memory certData = _createCertificateData(
+            student1,
+            "John Doe",
+            "STU-001",
+            "Bachelor of Science"
+        );
+        
+        uint256 tokenId = _issueCertificate(institution1, certData);
+        
+        // NFT should be owned by student
+        assertEq(certNFT.ownerOf(tokenId), student1);
+        assertEq(certNFT.balanceOf(student1), 1);
+    }
 }
 
