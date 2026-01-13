@@ -2405,5 +2405,71 @@ contract CertificationNftTest is Test {
         assertTrue(certNFT.isRevoked(tokenId1));
         assertTrue(certNFT.isRevoked(tokenId2));
     }
+    
+    // ============ Additional Edge Cases for Certificate Data Validation ============
+    
+    function test_EdgeCase_CertificateData_AllFieldsSet() public {
+        _setupAuthorizedInstitution(institution1);
+        
+        CertificateData memory certData = CertificateData({
+            studentWallet: student1,
+            studentName: "John Doe",
+            studentID: "STU-001",
+            degreeTitle: "Bachelor of Science in Computer Science",
+            grade: Classification.FirstClass,
+            duration: "4 years",
+            cgpa: "3.95",
+            faculty: Faculty.Engineering,
+            tokenURI: "https://ipfs.io/ipfs/QmExample123"
+        });
+        
+        uint256 tokenId = _issueCertificate(institution1, certData);
+        
+        Certificate memory cert = certNFT.getCertificate(tokenId);
+        assertEq(cert.studentName, "John Doe");
+        assertEq(cert.studentID, "STU-001");
+        assertEq(cert.degreeTitle, "Bachelor of Science in Computer Science");
+        assertEq(cert.duration, "4 years");
+        assertEq(cert.cgpa, "3.95");
+        assertTrue(uint8(cert.grade) == uint8(Classification.FirstClass));
+        assertTrue(uint8(cert.faculty) == uint8(Faculty.Engineering));
+    }
+    
+    function test_EdgeCase_CertificateData_DifferentCGPAFormats() public {
+        _setupAuthorizedInstitution(institution1);
+        
+        CertificateData memory certData1 = CertificateData({
+            studentWallet: student1,
+            studentName: "John Doe",
+            studentID: "STU-001",
+            degreeTitle: "Degree",
+            grade: Classification.FirstClass,
+            duration: "4 years",
+            cgpa: "3.5",
+            faculty: Faculty.Engineering,
+            tokenURI: "https://ipfs.io/ipfs/Qm1"
+        });
+        
+        CertificateData memory certData2 = CertificateData({
+            studentWallet: student2,
+            studentName: "Jane Smith",
+            studentID: "STU-002",
+            degreeTitle: "Degree",
+            grade: Classification.FirstClass,
+            duration: "4 years",
+            cgpa: "4.0",
+            faculty: Faculty.Engineering,
+            tokenURI: "https://ipfs.io/ipfs/Qm2"
+        });
+        
+        uint256 tokenId1 = _issueCertificate(institution1, certData1);
+        uint256 tokenId2 = _issueCertificate(institution1, certData2);
+        
+        Certificate memory cert1 = certNFT.getCertificate(tokenId1);
+        Certificate memory cert2 = certNFT.getCertificate(tokenId2);
+        
+        assertEq(cert1.cgpa, "3.5");
+        assertEq(cert2.cgpa, "4.0");
+    }
 }
 
