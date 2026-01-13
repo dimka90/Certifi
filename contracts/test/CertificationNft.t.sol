@@ -2395,5 +2395,488 @@ contract CertificationNftTest is Test {
         assertTrue(certNFT.isRevoked(tokenId1));
         assertTrue(certNFT.isRevoked(tokenId2));
     }
+    
+    // ============ Additional Edge Cases for Certificate Data Validation ============
+    
+    function test_EdgeCase_CertificateData_AllFieldsSet() public {
+        _setupAuthorizedInstitution(institution1);
+        
+        CertificateData memory certData = CertificateData({
+            studentWallet: student1,
+            studentName: "John Doe",
+            studentID: "STU-001",
+            degreeTitle: "Bachelor of Science in Computer Science",
+            grade: Classification.FirstClass,
+            duration: "4 years",
+            cgpa: "3.95",
+            faculty: Faculty.Engineering,
+            tokenURI: "https://ipfs.io/ipfs/QmExample123"
+        });
+        
+        uint256 tokenId = _issueCertificate(institution1, certData);
+        
+        Certificate memory cert = certNFT.getCertificate(tokenId);
+        assertEq(cert.studentName, "John Doe");
+        assertEq(cert.studentID, "STU-001");
+        assertEq(cert.degreeTitle, "Bachelor of Science in Computer Science");
+        assertEq(cert.duration, "4 years");
+        assertEq(cert.cgpa, "3.95");
+        assertTrue(uint8(cert.grade) == uint8(Classification.FirstClass));
+        assertTrue(uint8(cert.faculty) == uint8(Faculty.Engineering));
+    }
+    
+    function test_EdgeCase_CertificateData_DifferentCGPAFormats() public {
+        _setupAuthorizedInstitution(institution1);
+        
+        CertificateData memory certData1 = CertificateData({
+            studentWallet: student1,
+            studentName: "John Doe",
+            studentID: "STU-001",
+            degreeTitle: "Degree",
+            grade: Classification.FirstClass,
+            duration: "4 years",
+            cgpa: "3.5",
+            faculty: Faculty.Engineering,
+            tokenURI: "https://ipfs.io/ipfs/Qm1"
+        });
+        
+        CertificateData memory certData2 = CertificateData({
+            studentWallet: student2,
+            studentName: "Jane Smith",
+            studentID: "STU-002",
+            degreeTitle: "Degree",
+            grade: Classification.FirstClass,
+            duration: "4 years",
+            cgpa: "4.0",
+            faculty: Faculty.Engineering,
+            tokenURI: "https://ipfs.io/ipfs/Qm2"
+        });
+        
+        uint256 tokenId1 = _issueCertificate(institution1, certData1);
+        uint256 tokenId2 = _issueCertificate(institution1, certData2);
+        
+        Certificate memory cert1 = certNFT.getCertificate(tokenId1);
+        Certificate memory cert2 = certNFT.getCertificate(tokenId2);
+        
+        assertEq(cert1.cgpa, "3.5");
+        assertEq(cert2.cgpa, "4.0");
+    }
+    
+    // ============ Token URI and NFT Metadata Tests ============
+    
+    function test_TokenURI_SetCorrectly() public {
+        _setupAuthorizedInstitution(institution1);
+        
+        string memory expectedURI = "https://ipfs.io/ipfs/QmTestToken123";
+        CertificateData memory certData = CertificateData({
+            studentWallet: student1,
+            studentName: "John Doe",
+            studentID: "STU-001",
+            degreeTitle: "Bachelor of Science",
+            grade: Classification.FirstClass,
+            duration: "4 years",
+            cgpa: "3.8",
+            faculty: Faculty.Engineering,
+            tokenURI: expectedURI
+        });
+        
+        uint256 tokenId = _issueCertificate(institution1, certData);
+        
+        // Verify token URI is set
+        string memory actualURI = certNFT.tokenURI(tokenId);
+        assertEq(actualURI, expectedURI);
+    }
+    
+    function test_TokenURI_DifferentURIsForDifferentCertificates() public {
+        _setupAuthorizedInstitution(institution1);
+        
+        string memory uri1 = "https://ipfs.io/ipfs/QmToken1";
+        string memory uri2 = "https://ipfs.io/ipfs/QmToken2";
+        
+        CertificateData memory certData1 = CertificateData({
+            studentWallet: student1,
+            studentName: "John Doe",
+            studentID: "STU-001",
+            degreeTitle: "Degree",
+            grade: Classification.FirstClass,
+            duration: "4 years",
+            cgpa: "3.5",
+            faculty: Faculty.Engineering,
+            tokenURI: uri1
+        });
+        
+        CertificateData memory certData2 = CertificateData({
+            studentWallet: student2,
+            studentName: "Jane Smith",
+            studentID: "STU-002",
+            degreeTitle: "Degree",
+            grade: Classification.FirstClass,
+            duration: "4 years",
+            cgpa: "3.5",
+            faculty: Faculty.Engineering,
+            tokenURI: uri2
+        });
+        
+        uint256 tokenId1 = _issueCertificate(institution1, certData1);
+        uint256 tokenId2 = _issueCertificate(institution1, certData2);
+        
+        assertEq(certNFT.tokenURI(tokenId1), uri1);
+        assertEq(certNFT.tokenURI(tokenId2), uri2);
+    }
+    
+    function test_NFTOwnership_MatchesStudentWallet() public {
+        _setupAuthorizedInstitution(institution1);
+        
+        CertificateData memory certData = _createCertificateData(
+            student1,
+            "John Doe",
+            "STU-001",
+            "Bachelor of Science"
+        );
+        
+        uint256 tokenId = _issueCertificate(institution1, certData);
+        
+        // NFT should be owned by student
+        assertEq(certNFT.ownerOf(tokenId), student1);
+        assertEq(certNFT.balanceOf(student1), 1);
+    }
+    
+    // ============ Institution Certificate Count Tracking Tests ============
+    
+    function test_InstitutionCount_IncrementsOnIssue() public {
+        _setupAuthorizedInstitution(institution1);
+        
+        Institution memory instBefore = certNFT.getInstitution(institution1);
+        assertEq(instBefore.totalCertificatesIssued, 0);
+        
+        CertificateData memory certData = _createCertificateData(
+            student1,
+            "John Doe",
+            "STU-001",
+            "Bachelor of Science"
+        );
+        
+        _issueCertificate(institution1, certData);
+        
+        Institution memory instAfter = certNFT.getInstitution(institution1);
+        assertEq(instAfter.totalCertificatesIssued, 1);
+    }
+    
+    function test_InstitutionCount_MultipleCertificates() public {
+        _setupAuthorizedInstitution(institution1);
+        
+        // Issue 5 certificates
+        for (uint256 i = 0; i < 5; i++) {
+            CertificateData memory certData = _createCertificateData(
+                address(uint160(i + 700)),
+                string(abi.encodePacked("Student ", i)),
+                string(abi.encodePacked("STU-", i)),
+                "Degree"
+            );
+            _issueCertificate(institution1, certData);
+        }
+        
+        Institution memory inst = certNFT.getInstitution(institution1);
+        assertEq(inst.totalCertificatesIssued, 5);
+    }
+    
+    function test_InstitutionCount_NotAffectedByRevocation() public {
+        _setupAuthorizedInstitution(institution1);
+        
+        CertificateData memory certData = _createCertificateData(
+            student1,
+            "John Doe",
+            "STU-001",
+            "Bachelor of Science"
+        );
+        
+        uint256 tokenId = _issueCertificate(institution1, certData);
+        
+        Institution memory instBefore = certNFT.getInstitution(institution1);
+        assertEq(instBefore.totalCertificatesIssued, 1);
+        
+        // Revoke certificate
+        vm.prank(institution1);
+        certNFT.revokeCertificate(tokenId, "Revocation");
+        
+        // Count should remain the same
+        Institution memory instAfter = certNFT.getInstitution(institution1);
+        assertEq(instAfter.totalCertificatesIssued, 1);
+    }
+    
+    // ============ Complex Multi-Student Scenarios ============
+    
+    function test_MultiStudent_OneStudentMultipleCertificates() public {
+        _setupAuthorizedInstitution(institution1);
+        
+        address student = student1;
+        uint256[] memory tokenIds = new uint256[](3);
+        
+        for (uint256 i = 0; i < 3; i++) {
+            CertificateData memory certData = _createCertificateData(
+                student,
+                "John Doe",
+                string(abi.encodePacked("STU-", i)),
+                string(abi.encodePacked("Degree ", i))
+            );
+            tokenIds[i] = _issueCertificate(institution1, certData);
+        }
+        
+        uint256[] memory studentCerts = certNFT.getCertificatesByStudent(student);
+        assertEq(studentCerts.length, 3);
+        
+        for (uint256 i = 0; i < 3; i++) {
+            assertEq(studentCerts[i], tokenIds[i]);
+        }
+    }
+    
+    function test_MultiStudent_MultipleStudentsOneInstitution() public {
+        _setupAuthorizedInstitution(institution1);
+        
+        address[] memory students = new address[](5);
+        for (uint256 i = 0; i < 5; i++) {
+            students[i] = address(uint160(i + 800));
+            CertificateData memory certData = _createCertificateData(
+                students[i],
+                string(abi.encodePacked("Student ", i)),
+                string(abi.encodePacked("STU-", i)),
+                "Degree"
+            );
+            _issueCertificate(institution1, certData);
+        }
+        
+        assertEq(certNFT.getCertificatesByInstitution(institution1).length, 5);
+        
+        for (uint256 i = 0; i < 5; i++) {
+            assertEq(certNFT.getCertificatesByStudent(students[i]).length, 1);
+        }
+    }
+    
+    // ============ Date and Timestamp Validation Tests ============
+    
+    function test_Timestamp_IssueDateSetCorrectly() public {
+        _setupAuthorizedInstitution(institution1);
+        
+        uint256 beforeTime = block.timestamp;
+        vm.warp(beforeTime);
+        
+        CertificateData memory certData = _createCertificateData(
+            student1,
+            "John Doe",
+            "STU-001",
+            "Bachelor of Science"
+        );
+        
+        uint256 tokenId = _issueCertificate(institution1, certData);
+        
+        Certificate memory cert = certNFT.getCertificate(tokenId);
+        assertEq(cert.issueDate, beforeTime);
+    }
+    
+    function test_Timestamp_RevocationDateSetCorrectly() public {
+        _setupAuthorizedInstitution(institution1);
+        
+        uint256 issueTime = block.timestamp;
+        vm.warp(issueTime);
+        
+        CertificateData memory certData = _createCertificateData(
+            student1,
+            "John Doe",
+            "STU-001",
+            "Bachelor of Science"
+        );
+        
+        uint256 tokenId = _issueCertificate(institution1, certData);
+        
+        // Advance time before revocation
+        uint256 revokeTime = issueTime + 100;
+        vm.warp(revokeTime);
+        
+        vm.prank(institution1);
+        certNFT.revokeCertificate(tokenId, "Revocation reason");
+        
+        Certificate memory cert = certNFT.getCertificate(tokenId);
+        assertEq(cert.revocationDate, revokeTime);
+        assertGt(cert.revocationDate, cert.issueDate);
+    }
+    
+    // ============ Empty String Edge Cases ============
+    
+    function test_EmptyString_StudentIDCanBeEmpty() public {
+        _setupAuthorizedInstitution(institution1);
+        
+        CertificateData memory certData = CertificateData({
+            studentWallet: student1,
+            studentName: "John Doe",
+            studentID: "", // Empty student ID is allowed
+            degreeTitle: "Bachelor of Science",
+            grade: Classification.FirstClass,
+            duration: "4 years",
+            cgpa: "3.5",
+            faculty: Faculty.Engineering,
+            tokenURI: "https://ipfs.io/ipfs/QmTest"
+        });
+        
+        uint256 tokenId = _issueCertificate(institution1, certData);
+        Certificate memory cert = certNFT.getCertificate(tokenId);
+        assertEq(cert.studentID, "");
+    }
+    
+    function test_EmptyString_DurationAndCGPA() public {
+        _setupAuthorizedInstitution(institution1);
+        
+        CertificateData memory certData = CertificateData({
+            studentWallet: student1,
+            studentName: "John Doe",
+            studentID: "STU-001",
+            degreeTitle: "Bachelor of Science",
+            grade: Classification.FirstClass,
+            duration: "", // Empty duration
+            cgpa: "", // Empty CGPA
+            faculty: Faculty.Engineering,
+            tokenURI: "https://ipfs.io/ipfs/QmTest"
+        });
+        
+        uint256 tokenId = _issueCertificate(institution1, certData);
+        Certificate memory cert = certNFT.getCertificate(tokenId);
+        assertEq(cert.duration, "");
+        assertEq(cert.cgpa, "");
+    }
+    
+    // ============ Address Zero Validation Tests ============
+    
+    function test_AddressZero_TransferOwnershipReverts() public {
+        // Cannot transfer ownership to zero address
+        vm.expectRevert();
+        certNFT.transferOwnership(address(0));
+        
+        // Owner should still be the same
+        assertEq(certNFT.owner(), owner);
+    }
+    
+    function test_AddressZero_IssueCertificateReverts() public {
+        _setupAuthorizedInstitution(institution1);
+        
+        CertificateData memory certData = CertificateData({
+            studentWallet: address(0), // Zero address
+            studentName: "John Doe",
+            studentID: "STU-001",
+            degreeTitle: "Bachelor of Science",
+            grade: Classification.FirstClass,
+            duration: "4 years",
+            cgpa: "3.5",
+            faculty: Faculty.Engineering,
+            tokenURI: "https://ipfs.io/ipfs/QmTest"
+        });
+        
+        vm.expectRevert();
+        vm.prank(institution1);
+        certNFT.issueCertificate(certData);
+    }
+    
+    // ============ Concurrent Operations Tests ============
+    
+    function test_Concurrent_MultipleInstitutionsIssuing() public {
+        _setupAuthorizedInstitution(institution1);
+        _setupAuthorizedInstitution(institution2);
+        
+        // Both institutions issue certificates simultaneously
+        CertificateData memory certData1 = _createCertificateData(
+            student1,
+            "John Doe",
+            "STU-001",
+            "Bachelor of Science"
+        );
+        
+        CertificateData memory certData2 = _createCertificateData(
+            student2,
+            "Jane Smith",
+            "STU-002",
+            "Master of Arts"
+        );
+        
+        uint256 tokenId1 = _issueCertificate(institution1, certData1);
+        uint256 tokenId2 = _issueCertificate(institution2, certData2);
+        
+        // Both should succeed with sequential token IDs
+        assertEq(tokenId1, 1);
+        assertEq(tokenId2, 2);
+        assertEq(certNFT.getTotalCertificatesIssued(), 2);
+    }
+    
+    function test_Concurrent_IssueAndRevoke() public {
+        _setupAuthorizedInstitution(institution1);
+        
+        CertificateData memory certData1 = _createCertificateData(
+            student1,
+            "John Doe",
+            "STU-001",
+            "Bachelor of Science"
+        );
+        
+        uint256 tokenId1 = _issueCertificate(institution1, certData1);
+        
+        // Issue another while first is still valid
+        CertificateData memory certData2 = _createCertificateData(
+            student2,
+            "Jane Smith",
+            "STU-002",
+            "Master of Arts"
+        );
+        
+        uint256 tokenId2 = _issueCertificate(institution1, certData2);
+        
+        // Revoke first, second should remain valid
+        vm.prank(institution1);
+        certNFT.revokeCertificate(tokenId1, "Revocation");
+        
+        assertTrue(certNFT.isRevoked(tokenId1));
+        assertFalse(certNFT.isRevoked(tokenId2));
+    }
+    
+    // ============ Final Validation Tests ============
+    
+    function test_Validation_CompleteCertificateDataIntegrity() public {
+        _setupAuthorizedInstitution(institution1);
+        
+        CertificateData memory certData = CertificateData({
+            studentWallet: student1,
+            studentName: "John Doe",
+            studentID: "STU-001",
+            degreeTitle: "Bachelor of Science",
+            grade: Classification.FirstClass,
+            duration: "4 years",
+            cgpa: "3.95",
+            faculty: Faculty.Engineering,
+            tokenURI: "https://ipfs.io/ipfs/QmTest123"
+        });
+        
+        uint256 tokenId = _issueCertificate(institution1, certData);
+        
+        Certificate memory cert = certNFT.getCertificate(tokenId);
+        (Certificate memory verifiedCert, bool isValid) = certNFT.verifyCertificate(tokenId);
+        
+        // Verify all data matches
+        assertEq(cert.studentName, verifiedCert.studentName);
+        assertEq(cert.studentID, verifiedCert.studentID);
+        assertEq(cert.degreeTitle, verifiedCert.degreeTitle);
+        assertTrue(isValid);
+    }
+    
+    function test_Validation_InstitutionDataConsistency() public {
+        _registerInstitution(
+            institution1,
+            INSTITUTION_NAME,
+            INSTITUTION_ID,
+            INSTITUTION_EMAIL,
+            INSTITUTION_COUNTRY,
+            InstitutionType.University
+        );
+        
+        Institution memory inst1 = certNFT.getInstitution(institution1);
+        assertTrue(certNFT.registeredInstitutions(institution1));
+        assertEq(inst1.name, INSTITUTION_NAME);
+        assertEq(inst1.institutionID, INSTITUTION_ID);
+    }
 }
 
