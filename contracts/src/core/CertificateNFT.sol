@@ -614,4 +614,89 @@ contract CertificateNFT is ERC721URIStorage, Pausable, AccessControlEnumerable, 
         analyticsCounters[metricType] += value;
         emit AnalyticsUpdated(metricType, analyticsCounters[metricType], block.timestamp);
     }
+    
+    /**
+     * @dev Issue a single certificate (public interface)
+     * @param data Certificate data
+     * @return Token ID of the issued certificate
+     */
+    function issueCertificate(
+        CertificateData memory data
+    ) external onlyAuthorizedInstitution returns (uint256) {
+        return _issueCertificate(data);
+    }
+    
+    /**
+     * @dev Get certificate information
+     * @param tokenId Token ID
+     * @return certificate Certificate data
+     * @return exists Whether certificate exists
+     * @return isValid Whether certificate is valid (not revoked, not expired)
+     * @return verificationCode Verification code for the certificate
+     * @return verificationCount Number of times certificate has been verified
+     */
+    function getCertificateInfo(uint256 tokenId) 
+        external 
+        view 
+        returns (
+            Certificate memory certificate,
+            bool exists,
+            bool isValid,
+            string memory verificationCode,
+            uint256 verificationCount
+        ) 
+    {
+        exists = _exists(tokenId);
+        
+        if (!exists) {
+            return (certificate, false, false, "", 0);
+        }
+        
+        certificate = certificates[tokenId];
+        verificationCode = verificationCodes[tokenId];
+        verificationCount = verificationCounts[tokenId];
+        
+        isValid = !certificate.isRevoked && 
+                  (certificate.expirationDate == 0 || block.timestamp < certificate.expirationDate);
+    }
+    
+    /**
+     * @dev Get certificate by token ID
+     * @param tokenId Token ID
+     * @return Certificate data
+     */
+    function getCertificate(uint256 tokenId) 
+        external 
+        view 
+        certificateExists(tokenId) 
+        returns (Certificate memory) 
+    {
+        return certificates[tokenId];
+    }
+    
+    /**
+     * @dev Get certificates owned by a student
+     * @param student Student address
+     * @return Array of token IDs
+     */
+    function getCertificatesByStudent(address student) 
+        external 
+        view 
+        returns (uint256[] memory) 
+    {
+        return studentCertificates[student];
+    }
+    
+    /**
+     * @dev Get certificates issued by an institution
+     * @param institution Institution address
+     * @return Array of token IDs
+     */
+    function getCertificatesByInstitution(address institution) 
+        external 
+        view 
+        returns (uint256[] memory) 
+    {
+        return institutionCertificates[institution];
+    }
 }
