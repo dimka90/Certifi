@@ -1093,4 +1093,46 @@ contract CertificateNFT is ERC721URIStorage, Pausable, AccessControlEnumerable, 
     {
         return officialVerifications[tokenId][verifier];
     }
+    
+    // ============ SOULBOUND TOKEN UTILITIES ============
+    
+    /**
+     * @dev Check if a token transfer is allowed
+     * @param from Source address
+     * @param to Destination address
+     * @param tokenId Token ID
+     * @return True if transfer is allowed
+     */
+    function isTransferAllowed(address from, address to, uint256 tokenId) 
+        external 
+        view 
+        certificateExists(tokenId) 
+        returns (bool) 
+    {
+        // Allow minting (from == 0) and claiming (from == address(this))
+        if (from == address(0) || from == address(this)) {
+            return true;
+        }
+        
+        // Block all other transfers for soulbound characteristics
+        return false;
+    }
+    
+    /**
+     * @dev Get token transfer restrictions info
+     * @param tokenId Token ID
+     * @return isSoulbound Whether token is soulbound
+     * @return canTransfer Whether token can be transferred
+     * @return currentOwner Current owner address
+     */
+    function getTransferInfo(uint256 tokenId) 
+        external 
+        view 
+        certificateExists(tokenId) 
+        returns (bool isSoulbound, bool canTransfer, address currentOwner) 
+    {
+        currentOwner = ownerOf(tokenId);
+        isSoulbound = true; // All certificates are soulbound
+        canTransfer = false; // Transfers are not allowed except minting/claiming
+    }
 }
