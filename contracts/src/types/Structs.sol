@@ -1,8 +1,16 @@
 // SPDX-License-Identifier: MIT
-
 pragma solidity ^0.8.20;
+
 import "./Enums.sol";
 
+/**
+ * @title Structs
+ * @dev Core data structures for the Certificate NFT system
+ */
+
+/**
+ * @dev Institution information structure
+ */
 struct Institution {
     string name;
     string institutionID;  
@@ -15,16 +23,44 @@ struct Institution {
     uint256 totalCertificatesIssued;
 }
 
+/**
+ * @dev Certificate template structure for standardized issuance
+ */
 struct CertificateTemplate {
-    uint256 templateId;
+    uint256 id;
     string name;
-    string degreeTitle;
-    Faculty faculty;
-    string baseURI;
-    bool isActive;
     address creator;
+    uint256 createdAt;
+    uint256 version;
+    TemplateField[] requiredFields;
+    TemplateField[] optionalFields;
+    ValidationRule[] validationRules;
+    bool isActive;
 }
 
+/**
+ * @dev Template field definition
+ */
+struct TemplateField {
+    string fieldName;
+    string fieldType;
+    bool required;
+    string defaultValue;
+}
+
+/**
+ * @dev Validation rule for template fields
+ */
+struct ValidationRule {
+    string fieldName;
+    string ruleType;
+    string ruleValue;
+    string errorMessage;
+}
+
+/**
+ * @dev Complete certificate information structure
+ */
 struct Certificate {
     string studentName;
     string studentID;
@@ -45,8 +81,12 @@ struct Certificate {
     bool isClaimable;
     bool isClaimed;
     bytes32 claimHash;
+    uint256 renewalOf;
 }
 
+/**
+ * @dev Input data structure for certificate issuance
+ */
 struct CertificateData {
     address studentWallet;
     string studentName;
@@ -57,39 +97,15 @@ struct CertificateData {
     string cgpa;
     Faculty faculty;
     string tokenURI;
-    uint256 expirationDate; // Added field
+    uint256 expirationDate;
     uint256 templateId;
     bool isClaimable;
     bytes32 claimHash;
 }
 
-// Enhanced structures for new features
-struct CertificateTemplate {
-    uint256 id;
-    string name;
-    address creator;
-    uint256 createdAt;
-    uint256 version;
-    TemplateField[] requiredFields;
-    TemplateField[] optionalFields;
-    ValidationRule[] validationRules;
-    bool isActive;
-}
-
-struct TemplateField {
-    string fieldName;
-    string fieldType;
-    bool required;
-    string defaultValue;
-}
-
-struct ValidationRule {
-    string fieldName;
-    string ruleType;
-    string ruleValue;
-    string errorMessage;
-}
-
+/**
+ * @dev Multi-signature operation structure
+ */
 struct MultiSigOperation {
     uint256 id;
     bytes operationData;
@@ -101,6 +117,9 @@ struct MultiSigOperation {
     uint256 executedAt;
 }
 
+/**
+ * @dev Issuance statistics structure
+ */
 struct IssuanceStats {
     uint256 totalIssued;
     uint256 totalRevoked;
@@ -109,6 +128,9 @@ struct IssuanceStats {
     uint256 periodEnd;
 }
 
+/**
+ * @dev Verification statistics structure
+ */
 struct VerificationStats {
     uint256 totalVerifications;
     uint256 uniqueVerifications;
@@ -117,6 +139,9 @@ struct VerificationStats {
     uint256 periodEnd;
 }
 
+/**
+ * @dev Verification result structure
+ */
 struct VerificationResult {
     bool isValid;
     bool exists;
@@ -127,6 +152,9 @@ struct VerificationResult {
     uint256 verificationTime;
 }
 
+/**
+ * @dev Verification attempt tracking structure
+ */
 struct VerificationAttempt {
     uint256 timestamp;
     address verifier;
@@ -134,6 +162,9 @@ struct VerificationAttempt {
     string method;
 }
 
+/**
+ * @dev Error response structure for detailed error reporting
+ */
 struct ErrorResponse {
     uint256 errorCode;
     string errorMessage;
