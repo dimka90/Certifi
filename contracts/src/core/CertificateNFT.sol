@@ -1135,4 +1135,122 @@ contract CertificateNFT is ERC721URIStorage, Pausable, AccessControlEnumerable, 
         isSoulbound = true; // All certificates are soulbound
         canTransfer = false; // Transfers are not allowed except minting/claiming
     }
+    
+    // ============ ANALYTICS AND REPORTING ============
+    
+    /**
+     * @dev Get issuance statistics for a time period
+     * @param fromTime Start timestamp
+     * @param toTime End timestamp
+     * @return Issuance statistics
+     */
+    function getIssuanceStats(uint256 fromTime, uint256 toTime) 
+        external 
+        view 
+        returns (IssuanceStats memory) 
+    {
+        if (fromTime > toTime) revert InvalidTimeRange();
+        
+        IssuanceStats memory stats;
+        stats.totalIssued = _tokenIdCounter;
+        stats.periodStart = fromTime;
+        stats.periodEnd = toTime;
+        
+        // Count revoked certificates
+        uint256 revokedCount = 0;
+        for (uint256 i = 1; i <= _tokenIdCounter; i++) {
+            if (certificates[i].isRevoked) {
+                revokedCount++;
+            }
+        }
+        
+        stats.totalRevoked = revokedCount;
+        stats.activeCount = stats.totalIssued - stats.totalRevoked;
+        
+        return stats;
+    }
+    
+    /**
+     * @dev Get verification statistics for a time period
+     * @param fromTime Start timestamp
+     * @param toTime End timestamp
+     * @return Verification statistics
+     */
+    function getVerificationStats(uint256 fromTime, uint256 toTime) 
+        external 
+        view 
+        returns (VerificationStats memory) 
+    {
+        if (fromTime > toTime) revert InvalidTimeRange();
+        
+        VerificationStats memory stats;
+        stats.totalVerifications = analyticsCounters["totalVerifications"];
+        stats.uniqueVerifications = analyticsCounters["uniqueVerifications"];
+        stats.periodStart = fromTime;
+        stats.periodEnd = toTime;
+        
+        if (stats.uniqueVerifications > 0) {
+            stats.averageVerificationsPerCertificate = stats.totalVerifications / stats.uniqueVerifications;
+        }
+        
+        return stats;
+    }
+    
+    /**
+     * @dev Generate a comprehensive report
+     * @param reportType Type of report to generate
+     * @param periodStart Start of reporting period
+     * @param periodEnd End of reporting period
+     * @return Encoded report data
+     */
+    function generateReport(string memory reportType, uint256 periodStart, uint256 periodEnd) 
+        external 
+        view 
+        returns (bytes memory) 
+    {
+        if (periodStart > periodEnd) revert InvalidTimeRange();
+        
+        // Generate basic report data
+        IssuanceStats memory issuanceStats = this.getIssuanceStats(periodStart, periodEnd);
+        VerificationStats memory verificationStats = this.getVerificationStats(periodStart, periodEnd);
+        
+        // In a real implementation, this would format the data appropriately
+        bytes memory reportData = abi.encode(issuanceStats, verificationStats);
+        
+        emit ReportGenerated(reportType, periodStart, periodEnd, block.timestamp);
+        
+        return reportData;
+    }
+    
+    /**
+     * @dev Get analytics counter value
+     * @param metricType Type of metric
+     * @return Current counter value
+     */
+    function getAnalyticsCounter(string memory metricType) external view returns (uint256) {
+        return analyticsCounters[metricType];
+    }
+    
+    /**
+     * @dev Get system status overview
+     * @return totalCertificates Total certificates issued
+     * @return totalInstitutions Total registered institutions
+     * @return totalTemplates Total templates created
+     * @return contractPaused Whether contract is paused
+     */
+    function getSystemStatus() 
+        external 
+        view 
+        returns (
+            uint256 totalCertificates,
+            uint256 totalInstitutions,
+            uint256 totalTemplates,
+            bool contractPaused
+        ) 
+    {
+        totalCertificates = _tokenIdCounter;
+        totalInstitutions = institutionAddresses.length;
+        totalTemplates = _templateIdCounter;
+        contractPaused = paused();
+    }
 }
