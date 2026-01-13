@@ -2748,5 +2748,36 @@ contract CertificationNftTest is Test {
         assertEq(cert.duration, "");
         assertEq(cert.cgpa, "");
     }
+    
+    // ============ Address Zero Validation Tests ============
+    
+    function test_AddressZero_TransferOwnershipReverts() public {
+        // Cannot transfer ownership to zero address
+        vm.expectRevert();
+        certNFT.transferOwnership(address(0));
+        
+        // Owner should still be the same
+        assertEq(certNFT.owner(), owner);
+    }
+    
+    function test_AddressZero_IssueCertificateReverts() public {
+        _setupAuthorizedInstitution(institution1);
+        
+        CertificateData memory certData = CertificateData({
+            studentWallet: address(0), // Zero address
+            studentName: "John Doe",
+            studentID: "STU-001",
+            degreeTitle: "Bachelor of Science",
+            grade: Classification.FirstClass,
+            duration: "4 years",
+            cgpa: "3.5",
+            faculty: Faculty.Engineering,
+            tokenURI: "https://ipfs.io/ipfs/QmTest"
+        });
+        
+        vm.expectRevert();
+        vm.prank(institution1);
+        certNFT.issueCertificate(certData);
+    }
 }
 
