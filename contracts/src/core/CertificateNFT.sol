@@ -793,4 +793,97 @@ contract CertificateNFT is ERC721URIStorage, Pausable, AccessControlEnumerable, 
         analyticsCounters["totalChunkedOperations"]++;
         analyticsCounters["totalCertificatesInChunks"] += totalProcessed;
     }
+    
+    // ============ CERTIFICATE CLAIMING ============
+    
+    /**
+     * @dev Claim a certificate using claim code
+     * @param tokenId Token ID of the certificate to claim
+     * @param claimCode Claim code provided by the institution
+     */
+    function claimCertificate(uint256 tokenId, string calldata claimCode) external {
+        Certificate storage cert = certificates[tokenId];
+        if (!cert.isClaimable) revert NotClaimable();
+        if (cert.isClaimed) revert CertificateAlreadyClaimed();
+        if (keccak256(abi.encodePacked(claimCode)) != cert.claimHash) revert InvalidClaimCode();
+        
+        cert.isClaimed = true;
+        cert.studentWallet = msg.sender;
+        _transfer(address(this), msg.sender, tokenId);
+        
+        // Update student certificates array if not already present
+        bool alreadyInArray = false;
+        uint256[] storage studentCerts = studentCertificates[msg.sender];
+        for (uint256 i = 0; i < studentCerts.length; i++) {
+            if (studentCerts[i] == tokenId) {
+                alreadyInArray = true;
+                break;
+            }
+        }
+        if (!alreadyInArray) {
+            studentCertificates[msg.sender].push(tokenId);
+        }
+        
+        // Update analytics
+        updateAnalytics("totalCertificatesClaimed", 1);
+        
+        // Log security event
+        logSecurityEvent("certificate_claimed", msg.sender, abi.encodePacked(tokenId));
+        
+        emit CertificateClaimed(tokenId, msg.sender, block.timestamp);
+    }
+    
+    /**
+     * @dev Check if a certificate is claimable
+     * @param tokenId Token ID to check
+     * @return isClaimable Whether certificate can be claimed
+     * @return isClaimed Whether certificate has been claimed
+     * @return currentOwner Current owner of the certificate
+     */
+    function getClaimStatus(uint256 tokenId) 
+        external 
+        view 
+        certificateExists(tokenId) 
+        returns (bool isClaimable, bool isClaimed, address currentOwner) 
+    {
+        Certificate memory cert = certificates[tokenId];
+        isClaimable = cert.isClaimable;
+        isClaimed = cert.isClaimed;
+        currentOwner = ownerOf(tokenId);
+    }
+    
+    /**
+     * @dev Get all claimable certificates for a student
+     * @param studentWallet Student wallet address
+     * @return Array of claimable token IDs
+     */
+    function getClaimableCertificates(address studentWallet) 
+        external 
+        view 
+        returns (uint256[] memory) 
+    {
+        uint256[] memory allCerts = studentCertificates[studentWallet];
+        uint256 claimableCount = 0;
+        
+        // First pass: count claimable certificates
+        for (uint256 i = 0; i < allCerts.length; i++) {
+            Certificate memory cert = certificates[allCerts[i]];
+            if (cert.isClaimable && !cert.isClaimed) {
+                claimableCount++;
+            }
+        }
+        
+        // Second pass: collect claimable certificates
+        uint256[] memory claimableCerts = new uint256[](claimableCount);
+        uint256 index = 0;
+        for (uint256 i = 0; i < allCerts.length; i++) {
+            Certificate memory cert = certificates[allCerts[i]];
+            if (cert.isClaimable && !cert.isClaimed) {
+                claimableCerts[index] = allCerts[i];
+                index++;
+            }
+        }
+        
+        return claimableCerts;
+    }
 }
