@@ -2705,5 +2705,48 @@ contract CertificationNftTest is Test {
         assertEq(cert.revocationDate, beforeRevoke);
         assertGt(cert.revocationDate, cert.issueDate);
     }
+    
+    // ============ Empty String Edge Cases ============
+    
+    function test_EmptyString_StudentIDCanBeEmpty() public {
+        _setupAuthorizedInstitution(institution1);
+        
+        CertificateData memory certData = CertificateData({
+            studentWallet: student1,
+            studentName: "John Doe",
+            studentID: "", // Empty student ID is allowed
+            degreeTitle: "Bachelor of Science",
+            grade: Classification.FirstClass,
+            duration: "4 years",
+            cgpa: "3.5",
+            faculty: Faculty.Engineering,
+            tokenURI: "https://ipfs.io/ipfs/QmTest"
+        });
+        
+        uint256 tokenId = _issueCertificate(institution1, certData);
+        Certificate memory cert = certNFT.getCertificate(tokenId);
+        assertEq(cert.studentID, "");
+    }
+    
+    function test_EmptyString_DurationAndCGPA() public {
+        _setupAuthorizedInstitution(institution1);
+        
+        CertificateData memory certData = CertificateData({
+            studentWallet: student1,
+            studentName: "John Doe",
+            studentID: "STU-001",
+            degreeTitle: "Bachelor of Science",
+            grade: Classification.FirstClass,
+            duration: "", // Empty duration
+            cgpa: "", // Empty CGPA
+            faculty: Faculty.Engineering,
+            tokenURI: "https://ipfs.io/ipfs/QmTest"
+        });
+        
+        uint256 tokenId = _issueCertificate(institution1, certData);
+        Certificate memory cert = certNFT.getCertificate(tokenId);
+        assertEq(cert.duration, "");
+        assertEq(cert.cgpa, "");
+    }
 }
 
