@@ -29,18 +29,17 @@ contract CertificateNFT is ERC721URIStorage, Pausable, AccessControlEnumerable, 
     mapping(address => uint256[]) public institutionCertificates;
     mapping(address => bool) public registeredInstitutions;
     
-    // Template Management Storage
-    uint256 private _templateIdCounter;
-    mapping(uint256 => CertificateTemplate) public templates;
-    mapping(address => uint256[]) public institutionTemplates;
-    mapping(uint256 => bool) public activeTemplates;
-    
     // Multi-Signature Storage
     uint256 private _operationIdCounter;
     uint256 public signatureThreshold = 2;
     mapping(uint256 => MultiSigOperation) public pendingOperations;
     mapping(uint256 => mapping(address => bool)) public operationSignatures;
     mapping(address => bool) public authorizedSigners;
+    mapping(address => uint256[]) public institutionTemplates;
+    mapping(uint256 => bool) public activeTemplates;
+    mapping(uint256 => mapping(address => VerificationStatus)) public officialVerifications;
+    mapping(uint256 => VerificationRequest) public verificationRequests;
+    uint256 private _requestIdCounter;
     
     // Analytics Storage
     mapping(string => uint256) public analyticsCounters;
@@ -60,7 +59,7 @@ contract CertificateNFT is ERC721URIStorage, Pausable, AccessControlEnumerable, 
     mapping(bytes32 => string) public roleNames;
     
     modifier onlyOwner() {
-        if (msg.sender != owner) revert NotOwner();
+        if (msg.sender != owner()) revert NotOwner();
         _;
     }
     
@@ -75,7 +74,7 @@ contract CertificateNFT is ERC721URIStorage, Pausable, AccessControlEnumerable, 
     }
     
     constructor() ERC721("Educational Certificate", "CERTIFI") {
-        owner = msg.sender;
+        _grantRole(ADMIN_ROLE, msg.sender);
         authorizedSigners[msg.sender] = true;
     }
 
@@ -92,7 +91,7 @@ contract CertificateNFT is ERC721URIStorage, Pausable, AccessControlEnumerable, 
         uint256 newTemplateId = _templateIdCounter;
         
         CertificateTemplate storage template = templates[newTemplateId];
-        template.id = newTemplateId;
+        template.templateId = newTemplateId;
         template.name = _name;
         template.creator = msg.sender;
         template.createdAt = block.timestamp;
@@ -532,11 +531,11 @@ contract CertificateNFT is ERC721URIStorage, Pausable, AccessControlEnumerable, 
         if (periodStart > periodEnd) revert InvalidTimeRange();
         
         // Generate basic report data
-        IssuanceStats memory issuanceStats = this.getIssuanceStats(periodStart, periodEnd);
-        VerificationStats memory verificationStats = this.getVerificationStats(periodStart, periodEnd);
+        IssuanceStats memory issues = this.getIssuanceStats(periodStart, periodEnd);
+        VerificationStats memory vStats = this.getVerificationStats(periodStart, periodEnd);
         
         // In a real implementation, this would format the data appropriately
-        bytes memory reportData = abi.encode(issuanceStats, verificationStats);
+        bytes memory reportData = abi.encode(issues, vStats);
         
         return reportData;
     }
@@ -634,7 +633,34 @@ contract CertificateNFT is ERC721URIStorage, Pausable, AccessControlEnumerable, 
         emit CertificateVerified(tokenId, verifier, method, successful, block.timestamp);
     }
 
+    modifier onlyAdmin() {
+        if (!hasRole(ADMIN_ROLE, msg.sender)) revert AccessDenied(ADMIN_ROLE);
+        _;
+    }
+
     // Role-Based Access Control Functions
+
+    function requestCertificateVerification(uint256 tokenId, string memory comments) external returns (uint256) {
+        if (!_exists(tokenId)) revert CertificateDoesNotExist();
+        Certificate memory cert = certificates[tokenId];
+        if (cert.issuingInstitution != msg.sender) revert NotIssuingInstitution();
+        _requestIdCounter++;
+        uint256 requestId = _requestIdCounter;
+        verificationRequests[requestId] = VerificationRequest({id: requestId, tokenId: tokenId, requester: msg.sender, institution: msg.sender, requestedAt: block.timestamp, status: RequestStatus.Pending, comments: comments, reviewer: address(0), reviewedAt: 0});
+        emit VerificationRequested(requestId, tokenId, msg.sender, block.timestamp);
+        return requestId;
+    }
+
+    function reviewVerificationRequest(uint256 requestId, bool approved) external {
+        if (!hasRole(ADMIN_ROLE, msg.sender)) revert AccessDenied(ADMIN_ROLE);
+        VerificationRequest storage request = verificationRequests[requestId];
+        if (request.id == 0) revert RequestNotFound();
+        request.status = approved ? RequestStatus.Approved : RequestStatus.Rejected;
+        request.reviewer = msg.sender;
+        request.reviewedAt = block.timestamp;
+        if (approved) { officialVerifications[request.tokenId][msg.sender] = VerificationStatus.Verified; }
+        emit VerificationRequestReviewed(requestId, msg.sender, approved, block.timestamp);
+    }
     function createRole(string memory roleName, uint256[] memory permissions) 
         external 
         onlyOwner 
@@ -825,7 +851,7 @@ contract CertificateNFT is ERC721URIStorage, Pausable, AccessControlEnumerable, 
             uint256 totalCertificates,
             uint256 totalInstitutions,
             uint256 totalTemplates,
-            uint256 pendingOperations,
+            uint256 pendingOps,
             bool contractPaused,
             uint256 currentSignatureThreshold
         ) 
@@ -841,7 +867,7 @@ contract CertificateNFT is ERC721URIStorage, Pausable, AccessControlEnumerable, 
                 pending++;
             }
         }
-        pendingOperations = pending;
+        pendingOps = pending;
         
         contractPaused = paused();
         currentSignatureThreshold = signatureThreshold;
@@ -1221,3 +1247,4 @@ contract CertificateNFT is ERC721URIStorage, Pausable, AccessControlEnumerable, 
     }
 }
 
+}
