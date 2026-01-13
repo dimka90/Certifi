@@ -1,9 +1,17 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
 
+/**
+ * @title Errors
+ * @dev Custom error definitions for the Certificate NFT system
+ */
+
+// Access Control Errors
 error NotOwner();
 error NotAuthorizedInstitution();
 error NotIssuingInstitution();
+error AccessDenied(bytes32 role);
+error InsufficientPermissions();
 
 // Institution Errors
 error InstitutionAlreadyRegistered();
@@ -23,13 +31,17 @@ error InvalidCGPA();
 error CertificateExpired();
 error SoulboundTokenNoTransfer();
 error BatchSizeCheckFailed();
-error InvalidRevocationReason(); // Added
+error InvalidRevocationReason();
+error CertificateAlreadyClaimed();
+error NotClaimable();
+error InvalidClaimCode();
 
 // General Errors
 error InvalidAddress();
 error EmptyString();
-error ContractPaused(); // Added
-error InvalidIndex(); // Added
+error ContractPaused();
+error InvalidIndex();
+error InvalidTimeRange();
 
 // Template Errors
 error TemplateNotFound();
@@ -47,7 +59,6 @@ error NotAuthorizedSigner();
 error InvalidThreshold();
 
 // Analytics Errors
-error InvalidTimeRange();
 error AnalyticsNotAvailable();
 error InsufficientData();
 
@@ -58,7 +69,6 @@ error VerificationMethodNotSupported();
 
 // Role and Access Control Errors
 error RoleNotFound();
-error InsufficientPermissions();
 error RoleAlreadyAssigned();
 error InvalidRoleData();
 
