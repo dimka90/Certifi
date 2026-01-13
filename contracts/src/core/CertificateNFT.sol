@@ -486,4 +486,132 @@ contract CertificateNFT is ERC721URIStorage, Pausable, AccessControlEnumerable, 
         activeTemplates[templateId] = !activeTemplates[templateId];
         emit TemplateUpdated(templateId, activeTemplates[templateId]);
     }
+    
+    // ============ CERTIFICATE ISSUANCE ============
+    
+    /**
+     * @dev Internal function to issue a certificate
+     * @param data Certificate data
+     * @return Token ID of the issued certificate
+     */
+    function _issueCertificate(CertificateData memory data) internal whenNotPaused returns (uint256) {
+        if (data.studentWallet == address(0) && !data.isClaimable) revert InvalidStudentAddress();
+        if (bytes(data.studentName).length == 0) revert EmptyString();
+        if (bytes(data.degreeTitle).length == 0) revert EmptyString();
+        
+        string memory finalTokenURI = data.tokenURI;
+        if (data.templateId != 0) {
+            CertificateTemplate storage template = templates[data.templateId];
+            if (!template.isActive) revert TemplateNotActive();
+            // Validate against template
+            if (!this.validateAgainstTemplate(data.templateId, data)) {
+                revert TemplateValidationFailed();
+            }
+        }
+        
+        if (bytes(finalTokenURI).length == 0) revert InvalidTokenURI();
+        
+        _tokenIdCounter++;
+        uint256 newTokenId = _tokenIdCounter;
+        
+        // If claimable, mint to contract, otherwise mint to student
+        address recipient = data.isClaimable ? address(this) : data.studentWallet;
+        _safeMint(recipient, newTokenId);
+        _setTokenURI(newTokenId, finalTokenURI);
+        
+        certificates[newTokenId] = Certificate({
+            studentName: data.studentName,
+            studentID: data.studentID,
+            studentWallet: data.studentWallet,
+            degreeTitle: data.degreeTitle,
+            issueDate: block.timestamp,
+            grade: data.grade,
+            duration: data.duration,
+            cgpa: data.cgpa,
+            faculty: data.faculty,
+            issuingInstitution: msg.sender,
+            isRevoked: false,
+            revocationDate: 0,
+            revocationReason: "",
+            expirationDate: data.expirationDate,
+            templateId: data.templateId,
+            version: 1,
+            isClaimable: data.isClaimable,
+            isClaimed: false,
+            claimHash: data.claimHash,
+            renewalOf: 0
+        });
+        
+        // Generate verification code
+        string memory verificationCode = generateVerificationCode(newTokenId);
+        verificationCodes[newTokenId] = verificationCode;
+        codeToTokenId[verificationCode] = newTokenId;
+        
+        studentCertificates[data.studentWallet].push(newTokenId);
+        institutionCertificates[msg.sender].push(newTokenId);
+        institutions[msg.sender].totalCertificatesIssued++;
+        
+        // Update analytics
+        updateAnalytics("totalCertificatesIssued", 1);
+        updateAnalytics("certificatesThisMonth", 1);
+        
+        // Log security event
+        logSecurityEvent("certificate_issued", msg.sender, abi.encodePacked(newTokenId));
+        
+        emit CertificateIssued(newTokenId, data.studentWallet, msg.sender, data.degreeTitle, block.timestamp);
+        emit VerificationCodeGenerated(newTokenId, verificationCode, block.timestamp);
+        
+        return newTokenId;
+    }
+    
+    /**
+     * @dev Generate a unique verification code for a certificate
+     * @param tokenId Token ID
+     * @return Verification code string
+     */
+    function generateVerificationCode(uint256 tokenId) 
+        public 
+        view 
+        certificateExists(tokenId) 
+        returns (string memory) 
+    {
+        // Generate a unique verification code based on token ID and block data
+        bytes32 hash = keccak256(abi.encodePacked(tokenId, block.timestamp, address(this)));
+        return string(abi.encodePacked("CERT-", _toHexString(uint256(hash))));
+    }
+    
+    /**
+     * @dev Convert uint256 to hex string
+     * @param value Value to convert
+     * @return Hex string representation
+     */
+    function _toHexString(uint256 value) internal pure returns (string memory) {
+        if (value == 0) return "0";
+        
+        uint256 temp = value;
+        uint256 digits;
+        while (temp != 0) {
+            digits++;
+            temp /= 16;
+        }
+        
+        bytes memory buffer = new bytes(digits);
+        while (value != 0) {
+            digits -= 1;
+            buffer[digits] = bytes1(uint8(48 + uint256(value % 16)));
+            value /= 16;
+        }
+        
+        return string(buffer);
+    }
+    
+    /**
+     * @dev Update analytics counters
+     * @param metricType Type of metric
+     * @param value Value to add
+     */
+    function updateAnalytics(string memory metricType, uint256 value) internal {
+        analyticsCounters[metricType] += value;
+        emit AnalyticsUpdated(metricType, analyticsCounters[metricType], block.timestamp);
+    }
 }
