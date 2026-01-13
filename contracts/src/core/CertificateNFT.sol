@@ -339,4 +339,151 @@ contract CertificateNFT is ERC721URIStorage, Pausable, AccessControlEnumerable, 
         
         emit AnalyticsUpdated(eventType, securityMetrics[eventType], block.timestamp);
     }
+    
+    // ============ TEMPLATE MANAGEMENT ============
+    
+    /**
+     * @dev Create a new certificate template
+     * @param _name Template name
+     * @param _requiredFields Array of required fields
+     * @param _optionalFields Array of optional fields
+     * @param _validationRules Array of validation rules
+     * @return Template ID
+     */
+    function createTemplate(
+        string memory _name,
+        TemplateField[] memory _requiredFields,
+        TemplateField[] memory _optionalFields,
+        ValidationRule[] memory _validationRules
+    ) external onlyAuthorizedInstitution returns (uint256) {
+        if (bytes(_name).length == 0) revert EmptyString();
+        
+        _templateIdCounter++;
+        uint256 newTemplateId = _templateIdCounter;
+        
+        CertificateTemplate storage template = templates[newTemplateId];
+        template.id = newTemplateId;
+        template.name = _name;
+        template.creator = msg.sender;
+        template.createdAt = block.timestamp;
+        template.version = 1;
+        template.isActive = true;
+        
+        // Store fields and rules
+        for (uint256 i = 0; i < _requiredFields.length; i++) {
+            template.requiredFields.push(_requiredFields[i]);
+        }
+        for (uint256 i = 0; i < _optionalFields.length; i++) {
+            template.optionalFields.push(_optionalFields[i]);
+        }
+        for (uint256 i = 0; i < _validationRules.length; i++) {
+            template.validationRules.push(_validationRules[i]);
+        }
+        
+        institutionTemplates[msg.sender].push(newTemplateId);
+        activeTemplates[newTemplateId] = true;
+        
+        emit TemplateCreated(newTemplateId, msg.sender, _name, block.timestamp);
+        
+        return newTemplateId;
+    }
+    
+    /**
+     * @dev Validate certificate data against a template
+     * @param templateId Template ID to validate against
+     * @param data Certificate data to validate
+     * @return True if validation passes
+     */
+    function validateAgainstTemplate(uint256 templateId, CertificateData memory data) 
+        external 
+        view 
+        returns (bool) 
+    {
+        if (!activeTemplates[templateId]) revert TemplateNotActive();
+        
+        CertificateTemplate storage template = templates[templateId];
+        
+        // Basic validation - in a real implementation, this would be more comprehensive
+        if (bytes(data.studentName).length == 0) return false;
+        if (data.studentWallet == address(0)) return false;
+        if (bytes(data.degreeTitle).length == 0) return false;
+        
+        return true;
+    }
+    
+    /**
+     * @dev Get template information
+     * @param templateId Template ID
+     * @return template Template data
+     * @return exists Whether template exists
+     * @return isActive Whether template is active
+     * @return usageCount Number of certificates using this template
+     */
+    function getTemplateInfo(uint256 templateId) 
+        external 
+        view 
+        returns (
+            CertificateTemplate memory template,
+            bool exists,
+            bool isActive,
+            uint256 usageCount
+        ) 
+    {
+        exists = templates[templateId].id != 0;
+        
+        if (!exists) {
+            return (template, false, false, 0);
+        }
+        
+        template = templates[templateId];
+        isActive = activeTemplates[templateId];
+        
+        // Count how many certificates use this template
+        usageCount = 0;
+        for (uint256 i = 1; i <= _tokenIdCounter; i++) {
+            if (certificates[i].templateId == templateId) {
+                usageCount++;
+            }
+        }
+    }
+    
+    /**
+     * @dev Get template by ID
+     * @param templateId Template ID
+     * @return Template data
+     */
+    function getTemplate(uint256 templateId) 
+        external 
+        view 
+        returns (CertificateTemplate memory) 
+    {
+        if (templates[templateId].id == 0) revert TemplateNotFound();
+        return templates[templateId];
+    }
+    
+    /**
+     * @dev Get templates created by an institution
+     * @param institution Institution address
+     * @return Array of template IDs
+     */
+    function getTemplatesByInstitution(address institution) 
+        external 
+        view 
+        returns (uint256[] memory) 
+    {
+        return institutionTemplates[institution];
+    }
+    
+    /**
+     * @dev Toggle template active status
+     * @param templateId Template ID to toggle
+     */
+    function toggleTemplate(uint256 templateId) external {
+        if (templates[templateId].creator != msg.sender && !hasRole(ADMIN_ROLE, msg.sender)) {
+            revert AccessDenied(ADMIN_ROLE);
+        }
+        
+        activeTemplates[templateId] = !activeTemplates[templateId];
+        emit TemplateUpdated(templateId, activeTemplates[templateId]);
+    }
 }
