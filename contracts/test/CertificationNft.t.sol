@@ -2661,5 +2661,49 @@ contract CertificationNftTest is Test {
             assertEq(certNFT.getCertificatesByStudent(students[i]).length, 1);
         }
     }
+    
+    // ============ Date and Timestamp Validation Tests ============
+    
+    function test_Timestamp_IssueDateSetCorrectly() public {
+        _setupAuthorizedInstitution(institution1);
+        
+        uint256 beforeTime = block.timestamp;
+        vm.warp(beforeTime);
+        
+        CertificateData memory certData = _createCertificateData(
+            student1,
+            "John Doe",
+            "STU-001",
+            "Bachelor of Science"
+        );
+        
+        uint256 tokenId = _issueCertificate(institution1, certData);
+        
+        Certificate memory cert = certNFT.getCertificate(tokenId);
+        assertEq(cert.issueDate, beforeTime);
+    }
+    
+    function test_Timestamp_RevocationDateSetCorrectly() public {
+        _setupAuthorizedInstitution(institution1);
+        
+        CertificateData memory certData = _createCertificateData(
+            student1,
+            "John Doe",
+            "STU-001",
+            "Bachelor of Science"
+        );
+        
+        uint256 tokenId = _issueCertificate(institution1, certData);
+        
+        uint256 beforeRevoke = block.timestamp;
+        vm.warp(beforeRevoke);
+        
+        vm.prank(institution1);
+        certNFT.revokeCertificate(tokenId, "Revocation reason");
+        
+        Certificate memory cert = certNFT.getCertificate(tokenId);
+        assertEq(cert.revocationDate, beforeRevoke);
+        assertGt(cert.revocationDate, cert.issueDate);
+    }
 }
 
