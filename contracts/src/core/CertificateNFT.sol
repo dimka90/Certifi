@@ -48,11 +48,6 @@ contract CertificateNFT is ERC721URIStorage, Pausable, AccessControlEnumerable, 
     mapping(uint256 => MultiSigOperation) public pendingOperations;
     mapping(uint256 => mapping(address => bool)) public operationSignatures;
     mapping(address => bool) public authorizedSigners;
-    mapping(address => uint256[]) public institutionTemplates;
-    mapping(uint256 => bool) public activeTemplates;
-    mapping(uint256 => mapping(address => VerificationStatus)) public officialVerifications;
-    mapping(uint256 => VerificationRequest) public verificationRequests;
-    uint256 private _requestIdCounter;
     
     // Analytics Storage
     mapping(string => uint256) public analyticsCounters;
@@ -367,7 +362,7 @@ contract CertificateNFT is ERC721URIStorage, Pausable, AccessControlEnumerable, 
         uint256 newTemplateId = _templateIdCounter;
         
         CertificateTemplate storage template = templates[newTemplateId];
-        template.templateId = newTemplateId;
+        template.id = newTemplateId;
         template.name = _name;
         template.creator = msg.sender;
         template.createdAt = block.timestamp;
