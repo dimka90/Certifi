@@ -176,4 +176,97 @@ contract CertificateNFT is ERC721URIStorage, Pausable, AccessControlEnumerable, 
     {
         return super.supportsInterface(interfaceId);
     }
+
+    // ============ INSTITUTION MANAGEMENT ============
+    
+    /**
+     * @dev Register a new educational institution
+     * @param _name Institution name
+     * @param _institutionID Unique institution identifier
+     * @param _email Contact email
+     * @param _country Country of operation
+     * @param _institutionType Type of educational institution
+     */
+    function registerInstitution(
+        string memory _name,
+        string memory _institutionID,
+        string memory _email,
+        string memory _country,
+        InstitutionType _institutionType
+    ) external whenNotPaused {
+        if (registeredInstitutions[msg.sender]) revert InstitutionAlreadyRegistered();
+        if (bytes(_name).length == 0) revert EmptyString();
+        if (bytes(_institutionID).length == 0) revert InvalidInstitutionID();
+        
+        institutions[msg.sender] = Institution({
+            name: _name,
+            institutionID: _institutionID,
+            walletAddress: msg.sender,
+            email: _email,
+            country: _country,
+            institutionType: _institutionType,
+            registrationDate: block.timestamp,
+            isAuthorized: false,
+            totalCertificatesIssued: 0
+        });
+        
+        registeredInstitutions[msg.sender] = true;
+        institutionAddresses.push(msg.sender);
+        
+        emit InstitutionRegistered(msg.sender, _name, _institutionID, block.timestamp);
+    }
+    
+    /**
+     * @dev Get institution information
+     * @param institutionAddress Address of the institution
+     * @return institution Institution data
+     * @return templateIds Array of template IDs created by institution
+     * @return certificateIds Array of certificate IDs issued by institution
+     * @return isRegistered Whether institution is registered
+     * @return isAuthorized Whether institution is authorized
+     */
+    function getInstitutionInfo(address institutionAddress) 
+        external 
+        view 
+        returns (
+            Institution memory institution,
+            uint256[] memory templateIds,
+            uint256[] memory certificateIds,
+            bool isRegistered,
+            bool isAuthorized
+        ) 
+    {
+        isRegistered = registeredInstitutions[institutionAddress];
+        
+        if (!isRegistered) {
+            return (institution, templateIds, certificateIds, false, false);
+        }
+        
+        institution = institutions[institutionAddress];
+        templateIds = institutionTemplates[institutionAddress];
+        certificateIds = institutionCertificates[institutionAddress];
+        isAuthorized = institution.isAuthorized;
+    }
+    
+    /**
+     * @dev Get institution by address
+     * @param _addr Institution address
+     * @return Institution data
+     */
+    function getInstitution(address _addr) 
+        external 
+        view 
+        returns (Institution memory) 
+    {
+        if (!registeredInstitutions[_addr]) revert InstitutionNotRegistered();
+        return institutions[_addr];
+    }
+    
+    /**
+     * @dev Get all registered institution addresses
+     * @return Array of institution addresses
+     */
+    function getAllInstitutions() external view returns (address[] memory) {
+        return institutionAddresses;
+    }
 }
