@@ -2779,5 +2779,65 @@ contract CertificationNftTest is Test {
         vm.prank(institution1);
         certNFT.issueCertificate(certData);
     }
+    
+    // ============ Concurrent Operations Tests ============
+    
+    function test_Concurrent_MultipleInstitutionsIssuing() public {
+        _setupAuthorizedInstitution(institution1);
+        _setupAuthorizedInstitution(institution2);
+        
+        // Both institutions issue certificates simultaneously
+        CertificateData memory certData1 = _createCertificateData(
+            student1,
+            "John Doe",
+            "STU-001",
+            "Bachelor of Science"
+        );
+        
+        CertificateData memory certData2 = _createCertificateData(
+            student2,
+            "Jane Smith",
+            "STU-002",
+            "Master of Arts"
+        );
+        
+        uint256 tokenId1 = _issueCertificate(institution1, certData1);
+        uint256 tokenId2 = _issueCertificate(institution2, certData2);
+        
+        // Both should succeed with sequential token IDs
+        assertEq(tokenId1, 1);
+        assertEq(tokenId2, 2);
+        assertEq(certNFT.getTotalCertificatesIssued(), 2);
+    }
+    
+    function test_Concurrent_IssueAndRevoke() public {
+        _setupAuthorizedInstitution(institution1);
+        
+        CertificateData memory certData1 = _createCertificateData(
+            student1,
+            "John Doe",
+            "STU-001",
+            "Bachelor of Science"
+        );
+        
+        uint256 tokenId1 = _issueCertificate(institution1, certData1);
+        
+        // Issue another while first is still valid
+        CertificateData memory certData2 = _createCertificateData(
+            student2,
+            "Jane Smith",
+            "STU-002",
+            "Master of Arts"
+        );
+        
+        uint256 tokenId2 = _issueCertificate(institution1, certData2);
+        
+        // Revoke first, second should remain valid
+        vm.prank(institution1);
+        certNFT.revokeCertificate(tokenId1, "Revocation");
+        
+        assertTrue(certNFT.isRevoked(tokenId1));
+        assertFalse(certNFT.isRevoked(tokenId2));
+    }
 }
 
