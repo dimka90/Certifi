@@ -1361,4 +1361,100 @@ contract CertificateNFT is ERC721URIStorage, Pausable, AccessControlEnumerable, 
         
         return (errorCount == 0, finalErrors);
     }
+    
+    // ============ ADDITIONAL UTILITIES ============
+    
+    /**
+     * @dev Generate audit report for security events
+     * @param fromTime Start timestamp
+     * @param toTime End timestamp
+     * @return Encoded audit data
+     */
+    function generateAuditReport(uint256 fromTime, uint256 toTime) 
+        external 
+        view 
+        returns (bytes memory) 
+    {
+        if (fromTime > toTime) revert InvalidTimeRange();
+        
+        // Collect audit data
+        uint256 totalCertificates = _tokenIdCounter;
+        uint256 totalInstitutions = institutionAddresses.length;
+        uint256 totalTemplates = _templateIdCounter;
+        
+        // Security metrics
+        uint256 totalVerifications = securityMetrics["verification"];
+        uint256 totalRevocations = securityMetrics["revocation"];
+        uint256 totalAmendments = securityMetrics["amendment"];
+        
+        // Encode audit report
+        bytes memory auditData = abi.encode(
+            totalCertificates,
+            totalInstitutions,
+            totalTemplates,
+            totalVerifications,
+            totalRevocations,
+            totalAmendments,
+            fromTime,
+            toTime,
+            block.timestamp
+        );
+        
+        return auditData;
+    }
+    
+    /**
+     * @dev Validate data integrity for a certificate
+     * @param tokenId Token ID to validate
+     * @return isValid Whether certificate data is valid
+     * @return issues Array of integrity issues found
+     */
+    function validateDataIntegrity(uint256 tokenId) 
+        external 
+        view 
+        certificateExists(tokenId) 
+        returns (bool isValid, string[] memory issues) 
+    {
+        Certificate memory cert = certificates[tokenId];
+        string[] memory issueList = new string[](5);
+        uint256 issueCount = 0;
+        
+        // Check basic data integrity
+        if (cert.studentWallet == address(0)) {
+            issueList[issueCount] = "Invalid student wallet";
+            issueCount++;
+        }
+        
+        if (bytes(cert.studentName).length == 0) {
+            issueList[issueCount] = "Empty student name";
+            issueCount++;
+        }
+        
+        if (cert.issuingInstitution == address(0)) {
+            issueList[issueCount] = "Invalid issuing institution";
+            issueCount++;
+        }
+        
+        if (!registeredInstitutions[cert.issuingInstitution]) {
+            issueList[issueCount] = "Institution not registered";
+            issueCount++;
+        }
+        
+        // Resize issues array
+        string[] memory finalIssues = new string[](issueCount);
+        for (uint256 i = 0; i < issueCount; i++) {
+            finalIssues[i] = issueList[i];
+        }
+        
+        return (issueCount == 0, finalIssues);
+    }
+    
+    /**
+     * @dev Emergency function to get contract owner
+     * @return Current contract owner (first admin)
+     */
+    function owner() public view returns (address) {
+        if (getRoleMemberCount(DEFAULT_ADMIN_ROLE) == 0) return address(0);
+        return getRoleMember(DEFAULT_ADMIN_ROLE, 0);
+    }
 }
