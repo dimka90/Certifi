@@ -886,4 +886,83 @@ contract CertificateNFT is ERC721URIStorage, Pausable, AccessControlEnumerable, 
         
         return claimableCerts;
     }
+    
+    // ============ CERTIFICATE REVOCATION ============
+    
+    /**
+     * @dev Revoke a certificate
+     * @param tokenId Token ID to revoke
+     * @param reason Reason for revocation
+     */
+    function revokeCertificate(uint256 tokenId, string memory reason) external whenNotPaused {
+        _revokeCertificate(tokenId, reason);
+    }
+    
+    /**
+     * @dev Revoke multiple certificates in batch
+     * @param tokenIds Array of token IDs to revoke
+     * @param reason Reason for revocation
+     */
+    function batchRevoke(uint256[] calldata tokenIds, string memory reason) external whenNotPaused {
+        if (tokenIds.length == 0 || tokenIds.length > MAX_BATCH_SIZE) revert BatchSizeCheckFailed();
+        for (uint256 i = 0; i < tokenIds.length; i++) {
+            _revokeCertificate(tokenIds[i], reason);
+        }
+    }
+    
+    /**
+     * @dev Internal function to revoke a certificate
+     * @param tokenId Token ID to revoke
+     * @param reason Reason for revocation
+     */
+    function _revokeCertificate(uint256 tokenId, string memory reason) internal {
+        Certificate storage cert = certificates[tokenId];
+        if (!_exists(tokenId)) revert CertificateDoesNotExist();
+        if (cert.issuingInstitution != msg.sender && !hasRole(ADMIN_ROLE, msg.sender)) {
+            revert NotIssuingInstitution();
+        }
+        if (cert.isRevoked) revert CertificateAlreadyRevoked();
+        if (bytes(reason).length == 0) revert EmptyString();
+
+        cert.isRevoked = true;
+        cert.revocationDate = block.timestamp;
+        cert.revocationReason = reason;
+
+        // Update analytics
+        updateAnalytics("totalRevocations", 1);
+        updateAnalytics("revocationsThisMonth", 1);
+        
+        // Log security event
+        logSecurityEvent("certificate_revoked", msg.sender, abi.encodePacked(tokenId, reason));
+
+        emit CertificateRevoked(tokenId, msg.sender, reason, block.timestamp);
+    }
+    
+    /**
+     * @dev Check if a certificate is revoked
+     * @param tokenId Token ID to check
+     * @return True if certificate is revoked
+     */
+    function isRevoked(uint256 tokenId) external view certificateExists(tokenId) returns (bool) {
+        return certificates[tokenId].isRevoked;
+    }
+    
+    /**
+     * @dev Get revocation information
+     * @param tokenId Token ID to check
+     * @return isRevoked Whether certificate is revoked
+     * @return revocationDate Timestamp of revocation
+     * @return revocationReason Reason for revocation
+     */
+    function getRevocationInfo(uint256 tokenId) 
+        external 
+        view 
+        certificateExists(tokenId) 
+        returns (bool isRevoked, uint256 revocationDate, string memory revocationReason) 
+    {
+        Certificate memory cert = certificates[tokenId];
+        isRevoked = cert.isRevoked;
+        revocationDate = cert.revocationDate;
+        revocationReason = cert.revocationReason;
+    }
 }
