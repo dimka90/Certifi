@@ -2839,5 +2839,50 @@ contract CertificationNftTest is Test {
         assertTrue(certNFT.isRevoked(tokenId1));
         assertFalse(certNFT.isRevoked(tokenId2));
     }
+    
+    // ============ Final Validation Tests ============
+    
+    function test_Validation_CompleteCertificateDataIntegrity() public {
+        _setupAuthorizedInstitution(institution1);
+        
+        CertificateData memory certData = CertificateData({
+            studentWallet: student1,
+            studentName: "John Doe",
+            studentID: "STU-001",
+            degreeTitle: "Bachelor of Science",
+            grade: Classification.FirstClass,
+            duration: "4 years",
+            cgpa: "3.95",
+            faculty: Faculty.Engineering,
+            tokenURI: "https://ipfs.io/ipfs/QmTest123"
+        });
+        
+        uint256 tokenId = _issueCertificate(institution1, certData);
+        
+        Certificate memory cert = certNFT.getCertificate(tokenId);
+        (Certificate memory verifiedCert, bool isValid) = certNFT.verifyCertificate(tokenId);
+        
+        // Verify all data matches
+        assertEq(cert.studentName, verifiedCert.studentName);
+        assertEq(cert.studentID, verifiedCert.studentID);
+        assertEq(cert.degreeTitle, verifiedCert.degreeTitle);
+        assertTrue(isValid);
+    }
+    
+    function test_Validation_InstitutionDataConsistency() public {
+        _registerInstitution(
+            institution1,
+            INSTITUTION_NAME,
+            INSTITUTION_ID,
+            INSTITUTION_EMAIL,
+            INSTITUTION_COUNTRY,
+            InstitutionType.University
+        );
+        
+        Institution memory inst1 = certNFT.getInstitution(institution1);
+        assertTrue(certNFT.registeredInstitutions(institution1));
+        assertEq(inst1.name, INSTITUTION_NAME);
+        assertEq(inst1.institutionID, INSTITUTION_ID);
+    }
 }
 
