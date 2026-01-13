@@ -2550,5 +2550,68 @@ contract CertificationNftTest is Test {
         assertEq(certNFT.ownerOf(tokenId), student1);
         assertEq(certNFT.balanceOf(student1), 1);
     }
+    
+    // ============ Institution Certificate Count Tracking Tests ============
+    
+    function test_InstitutionCount_IncrementsOnIssue() public {
+        _setupAuthorizedInstitution(institution1);
+        
+        Institution memory instBefore = certNFT.getInstitution(institution1);
+        assertEq(instBefore.totalCertificatesIssued, 0);
+        
+        CertificateData memory certData = _createCertificateData(
+            student1,
+            "John Doe",
+            "STU-001",
+            "Bachelor of Science"
+        );
+        
+        _issueCertificate(institution1, certData);
+        
+        Institution memory instAfter = certNFT.getInstitution(institution1);
+        assertEq(instAfter.totalCertificatesIssued, 1);
+    }
+    
+    function test_InstitutionCount_MultipleCertificates() public {
+        _setupAuthorizedInstitution(institution1);
+        
+        // Issue 5 certificates
+        for (uint256 i = 0; i < 5; i++) {
+            CertificateData memory certData = _createCertificateData(
+                address(uint160(i + 700)),
+                string(abi.encodePacked("Student ", i)),
+                string(abi.encodePacked("STU-", i)),
+                "Degree"
+            );
+            _issueCertificate(institution1, certData);
+        }
+        
+        Institution memory inst = certNFT.getInstitution(institution1);
+        assertEq(inst.totalCertificatesIssued, 5);
+    }
+    
+    function test_InstitutionCount_NotAffectedByRevocation() public {
+        _setupAuthorizedInstitution(institution1);
+        
+        CertificateData memory certData = _createCertificateData(
+            student1,
+            "John Doe",
+            "STU-001",
+            "Bachelor of Science"
+        );
+        
+        uint256 tokenId = _issueCertificate(institution1, certData);
+        
+        Institution memory instBefore = certNFT.getInstitution(institution1);
+        assertEq(instBefore.totalCertificatesIssued, 1);
+        
+        // Revoke certificate
+        vm.prank(institution1);
+        certNFT.revokeCertificate(tokenId, "Revocation");
+        
+        // Count should remain the same
+        Institution memory instAfter = certNFT.getInstitution(institution1);
+        assertEq(instAfter.totalCertificatesIssued, 1);
+    }
 }
 
