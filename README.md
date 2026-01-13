@@ -125,3 +125,5 @@ This project is licensed under the MIT License.
 - **Developer Utilities**: Rate limiting, custom hooks (useCertificate, useDebounce), and type-safe event handling.
 - **Accessibility & UX**: Focus management, screen reader support, and improved loading states with skeletons.
 - **Theme Support**: Integrated dark/light mode theme management.
+## Verification Request System
+Institutions can now request official badges for their certificates.

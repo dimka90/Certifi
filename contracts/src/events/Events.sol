@@ -25,18 +25,12 @@ event TemplateCreated(uint256 indexed templateId, address indexed creator, strin
 event TemplateUpdated(uint256 indexed templateId, bool isActive);
 event TemplateActivated(uint256 indexed templateId, uint256 timestamp);
 event TemplateDeactivated(uint256 indexed templateId, uint256 timestamp);
-
-// Multi-Signature Events
 event OperationProposed(uint256 indexed operationId, address indexed proposer, bytes operationData, uint256 timestamp);
 event OperationSigned(uint256 indexed operationId, address indexed signer, uint256 signatureCount, uint256 timestamp);
 event OperationExecuted(uint256 indexed operationId, address indexed executor, uint256 timestamp);
 event SignatureThresholdUpdated(uint256 oldThreshold, uint256 newThreshold, uint256 timestamp);
-
-// Analytics Events
 event AnalyticsUpdated(string metricType, uint256 value, uint256 timestamp);
 event ReportGenerated(string reportType, uint256 periodStart, uint256 periodEnd, uint256 timestamp);
-
-// Verification Events
 event CertificateVerified(uint256 indexed tokenId, address indexed verifier, string method, bool successful, uint256 timestamp);
 event VerificationCodeGenerated(uint256 indexed tokenId, string verificationCode, uint256 timestamp);
 event OfficialVerification(uint256 indexed tokenId, address indexed verifier, bool status, uint256 timestamp);
@@ -46,8 +40,6 @@ event RoleCreated(bytes32 indexed roleId, string roleName, uint256 timestamp);
 event RoleAssigned(address indexed user, bytes32 indexed roleId, uint256 timestamp);
 event RoleRevoked(address indexed user, bytes32 indexed roleId, uint256 timestamp);
 event PermissionUpdated(bytes32 indexed roleId, uint256 permission, bool granted, uint256 timestamp);
-
-// Lifecycle Events
 event CertificateRenewed(uint256 indexed oldTokenId, uint256 indexed newTokenId, uint256 timestamp);
 event CertificateAmended(uint256 indexed tokenId, string amendmentType, uint256 timestamp);
 event CertificateExpired(uint256 indexed tokenId, uint256 timestamp);
