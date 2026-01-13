@@ -965,4 +965,132 @@ contract CertificateNFT is ERC721URIStorage, Pausable, AccessControlEnumerable, 
         revocationDate = cert.revocationDate;
         revocationReason = cert.revocationReason;
     }
+    
+    // ============ CERTIFICATE VERIFICATION ============
+    
+    /**
+     * @dev Verify a certificate by token ID
+     * @param tokenId Token ID to verify
+     * @return certificate Certificate data
+     * @return isValid Whether certificate is valid
+     */
+    function verifyCertificate(uint256 tokenId) 
+        external 
+        view 
+        certificateExists(tokenId) 
+        returns (Certificate memory certificate, bool isValid) 
+    {
+        Certificate memory cert = certificates[tokenId];
+        bool valid = !cert.isRevoked && (cert.expirationDate == 0 || block.timestamp < cert.expirationDate);
+        return (cert, valid);
+    }
+    
+    /**
+     * @dev Verify certificate by verification code
+     * @param code Verification code
+     * @return Verification result
+     */
+    function verifyByCode(string memory code) 
+        external 
+        view 
+        returns (VerificationResult memory) 
+    {
+        uint256 tokenId = codeToTokenId[code];
+        
+        VerificationResult memory result;
+        result.verificationCode = code;
+        result.verificationTime = block.timestamp;
+        
+        if (tokenId == 0) {
+            result.isValid = false;
+            result.exists = false;
+            return result;
+        }
+        
+        result.tokenId = tokenId;
+        result.exists = true;
+        
+        Certificate memory cert = certificates[tokenId];
+        result.isRevoked = cert.isRevoked;
+        result.isExpired = cert.expirationDate != 0 && block.timestamp >= cert.expirationDate;
+        result.isValid = !result.isRevoked && !result.isExpired;
+        
+        return result;
+    }
+    
+    /**
+     * @dev Record a verification attempt
+     * @param tokenId Token ID being verified
+     * @param verifier Address performing verification
+     * @param successful Whether verification was successful
+     * @param method Verification method used
+     */
+    function recordVerificationAttempt(
+        uint256 tokenId, 
+        address verifier, 
+        bool successful, 
+        string memory method
+    ) external {
+        if (!_exists(tokenId)) revert CertificateDoesNotExist();
+        
+        VerificationAttempt memory attempt = VerificationAttempt({
+            timestamp: block.timestamp,
+            verifier: verifier,
+            successful: successful,
+            method: method
+        });
+        
+        verificationHistory[tokenId].push(attempt);
+        verificationCounts[tokenId]++;
+        
+        updateAnalytics("totalVerifications", 1);
+        if (successful) {
+            updateAnalytics("successfulVerifications", 1);
+        }
+        
+        emit CertificateVerified(tokenId, verifier, method, successful, block.timestamp);
+    }
+    
+    /**
+     * @dev Get verification history for a certificate
+     * @param tokenId Token ID
+     * @return Array of verification attempts
+     */
+    function getVerificationHistory(uint256 tokenId) 
+        external 
+        view 
+        certificateExists(tokenId) 
+        returns (VerificationAttempt[] memory) 
+    {
+        return verificationHistory[tokenId];
+    }
+    
+    /**
+     * @dev Official verification by authorized verifier
+     * @param tokenId Token ID to verify
+     * @param status Verification status
+     */
+    function officiallyVerify(uint256 tokenId, bool status) external {
+        if (!hasRole(VERIFIER_ROLE, msg.sender)) revert AccessDenied(VERIFIER_ROLE);
+        if (!_exists(tokenId)) revert CertificateDoesNotExist();
+        
+        officialVerifications[tokenId][msg.sender] = status ? VerificationStatus.Verified : VerificationStatus.Rejected;
+        
+        emit OfficialVerification(tokenId, msg.sender, status, block.timestamp);
+    }
+    
+    /**
+     * @dev Get official verification status
+     * @param tokenId Token ID
+     * @param verifier Verifier address
+     * @return Verification status
+     */
+    function getOfficialVerification(uint256 tokenId, address verifier) 
+        external 
+        view 
+        certificateExists(tokenId) 
+        returns (VerificationStatus) 
+    {
+        return officialVerifications[tokenId][verifier];
+    }
 }
