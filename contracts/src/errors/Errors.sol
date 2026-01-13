@@ -14,3 +14,4 @@ error InvalidVerificationCode(); error VerificationExpired(); error Verification
 error RoleNotFound(); error InsufficientPermissions(); error RoleAlreadyAssigned(); error InvalidRoleData(); error AccessDenied(bytes32 role);
 error CertificateNotRenewable(); error AmendmentNotAllowed(); error InvalidAmendmentData();
 error NotClaimable(); error CertificateAlreadyClaimed(); error InvalidClaimCode();
+error RequestAlreadyExists(); error RequestNotFound();
