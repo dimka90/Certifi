@@ -42,6 +42,12 @@ contract SimpleToken is ERC20, Ownable, Pausable {
     
     mapping(address => mapping(address => uint256)) public allowanceExpiry;
     
+    address[] public holders;
+    mapping(address => bool) public isHolder;
+    
+    event HolderAdded(address indexed holder);
+    event HolderRemoved(address indexed holder);
+    
     event AllowanceWithExpiry(address indexed owner, address indexed spender, uint256 amount, uint256 expiry);
     
     event SnapshotCreated(uint256 indexed id, uint256 timestamp);
@@ -104,6 +110,21 @@ contract SimpleToken is ERC20, Ownable, Pausable {
         require(!blacklisted[to], "Recipient is blacklisted");
         require(!frozenAccounts[from], "Sender account is frozen");
         require(!frozenAccounts[to], "Recipient account is frozen");
+        
+        // Track holders
+        if (to != address(0) && balanceOf(to) == 0 && amount > 0) {
+            if (!isHolder[to]) {
+                holders.push(to);
+                isHolder[to] = true;
+                emit HolderAdded(to);
+            }
+        }
+        
+        if (from != address(0) && balanceOf(from) == amount) {
+            isHolder[from] = false;
+            emit HolderRemoved(from);
+        }
+        
         super._beforeTokenTransfer(from, to, amount);
     }
     
@@ -287,5 +308,20 @@ contract SimpleToken is ERC20, Ownable, Pausable {
             require(block.timestamp <= expiry, "Allowance expired");
         }
         return super.transferFrom(from, to, amount);
+    }
+    
+    /**
+     * @dev Get total number of holders
+     */
+    function getHolderCount() external view returns (uint256) {
+        return holders.length;
+    }
+    
+    /**
+     * @dev Get holder at index
+     */
+    function getHolderAt(uint256 index) external view returns (address) {
+        require(index < holders.length, "Index out of bounds");
+        return holders[index];
     }
 }
