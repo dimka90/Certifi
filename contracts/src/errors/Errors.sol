@@ -28,7 +28,7 @@ error CertificateNotRevoked();
 error InvalidStudentAddress();
 error InvalidTokenURI();
 error InvalidCGPA();
-error CertificateExpired();
+error CertificateHasExpired();
 error SoulboundTokenNoTransfer();
 error BatchSizeCheckFailed();
 error InvalidRevocationReason();
