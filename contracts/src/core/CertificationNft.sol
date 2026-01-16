@@ -50,6 +50,13 @@ contract CertificateNFT is ERC721URIStorage, Pausable, AccessControlEnumerable, 
     mapping(uint256 => bool) public activeTemplates;
     mapping(uint256 => VerificationRequest) public verificationRequests;
     uint256 private _requestIdCounter;
+
+    /**
+     * @dev Getter for verification requests to match test expectations
+     */
+    function verificationRequests(uint256 requestId) external view returns (VerificationRequest memory) {
+        return _verificationRequests[requestId];
+    }
     
     // Analytics Storage
     mapping(string => uint256) public analyticsCounters;
@@ -72,6 +79,13 @@ contract CertificateNFT is ERC721URIStorage, Pausable, AccessControlEnumerable, 
     mapping(uint256 => mapping(address => VerificationStatus)) public officialVerifications;
     mapping(uint256 => VerificationRequest) internal _verificationRequests;
     uint256 private _requestIdCounter;
+
+    /**
+     * @dev Getter for verification requests to match test expectations
+     */
+    function verificationRequests(uint256 requestId) external view returns (VerificationRequest memory) {
+        return _verificationRequests[requestId];
+    }
     
     // Security and audit storage
     mapping(bytes32 => bool) public auditTrail;
