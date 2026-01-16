@@ -51,6 +51,10 @@ contract SimpleToken is ERC20, Ownable, Pausable {
     
     bool public transfersEnabled = true;
     
+    uint256 public totalFeeCollected;
+    
+    event FeeCollected(uint256 amount, uint256 total);
+    
     event TransfersToggled(bool enabled);
     
     event MetadataUpdated(address indexed account, string metadata);
@@ -199,8 +203,10 @@ contract SimpleToken is ERC20, Ownable, Pausable {
         if (transferFee > 0 && from != owner() && to != owner()) {
             uint256 fee = (amount * transferFee) / 10000;
             uint256 amountAfterFee = amount - fee;
+            totalFeeCollected += fee;
             super._transfer(from, feeCollector, fee);
             super._transfer(from, to, amountAfterFee);
+            emit FeeCollected(fee, totalFeeCollected);
         } else {
             super._transfer(from, to, amount);
         }
