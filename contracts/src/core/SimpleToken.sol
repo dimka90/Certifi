@@ -45,6 +45,10 @@ contract SimpleToken is ERC20, Ownable, Pausable {
     address[] public holders;
     mapping(address => bool) public isHolder;
     
+    uint256 public minTransferAmount = 0;
+    
+    event MinTransferAmountUpdated(uint256 newAmount);
+    
     event HolderAdded(address indexed holder);
     event HolderRemoved(address indexed holder);
     
@@ -170,6 +174,8 @@ contract SimpleToken is ERC20, Ownable, Pausable {
         address to,
         uint256 amount
     ) internal virtual override {
+        require(amount >= minTransferAmount, "Amount below minimum");
+        
         // Check daily limit
         if (dailyLimit[from] > 0) {
             uint256 currentDay = block.timestamp / 1 days;
@@ -323,5 +329,13 @@ contract SimpleToken is ERC20, Ownable, Pausable {
     function getHolderAt(uint256 index) external view returns (address) {
         require(index < holders.length, "Index out of bounds");
         return holders[index];
+    }
+    
+    /**
+     * @dev Set minimum transfer amount
+     */
+    function setMinTransferAmount(uint256 amount) external onlyOwner {
+        minTransferAmount = amount;
+        emit MinTransferAmountUpdated(amount);
     }
 }
