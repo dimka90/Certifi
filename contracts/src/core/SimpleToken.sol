@@ -49,6 +49,10 @@ contract SimpleToken is ERC20, Ownable, Pausable {
     
     mapping(address => string) public accountMetadata;
     
+    bool public transfersEnabled = true;
+    
+    event TransfersToggled(bool enabled);
+    
     event MetadataUpdated(address indexed account, string metadata);
     
     event MinTransferAmountUpdated(uint256 newAmount);
@@ -178,6 +182,7 @@ contract SimpleToken is ERC20, Ownable, Pausable {
         address to,
         uint256 amount
     ) internal virtual override {
+        require(transfersEnabled, "Transfers are disabled");
         require(amount >= minTransferAmount, "Amount below minimum");
         
         // Check daily limit
@@ -356,5 +361,13 @@ contract SimpleToken is ERC20, Ownable, Pausable {
      */
     function getAccountMetadata(address account) external view returns (string memory) {
         return accountMetadata[account];
+    }
+    
+    /**
+     * @dev Toggle transfers on/off
+     */
+    function toggleTransfers() external onlyOwner {
+        transfersEnabled = !transfersEnabled;
+        emit TransfersToggled(transfersEnabled);
     }
 }
