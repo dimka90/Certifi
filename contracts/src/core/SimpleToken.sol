@@ -22,11 +22,16 @@ contract SimpleToken is ERC20, Ownable, Pausable {
     mapping(address => uint256) public vestingDuration;
     mapping(address => uint256) public vestingAmount;
     
+    mapping(address => uint256) public dailyLimit;
+    mapping(address => uint256) public dailySpent;
+    mapping(address => uint256) public lastTransferDay;
+    
     event Blacklisted(address indexed account);
     event Unblacklisted(address indexed account);
     event TransferFeeUpdated(uint256 newFee);
     event FeeCollectorUpdated(address indexed newCollector);
     event VestingScheduleCreated(address indexed beneficiary, uint256 amount, uint256 duration);
+    event DailyLimitSet(address indexed account, uint256 limit);
     
     constructor() ERC20("Simple Token", "SMPL") Ownable(msg.sender) {
         _mint(msg.sender, 1000000 * 10 ** decimals());
@@ -117,6 +122,17 @@ contract SimpleToken is ERC20, Ownable, Pausable {
         address to,
         uint256 amount
     ) internal virtual override {
+        // Check daily limit
+        if (dailyLimit[from] > 0) {
+            uint256 currentDay = block.timestamp / 1 days;
+            if (lastTransferDay[from] != currentDay) {
+                dailySpent[from] = 0;
+                lastTransferDay[from] = currentDay;
+            }
+            require(dailySpent[from] + amount <= dailyLimit[from], "Daily limit exceeded");
+            dailySpent[from] += amount;
+        }
+        
         if (transferFee > 0 && from != owner() && to != owner()) {
             uint256 fee = (amount * transferFee) / 10000;
             uint256 amountAfterFee = amount - fee;
@@ -172,5 +188,13 @@ contract SimpleToken is ERC20, Ownable, Pausable {
         
         vestingAmount[msg.sender] = 0;
         _transfer(address(this), msg.sender, vested);
+    }
+    
+    /**
+     * @dev Set daily transfer limit for an address
+     */
+    function setDailyLimit(address account, uint256 limit) external onlyOwner {
+        dailyLimit[account] = limit;
+        emit DailyLimitSet(account, limit);
     }
 }
