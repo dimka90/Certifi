@@ -1,6 +1,6 @@
 # Implementation Plan: Certifi ERC20 Token
 
-- [-] 1. Set up project structure and dependencies
+- [x] 1. Set up project structure and dependencies
   - Create contracts/src/token directory for ERC20 implementation
   - Add OpenZeppelin contracts dependency to foundry.toml
   - Create test directory structure for token tests
