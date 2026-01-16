@@ -13,6 +13,11 @@ contract SimpleToken is ERC20, Ownable, Pausable {
     
     uint256 public constant MAX_SUPPLY = 10000000 * 10 ** 18;
     
+    mapping(address => bool) public blacklisted;
+    
+    event Blacklisted(address indexed account);
+    event Unblacklisted(address indexed account);
+    
     constructor() ERC20("Simple Token", "SMPL") Ownable(msg.sender) {
         _mint(msg.sender, 1000000 * 10 ** decimals());
     }
@@ -54,6 +59,24 @@ contract SimpleToken is ERC20, Ownable, Pausable {
         address to,
         uint256 amount
     ) internal virtual override whenNotPaused {
+        require(!blacklisted[from], "Sender is blacklisted");
+        require(!blacklisted[to], "Recipient is blacklisted");
         super._beforeTokenTransfer(from, to, amount);
+    }
+    
+    /**
+     * @dev Blacklist an address
+     */
+    function blacklist(address account) external onlyOwner {
+        blacklisted[account] = true;
+        emit Blacklisted(account);
+    }
+    
+    /**
+     * @dev Remove address from blacklist
+     */
+    function unblacklist(address account) external onlyOwner {
+        blacklisted[account] = false;
+        emit Unblacklisted(account);
     }
 }
