@@ -10,7 +10,17 @@ import "@openzeppelin/contracts/access/Ownable.sol";
  */
 contract SimpleToken is ERC20, Ownable {
     
+    uint256 public constant MAX_SUPPLY = 10000000 * 10 ** 18;
+    
     constructor() ERC20("Simple Token", "SMPL") Ownable(msg.sender) {
         _mint(msg.sender, 1000000 * 10 ** decimals());
+    }
+    
+    /**
+     * @dev Mint new tokens (owner only)
+     */
+    function mint(address to, uint256 amount) external onlyOwner {
+        require(totalSupply() + amount <= MAX_SUPPLY, "Exceeds max supply");
+        _mint(to, amount);
     }
 }
