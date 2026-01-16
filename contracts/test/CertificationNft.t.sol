@@ -978,16 +978,18 @@ contract CertificationNftTest is Test {
     function test_TransferOwnership_OldOwnerCannotTransfer() public {
         address newOwner = address(0x999);
         
-        // Transfer ownership
+        certNFT.transferOwnership(newOwner);
         
-        // Old owner cannot transfer anymore
+        vm.prank(owner);
+        vm.expectRevert();
+        certNFT.transferOwnership(address(0x888));
         vm.expectRevert();
     }
     
     function test_TransferOwnership_NewOwnerCanAuthorize() public {
         address newOwner = address(0x999);
         
-        // Transfer ownership
+        certNFT.transferOwnership(newOwner);
         
         // Setup institution
         _registerInstitution(
@@ -1013,7 +1015,7 @@ contract CertificationNftTest is Test {
         // Setup authorized institution
         _setupAuthorizedInstitution(institution1);
         
-        // Transfer ownership
+        certNFT.transferOwnership(newOwner);
         
         // New owner can deauthorize
         vm.prank(newOwner);
@@ -1083,7 +1085,7 @@ contract CertificationNftTest is Test {
         
         uint256 tokenId = _issueCertificate(institution1, certData);
         
-        // Transfer ownership
+        certNFT.transferOwnership(newOwner);
         
         // New owner can revoke certificates
         vm.prank(newOwner);
@@ -1230,7 +1232,7 @@ contract CertificationNftTest is Test {
         _setupAuthorizedInstitution(institution1);
         _setupAuthorizedInstitution(institution2);
         
-        // Transfer ownership
+        certNFT.transferOwnership(newOwner);
         
         // New owner can deauthorize both
         vm.prank(newOwner);
