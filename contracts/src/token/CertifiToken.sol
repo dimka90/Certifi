@@ -69,6 +69,25 @@ contract CertifiToken is ERC20, ERC20Burnable, ERC20Pausable, AccessControl {
     }
 
     /**
+     * @notice Burns tokens from the caller's account
+     * @param amount The amount of tokens to burn
+     */
+    function burn(uint256 amount) public override {
+        totalBurned += amount;
+        super.burn(amount);
+    }
+
+    /**
+     * @notice Burns tokens from a specified account with allowance
+     * @param account The account to burn tokens from
+     * @param amount The amount of tokens to burn
+     */
+    function burnFrom(address account, uint256 amount) public override {
+        totalBurned += amount;
+        super.burnFrom(account, amount);
+    }
+
+    /**
      * @notice Hook that is called before any token transfer
      * @dev Overrides required by Solidity for multiple inheritance
      */
