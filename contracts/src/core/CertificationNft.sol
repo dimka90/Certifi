@@ -1096,6 +1096,31 @@ contract CertificateNFT is ERC721URIStorage, Pausable, AccessControlEnumerable, 
         
         emit OfficialVerification(tokenId, msg.sender, status, block.timestamp);
     }
+    /**
+     * @dev Request official verification for a certificate
+     * @param tokenId Token ID to verify
+     * @param reason Reason for verification request
+     * @return Request ID
+     */
+    function requestCertificateVerification(uint256 tokenId, string memory reason) 
+        external 
+        certificateExists(tokenId) 
+        returns (uint256) 
+    {
+        _requestIdCounter++;
+        uint256 requestId = _requestIdCounter;
+        
+        _verificationRequests[requestId] = VerificationRequest({
+            id: requestId,
+            tokenId: tokenId,
+            requester: msg.sender,
+            reason: reason,
+            requestedAt: block.timestamp,
+            processed: false
+        });
+        
+        return requestId;
+    }
     
     /**
      * @dev Get official verification status
