@@ -31,6 +31,17 @@ contract SimpleToken is ERC20, Ownable, Pausable {
     
     mapping(address => bool) public frozenAccounts;
     
+    struct Snapshot {
+        uint256 id;
+        uint256 timestamp;
+    }
+    
+    uint256 private _currentSnapshotId;
+    mapping(uint256 => mapping(address => uint256)) private _balanceSnapshots;
+    mapping(uint256 => uint256) private _totalSupplySnapshots;
+    
+    event SnapshotCreated(uint256 indexed id, uint256 timestamp);
+    
     event AccountFrozen(address indexed account);
     event AccountUnfrozen(address indexed account);
     
@@ -224,5 +235,23 @@ contract SimpleToken is ERC20, Ownable, Pausable {
     function unfreezeAccount(address account) external onlyOwner {
         frozenAccounts[account] = false;
         emit AccountUnfrozen(account);
+    }
+    
+    /**
+     * @dev Create a snapshot of current balances
+     */
+    function snapshot() external onlyOwner returns (uint256) {
+        _currentSnapshotId++;
+        _totalSupplySnapshots[_currentSnapshotId] = totalSupply();
+        emit SnapshotCreated(_currentSnapshotId, block.timestamp);
+        return _currentSnapshotId;
+    }
+    
+    /**
+     * @dev Get balance at a specific snapshot
+     */
+    function balanceOfAt(address account, uint256 snapshotId) external view returns (uint256) {
+        require(snapshotId <= _currentSnapshotId, "Invalid snapshot");
+        return _balanceSnapshots[snapshotId][account];
     }
 }
