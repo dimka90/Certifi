@@ -70,6 +70,7 @@ contract CertificateNFT is ERC721URIStorage, Pausable, AccessControlEnumerable, 
     
     // Official verification storage
     mapping(uint256 => mapping(address => VerificationStatus)) public officialVerifications;
+    mapping(uint256 => VerificationRequest) internal _verificationRequests;
     
     // Security and audit storage
     mapping(bytes32 => bool) public auditTrail;
