@@ -26,6 +26,9 @@ contract SimpleToken is ERC20, Ownable, Pausable {
     mapping(address => uint256) public dailySpent;
     mapping(address => uint256) public lastTransferDay;
     
+    uint256 public totalBurned;
+    uint256 public totalMinted;
+    
     event Blacklisted(address indexed account);
     event Unblacklisted(address indexed account);
     event TransferFeeUpdated(uint256 newFee);
@@ -43,6 +46,7 @@ contract SimpleToken is ERC20, Ownable, Pausable {
      */
     function mint(address to, uint256 amount) external onlyOwner {
         require(totalSupply() + amount <= MAX_SUPPLY, "Exceeds max supply");
+        totalMinted += amount;
         _mint(to, amount);
     }
     
@@ -50,6 +54,7 @@ contract SimpleToken is ERC20, Ownable, Pausable {
      * @dev Burn tokens from caller's balance
      */
     function burn(uint256 amount) external {
+        totalBurned += amount;
         _burn(msg.sender, amount);
     }
     
