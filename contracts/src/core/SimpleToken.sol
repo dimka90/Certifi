@@ -47,6 +47,10 @@ contract SimpleToken is ERC20, Ownable, Pausable {
     
     uint256 public minTransferAmount = 0;
     
+    mapping(address => string) public accountMetadata;
+    
+    event MetadataUpdated(address indexed account, string metadata);
+    
     event MinTransferAmountUpdated(uint256 newAmount);
     
     event HolderAdded(address indexed holder);
@@ -337,5 +341,20 @@ contract SimpleToken is ERC20, Ownable, Pausable {
     function setMinTransferAmount(uint256 amount) external onlyOwner {
         minTransferAmount = amount;
         emit MinTransferAmountUpdated(amount);
+    }
+    
+    /**
+     * @dev Set metadata for an account
+     */
+    function setAccountMetadata(string calldata metadata) external {
+        accountMetadata[msg.sender] = metadata;
+        emit MetadataUpdated(msg.sender, metadata);
+    }
+    
+    /**
+     * @dev Get metadata for an account
+     */
+    function getAccountMetadata(address account) external view returns (string memory) {
+        return accountMetadata[account];
     }
 }
