@@ -2,7 +2,7 @@
 pragma solidity ^0.8.20;
 
 /**
- * @title Errors
+ 
  * @dev Custom error definitions for the Certificate NFT system
  */
 
