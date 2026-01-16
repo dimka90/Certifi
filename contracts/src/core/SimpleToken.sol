@@ -15,11 +15,17 @@ contract SimpleToken is ERC20, Ownable, Pausable {
     
     mapping(address => bool) public blacklisted;
     
+    uint256 public transferFee = 0; // Fee in basis points (100 = 1%)
+    address public feeCollector;
+    
     event Blacklisted(address indexed account);
     event Unblacklisted(address indexed account);
+    event TransferFeeUpdated(uint256 newFee);
+    event FeeCollectorUpdated(address indexed newCollector);
     
     constructor() ERC20("Simple Token", "SMPL") Ownable(msg.sender) {
         _mint(msg.sender, 1000000 * 10 ** decimals());
+        feeCollector = msg.sender;
     }
     
     /**
@@ -78,5 +84,41 @@ contract SimpleToken is ERC20, Ownable, Pausable {
     function unblacklist(address account) external onlyOwner {
         blacklisted[account] = false;
         emit Unblacklisted(account);
+    }
+    
+    /**
+     * @dev Set transfer fee
+     */
+    function setTransferFee(uint256 fee) external onlyOwner {
+        require(fee <= 1000, "Fee too high"); // Max 10%
+        transferFee = fee;
+        emit TransferFeeUpdated(fee);
+    }
+    
+    /**
+     * @dev Set fee collector address
+     */
+    function setFeeCollector(address collector) external onlyOwner {
+        require(collector != address(0), "Invalid address");
+        feeCollector = collector;
+        emit FeeCollectorUpdated(collector);
+    }
+    
+    /**
+     * @dev Override transfer to include fees
+     */
+    function _transfer(
+        address from,
+        address to,
+        uint256 amount
+    ) internal virtual override {
+        if (transferFee > 0 && from != owner() && to != owner()) {
+            uint256 fee = (amount * transferFee) / 10000;
+            uint256 amountAfterFee = amount - fee;
+            super._transfer(from, feeCollector, fee);
+            super._transfer(from, to, amountAfterFee);
+        } else {
+            super._transfer(from, to, amount);
+        }
     }
 }
