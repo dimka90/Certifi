@@ -106,6 +106,17 @@ contract SimpleToken is ERC20, Ownable, Pausable {
     }
     
     /**
+     * @dev Burn tokens from another address (requires allowance)
+     */
+    function burnFrom(address account, uint256 amount) external {
+        uint256 currentAllowance = allowance(account, msg.sender);
+        require(currentAllowance >= amount, "Insufficient allowance");
+        _approve(account, msg.sender, currentAllowance - amount);
+        totalBurned += amount;
+        _burn(account, amount);
+    }
+    
+    /**
      * @dev Pause token transfers
      */
     function pause() external onlyOwner {
