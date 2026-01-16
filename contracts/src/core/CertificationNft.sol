@@ -154,6 +154,15 @@ contract CertificateNFT is ERC721URIStorage, Pausable, AccessControlEnumerable, 
         return _tokenIdCounter;
     }
     
+
+    /**
+     * @dev Emergency function to get contract owner
+     * @return Current contract owner (first admin)
+     */
+    function owner() public view returns (address) {
+        if (getRoleMemberCount(DEFAULT_ADMIN_ROLE) == 0) return address(0);
+        return getRoleMember(DEFAULT_ADMIN_ROLE, 0);
+    }
     /**
      * @dev Check if token exists
      */
