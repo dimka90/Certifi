@@ -163,6 +163,18 @@ struct VerificationAttempt {
 }
 
 /**
+ * @dev Verification request structure
+ */
+struct VerificationRequest {
+    uint256 id;
+    uint256 tokenId;
+    address requester;
+    string reason;
+    uint256 requestedAt;
+    bool processed;
+}
+
+/**
  * @dev Error response structure for detailed error reporting
  */
 struct ErrorResponse {
