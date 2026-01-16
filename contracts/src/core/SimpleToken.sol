@@ -23,4 +23,11 @@ contract SimpleToken is ERC20, Ownable {
         require(totalSupply() + amount <= MAX_SUPPLY, "Exceeds max supply");
         _mint(to, amount);
     }
+    
+    /**
+     * @dev Burn tokens from caller's balance
+     */
+    function burn(uint256 amount) external {
+        _burn(msg.sender, amount);
+    }
 }
