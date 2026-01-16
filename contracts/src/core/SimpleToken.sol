@@ -53,6 +53,11 @@ contract SimpleToken is ERC20, Ownable, Pausable {
     
     uint256 public totalFeeCollected;
     
+    mapping(address => bool) public whitelisted;
+    
+    event Whitelisted(address indexed account);
+    event RemovedFromWhitelist(address indexed account);
+    
     event FeeCollected(uint256 amount, uint256 total);
     
     event TransfersToggled(bool enabled);
@@ -200,7 +205,7 @@ contract SimpleToken is ERC20, Ownable, Pausable {
             dailySpent[from] += amount;
         }
         
-        if (transferFee > 0 && from != owner() && to != owner()) {
+        if (transferFee > 0 && from != owner() && to != owner() && !whitelisted[from] && !whitelisted[to]) {
             uint256 fee = (amount * transferFee) / 10000;
             uint256 amountAfterFee = amount - fee;
             totalFeeCollected += fee;
@@ -375,5 +380,21 @@ contract SimpleToken is ERC20, Ownable, Pausable {
     function toggleTransfers() external onlyOwner {
         transfersEnabled = !transfersEnabled;
         emit TransfersToggled(transfersEnabled);
+    }
+    
+    /**
+     * @dev Add address to whitelist (fee exempt)
+     */
+    function addToWhitelist(address account) external onlyOwner {
+        whitelisted[account] = true;
+        emit Whitelisted(account);
+    }
+    
+    /**
+     * @dev Remove address from whitelist
+     */
+    function removeFromWhitelist(address account) external onlyOwner {
+        whitelisted[account] = false;
+        emit RemovedFromWhitelist(account);
     }
 }
