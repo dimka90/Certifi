@@ -40,7 +40,6 @@ contract CertificateNFT is ERC721URIStorage, Pausable, AccessControlEnumerable, 
     mapping(address => bool) public registeredInstitutions;
     
     // Template Management Storage
-    mapping(address => uint256[]) public institutionTemplates;
     mapping(uint256 => bool) public activeTemplates;
     
     // Multi-Signature Storage
