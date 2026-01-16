@@ -1279,10 +1279,10 @@ contract CertificateNFT is ERC721URIStorage, Pausable, AccessControlEnumerable, 
         
         // Generate basic report data
         IssuanceStats memory issuanceStats = this.getIssuanceStats(periodStart, periodEnd);
-        VerificationStats memory verificationStats = this.getVerificationStats(periodStart, periodEnd);
+        VerificationStats memory stats = this.getVerificationStats(periodStart, periodEnd);
         
         // In a real implementation, this would format the data appropriately
-        bytes memory reportData = abi.encode(issuanceStats, verificationStats);
+        bytes memory reportData = abi.encode(issuanceStats, stats);
         
         emit ReportGenerated(reportType, periodStart, periodEnd, block.timestamp);
         
