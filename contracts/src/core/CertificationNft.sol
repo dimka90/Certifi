@@ -169,6 +169,21 @@ contract CertificateNFT is ERC721URIStorage, Pausable, AccessControlEnumerable, 
     function _exists(uint256 tokenId) internal view override returns (bool) {
         return _ownerOf(tokenId) != address(0);
     }
+
+    /**
+     * @dev Transfer ownership to another address
+     * @param newOwner Address of new owner
+     */
+    function transferOwnership(address newOwner) external onlyOwner {
+        if (newOwner == address(0)) revert InvalidAddress();
+        _grantRole(DEFAULT_ADMIN_ROLE, newOwner);
+        _grantRole(ADMIN_ROLE, newOwner);
+        _revokeRole(DEFAULT_ADMIN_ROLE, msg.sender);
+        _revokeRole(ADMIN_ROLE, msg.sender);
+        authorizedSigners[newOwner] = true;
+        authorizedSigners[msg.sender] = false;
+        emit OwnershipTransferred(msg.sender, newOwner);
+    }
     
     /**
      * @dev Override _beforeTokenTransfer to implement soulbound characteristics
