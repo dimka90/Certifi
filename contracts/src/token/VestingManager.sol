@@ -75,4 +75,18 @@ contract VestingManager {
         uint256 vestedAmount = (schedule.totalAmount * elapsedTime) / schedule.duration;
         return vestedAmount - schedule.releasedAmount;
     }
+
+    function releaseVestedTokens(bytes32 scheduleId) external {
+        VestingSchedule storage schedule = vestingSchedules[scheduleId];
+        require(msg.sender == schedule.beneficiary, "Not beneficiary");
+        require(!schedule.revoked, "Schedule revoked");
+
+        uint256 releasable = computeReleasableAmount(scheduleId);
+        require(releasable > 0, "No tokens to release");
+
+        schedule.releasedAmount += releasable;
+        token.transfer(schedule.beneficiary, releasable);
+
+        emit TokensReleased(scheduleId, releasable);
+    }
 }
