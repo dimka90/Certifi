@@ -88,6 +88,22 @@ contract CertifiToken is ERC20, ERC20Burnable, ERC20Pausable, AccessControl {
     }
 
     /**
+     * @notice Pauses all token transfers
+     * @dev Only callable by addresses with PAUSER_ROLE
+     */
+    function pause() external onlyRole(PAUSER_ROLE) {
+        _pause();
+    }
+
+    /**
+     * @notice Unpauses all token transfers
+     * @dev Only callable by addresses with PAUSER_ROLE
+     */
+    function unpause() external onlyRole(PAUSER_ROLE) {
+        _unpause();
+    }
+
+    /**
      * @notice Hook that is called before any token transfer
      * @dev Overrides required by Solidity for multiple inheritance
      */
