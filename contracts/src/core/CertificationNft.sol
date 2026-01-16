@@ -1272,7 +1272,6 @@ contract CertificateNFT is ERC721URIStorage, Pausable, AccessControlEnumerable, 
      */
     function generateReport(string memory reportType, uint256 periodStart, uint256 periodEnd) 
         external 
-        view 
         returns (bytes memory) 
     {
         if (periodStart > periodEnd) revert InvalidTimeRange();
@@ -1439,7 +1438,6 @@ contract CertificateNFT is ERC721URIStorage, Pausable, AccessControlEnumerable, 
      */
     function generateAuditReport(uint256 fromTime, uint256 toTime) 
         external 
-        view 
         returns (bytes memory) 
     {
         if (fromTime > toTime) revert InvalidTimeRange();
