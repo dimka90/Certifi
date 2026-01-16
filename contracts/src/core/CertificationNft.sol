@@ -968,7 +968,7 @@ contract CertificateNFT is ERC721URIStorage, Pausable, AccessControlEnumerable, 
     /**
      * @dev Get revocation information
      * @param tokenId Token ID to check
-     * @return isRevoked Whether certificate is revoked
+     * @return _isRevoked Whether certificate is revoked
      * @return revocationDate Timestamp of revocation
      * @return revocationReason Reason for revocation
      */
@@ -976,12 +976,12 @@ contract CertificateNFT is ERC721URIStorage, Pausable, AccessControlEnumerable, 
         external 
         view 
         certificateExists(tokenId) 
-        returns (bool isRevoked, uint256 revocationDate, string memory revocationReason) 
+        returns (bool _isRevoked, uint256 revocationDate, string memory revocationReason) 
     {
         Certificate memory cert = certificates[tokenId];
-        isRevoked = cert.isRevoked;
-        revocationDate = cert.revocationDate;
-        revocationReason = cert.revocationReason;
+        return (cert.isRevoked, cert.revocationDate, cert.revocationReason);
+        
+        
     }
     
     // ============ CERTIFICATE VERIFICATION ============
@@ -1029,7 +1029,7 @@ contract CertificateNFT is ERC721URIStorage, Pausable, AccessControlEnumerable, 
         result.exists = true;
         
         Certificate memory cert = certificates[tokenId];
-        result.isRevoked = cert.isRevoked;
+        result.return (cert.isRevoked, cert.revocationDate, cert.revocationReason);
         result.isExpired = cert.expirationDate != 0 && block.timestamp >= cert.expirationDate;
         result.isValid = !result.isRevoked && !result.isExpired;
         
