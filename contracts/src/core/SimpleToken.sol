@@ -29,6 +29,11 @@ contract SimpleToken is ERC20, Ownable, Pausable {
     uint256 public totalBurned;
     uint256 public totalMinted;
     
+    mapping(address => bool) public frozenAccounts;
+    
+    event AccountFrozen(address indexed account);
+    event AccountUnfrozen(address indexed account);
+    
     event Blacklisted(address indexed account);
     event Unblacklisted(address indexed account);
     event TransferFeeUpdated(uint256 newFee);
@@ -82,6 +87,8 @@ contract SimpleToken is ERC20, Ownable, Pausable {
     ) internal virtual override whenNotPaused {
         require(!blacklisted[from], "Sender is blacklisted");
         require(!blacklisted[to], "Recipient is blacklisted");
+        require(!frozenAccounts[from], "Sender account is frozen");
+        require(!frozenAccounts[to], "Recipient account is frozen");
         super._beforeTokenTransfer(from, to, amount);
     }
     
@@ -201,5 +208,21 @@ contract SimpleToken is ERC20, Ownable, Pausable {
     function setDailyLimit(address account, uint256 limit) external onlyOwner {
         dailyLimit[account] = limit;
         emit DailyLimitSet(account, limit);
+    }
+    
+    /**
+     * @dev Freeze an account
+     */
+    function freezeAccount(address account) external onlyOwner {
+        frozenAccounts[account] = true;
+        emit AccountFrozen(account);
+    }
+    
+    /**
+     * @dev Unfreeze an account
+     */
+    function unfreezeAccount(address account) external onlyOwner {
+        frozenAccounts[account] = false;
+        emit AccountUnfrozen(account);
     }
 }
