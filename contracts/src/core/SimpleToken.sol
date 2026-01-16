@@ -18,10 +18,15 @@ contract SimpleToken is ERC20, Ownable, Pausable {
     uint256 public transferFee = 0; // Fee in basis points (100 = 1%)
     address public feeCollector;
     
+    mapping(address => uint256) public vestingStart;
+    mapping(address => uint256) public vestingDuration;
+    mapping(address => uint256) public vestingAmount;
+    
     event Blacklisted(address indexed account);
     event Unblacklisted(address indexed account);
     event TransferFeeUpdated(uint256 newFee);
     event FeeCollectorUpdated(address indexed newCollector);
+    event VestingScheduleCreated(address indexed beneficiary, uint256 amount, uint256 duration);
     
     constructor() ERC20("Simple Token", "SMPL") Ownable(msg.sender) {
         _mint(msg.sender, 1000000 * 10 ** decimals());
@@ -120,5 +125,52 @@ contract SimpleToken is ERC20, Ownable, Pausable {
         } else {
             super._transfer(from, to, amount);
         }
+    }
+    
+    /**
+     * @dev Create vesting schedule for an address
+     */
+    function createVestingSchedule(
+        address beneficiary,
+        uint256 amount,
+        uint256 duration
+    ) external onlyOwner {
+        require(beneficiary != address(0), "Invalid beneficiary");
+        require(amount > 0, "Amount must be positive");
+        require(duration > 0, "Duration must be positive");
+        require(vestingAmount[beneficiary] == 0, "Vesting already exists");
+        
+        vestingStart[beneficiary] = block.timestamp;
+        vestingDuration[beneficiary] = duration;
+        vestingAmount[beneficiary] = amount;
+        
+        _transfer(msg.sender, address(this), amount);
+        
+        emit VestingScheduleCreated(beneficiary, amount, duration);
+    }
+    
+    /**
+     * @dev Calculate vested amount for an address
+     */
+    function vestedAmount(address beneficiary) public view returns (uint256) {
+        if (vestingAmount[beneficiary] == 0) return 0;
+        
+        uint256 elapsed = block.timestamp - vestingStart[beneficiary];
+        if (elapsed >= vestingDuration[beneficiary]) {
+            return vestingAmount[beneficiary];
+        }
+        
+        return (vestingAmount[beneficiary] * elapsed) / vestingDuration[beneficiary];
+    }
+    
+    /**
+     * @dev Release vested tokens
+     */
+    function releaseVested() external {
+        uint256 vested = vestedAmount(msg.sender);
+        require(vested > 0, "No tokens to release");
+        
+        vestingAmount[msg.sender] = 0;
+        _transfer(address(this), msg.sender, vested);
     }
 }
