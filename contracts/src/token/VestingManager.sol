@@ -89,4 +89,19 @@ contract VestingManager {
 
         emit TokensReleased(scheduleId, releasable);
     }
+
+    function revokeVestingSchedule(bytes32 scheduleId) external {
+        VestingSchedule storage schedule = vestingSchedules[scheduleId];
+        require(schedule.revocable, "Not revocable");
+        require(!schedule.revoked, "Already revoked");
+
+        schedule.revoked = true;
+        
+        uint256 unvested = schedule.totalAmount - schedule.releasedAmount;
+        if (unvested > 0) {
+            token.transfer(msg.sender, unvested);
+        }
+
+        emit VestingScheduleRevoked(scheduleId);
+    }
 }
