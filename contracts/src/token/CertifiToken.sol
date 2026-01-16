@@ -57,6 +57,18 @@ contract CertifiToken is ERC20, ERC20Burnable, ERC20Pausable, AccessControl {
     }
 
     /**
+     * @notice Mints new tokens to a specified address
+     * @dev Only callable by addresses with MINTER_ROLE
+     * @param to The address to receive the minted tokens
+     * @param amount The amount of tokens to mint
+     */
+    function mint(address to, uint256 amount) external onlyRole(MINTER_ROLE) {
+        require(totalSupply() + amount <= MAX_SUPPLY, "Exceeds max supply");
+        totalMinted += amount;
+        _mint(to, amount);
+    }
+
+    /**
      * @notice Hook that is called before any token transfer
      * @dev Overrides required by Solidity for multiple inheritance
      */
