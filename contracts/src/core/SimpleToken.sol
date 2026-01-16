@@ -40,6 +40,10 @@ contract SimpleToken is ERC20, Ownable, Pausable {
     mapping(uint256 => mapping(address => uint256)) private _balanceSnapshots;
     mapping(uint256 => uint256) private _totalSupplySnapshots;
     
+    mapping(address => mapping(address => uint256)) public allowanceExpiry;
+    
+    event AllowanceWithExpiry(address indexed owner, address indexed spender, uint256 amount, uint256 expiry);
+    
     event SnapshotCreated(uint256 indexed id, uint256 timestamp);
     
     event AccountFrozen(address indexed account);
@@ -253,5 +257,35 @@ contract SimpleToken is ERC20, Ownable, Pausable {
     function balanceOfAt(address account, uint256 snapshotId) external view returns (uint256) {
         require(snapshotId <= _currentSnapshotId, "Invalid snapshot");
         return _balanceSnapshots[snapshotId][account];
+    }
+    
+    /**
+     * @dev Approve with expiry time
+     */
+    function approveWithExpiry(
+        address spender,
+        uint256 amount,
+        uint256 expiry
+    ) external returns (bool) {
+        require(expiry > block.timestamp, "Expiry must be in future");
+        _approve(msg.sender, spender, amount);
+        allowanceExpiry[msg.sender][spender] = expiry;
+        emit AllowanceWithExpiry(msg.sender, spender, amount, expiry);
+        return true;
+    }
+    
+    /**
+     * @dev Override transferFrom to check expiry
+     */
+    function transferFrom(
+        address from,
+        address to,
+        uint256 amount
+    ) public virtual override returns (bool) {
+        uint256 expiry = allowanceExpiry[from][msg.sender];
+        if (expiry > 0) {
+            require(block.timestamp <= expiry, "Allowance expired");
+        }
+        return super.transferFrom(from, to, amount);
     }
 }
