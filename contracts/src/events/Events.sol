@@ -2,7 +2,7 @@
 pragma solidity ^0.8.20;
 
 /**
- * @title Events
+ 
  * @dev Event definitions for the Certificate NFT system
  */
 
