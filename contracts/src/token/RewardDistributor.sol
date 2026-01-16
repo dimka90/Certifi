@@ -56,4 +56,18 @@ contract RewardDistributor {
             rewardConfig.lastResetTime = block.timestamp;
         }
     }
+
+    function distributeInstitutionReward(address institution, uint256 certificateId) external {
+        _resetDailyCapIfNeeded();
+        
+        uint256 reward = rewardConfig.institutionRewardPerCert;
+        require(rewardConfig.dailyDistributed + reward <= rewardConfig.dailyRewardCap, "Daily cap exceeded");
+        require(rewardConfig.totalDistributed + reward <= rewardConfig.totalRewardCap, "Total cap exceeded");
+
+        rewardConfig.dailyDistributed += reward;
+        rewardConfig.totalDistributed += reward;
+
+        token.mint(institution, reward);
+        emit RewardMinted(institution, certificateId, reward, "institution");
+    }
 }
