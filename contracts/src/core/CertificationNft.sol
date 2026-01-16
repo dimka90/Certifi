@@ -380,7 +380,7 @@ contract CertificateNFT is ERC721URIStorage, Pausable, AccessControlEnumerable, 
         uint256 newTemplateId = _templateIdCounter;
         
         CertificateTemplate storage template = templates[newTemplateId];
-        template.templateId = newTemplateId;
+        template.id = newTemplateId;
         template.name = _name;
         template.creator = msg.sender;
         template.createdAt = block.timestamp;
