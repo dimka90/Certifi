@@ -4,6 +4,7 @@ pragma solidity ^0.8.20;
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/security/Pausable.sol";
+import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 
 /**
  * @title SimpleToken
@@ -32,7 +33,7 @@ error InvalidCollector(address collector);
 error SnapshotNotFound(uint256 snapshotId);
 error AllowanceExpired(address owner, address spender, uint256 expiry);
 error HolderIndexOutOfBounds(uint256 index, uint256 length);
-contract SimpleToken is ERC20, Ownable, Pausable {
+contract SimpleToken is ERC20, Ownable, Pausable, ReentrancyGuard {
     
     uint256 public constant MAX_SUPPLY = 10000000 * 10 ** 18;
     
@@ -114,7 +115,7 @@ contract SimpleToken is ERC20, Ownable, Pausable {
     /**
      * @dev Mint new tokens (owner only)
      */
-    function mint(address to, uint256 amount) external onlyOwner {
+    function mint(address to, uint256 amount) external onlyOwner nonReentrant {
         if (totalSupply() + amount > MAX_SUPPLY) {
             revert ExceedsMaxSupply(amount, MAX_SUPPLY);
         }
@@ -125,7 +126,7 @@ contract SimpleToken is ERC20, Ownable, Pausable {
     /**
      * @dev Burn tokens from caller's balance
      */
-    function burn(uint256 amount) external {
+    function burn(uint256 amount) external nonReentrant {
         totalBurned += amount;
         _burn(msg.sender, amount);
     }
@@ -133,7 +134,7 @@ contract SimpleToken is ERC20, Ownable, Pausable {
     /**
      * @dev Burn tokens from another address (requires allowance)
      */
-    function burnFrom(address account, uint256 amount) external {
+    function burnFrom(address account, uint256 amount) external nonReentrant {
         uint256 currentAllowance = allowance(account, msg.sender);
         if (currentAllowance < amount) {
             revert InsufficientAllowance(account, msg.sender, amount, currentAllowance);
@@ -302,7 +303,7 @@ contract SimpleToken is ERC20, Ownable, Pausable {
     /**
      * @dev Release vested tokens
      */
-    function releaseVested() external {
+    function releaseVested() external nonReentrant {
         uint256 vested = vestedAmount(msg.sender);
         require(vested > 0, "No tokens to release");
         
