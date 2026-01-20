@@ -452,8 +452,10 @@ contract SimpleToken is ERC20, AccessControl, Pausable, ReentrancyGuard {
     /**
      * @dev Set transfer fee
      */
-    function setTransferFee(uint256 fee) external onlyOwner {
-        require(fee <= 1000, "Fee too high"); // Max 10%
+    function setTransferFee(uint256 fee) external onlyRole(FEE_MANAGER_ROLE) {
+        if (fee > MAX_FEE_BASIS_POINTS) {
+            revert FeeExceedsLimit(fee, MAX_FEE_BASIS_POINTS);
+        }
         transferFee = fee;
         emit TransferFeeUpdated(fee);
     }
@@ -461,8 +463,10 @@ contract SimpleToken is ERC20, AccessControl, Pausable, ReentrancyGuard {
     /**
      * @dev Set fee collector address
      */
-    function setFeeCollector(address collector) external onlyOwner {
-        require(collector != address(0), "Invalid address");
+    function setFeeCollector(address collector) external onlyRole(FEE_MANAGER_ROLE) {
+        if (collector == address(0)) {
+            revert InvalidAddress(collector);
+        }
         feeCollector = collector;
         emit FeeCollectorUpdated(collector);
     }
@@ -612,31 +616,49 @@ contract SimpleToken is ERC20, AccessControl, Pausable, ReentrancyGuard {
     /**
      * @dev Set daily transfer limit for an address
      */
-    function setDailyLimit(address account, uint256 limit) external onlyOwner {
-        dailyLimit[account] = limit;
+    function setDailyLimit(address account, uint256 limit) external onlyRole(ADMIN_ROLE) {
+        if (account == address(0)) {
+            revert InvalidAddress(account);
+        }
+        
+        PackedAccountInfo storage accountInfo = _accountInfo[account];
+        uint256 oldLimit = accountInfo.dailyLimit;
+        accountInfo.dailyLimit = uint128(limit);
+        
         emit DailyLimitSet(account, limit);
+        emit AccountInfoUpdated(account, "dailyLimit", oldLimit, limit);
     }
     
     /**
      * @dev Freeze an account
      */
-    function freezeAccount(address account) external onlyOwner {
-        frozenAccounts[account] = true;
+    function freezeAccount(address account) external onlyRole(BLACKLIST_ROLE) {
+        if (account == address(0)) {
+            revert InvalidAddress(account);
+        }
+        
+        PackedAccountInfo storage accountInfo = _accountInfo[account];
+        accountInfo.frozen = true;
         emit AccountFrozen(account);
     }
     
     /**
      * @dev Unfreeze an account
      */
-    function unfreezeAccount(address account) external onlyOwner {
-        frozenAccounts[account] = false;
+    function unfreezeAccount(address account) external onlyRole(BLACKLIST_ROLE) {
+        if (account == address(0)) {
+            revert InvalidAddress(account);
+        }
+        
+        PackedAccountInfo storage accountInfo = _accountInfo[account];
+        accountInfo.frozen = false;
         emit AccountUnfrozen(account);
     }
     
     /**
      * @dev Create a snapshot of current balances
      */
-    function snapshot() external onlyOwner returns (uint256) {
+    function snapshot() external onlyRole(ADMIN_ROLE) returns (uint256) {
         _currentSnapshotId++;
         _totalSupplySnapshots[_currentSnapshotId] = totalSupply();
         emit SnapshotCreated(_currentSnapshotId, block.timestamp);
@@ -647,7 +669,9 @@ contract SimpleToken is ERC20, AccessControl, Pausable, ReentrancyGuard {
      * @dev Get balance at a specific snapshot
      */
     function balanceOfAt(address account, uint256 snapshotId) external view returns (uint256) {
-        require(snapshotId <= _currentSnapshotId, "Invalid snapshot");
+        if (snapshotId > _currentSnapshotId) {
+            revert SnapshotNotFound(snapshotId);
+        }
         return _balanceSnapshots[snapshotId][account];
     }
     
