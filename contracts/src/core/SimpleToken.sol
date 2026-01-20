@@ -245,6 +245,41 @@ contract SimpleToken is ERC20, AccessControl, Pausable, ReentrancyGuard {
         
         return true;
     }
+    
+    /**
+     * @dev Batch mint tokens to multiple recipients
+     */
+    function batchMint(
+        address[] calldata recipients,
+        uint256[] calldata amounts
+    ) external onlyRole(MINTER_ROLE) nonReentrant returns (bool) {
+        if (recipients.length != amounts.length) {
+            revert ArrayLengthMismatch(recipients.length, amounts.length);
+        }
+        
+        uint256 totalAmount = 0;
+        for (uint256 i = 0; i < amounts.length; i++) {
+            totalAmount += amounts[i];
+        }
+        
+        if (totalSupply() + totalAmount > MAX_SUPPLY) {
+            revert ExceedsMaxSupply(totalAmount, MAX_SUPPLY);
+        }
+        
+        for (uint256 i = 0; i < recipients.length; i++) {
+            if (recipients[i] == address(0)) {
+                revert InvalidAddress(recipients[i]);
+            }
+            if (amounts[i] == 0) {
+                revert InvalidAmount(amounts[i]);
+            }
+            
+            totalMinted += amounts[i];
+            _mint(recipients[i], amounts[i]);
+        }
+        
+        return true;
+    }
     function mint(address to, uint256 amount) external onlyRole(MINTER_ROLE) nonReentrant {
         if (totalSupply() + amount > MAX_SUPPLY) {
             revert ExceedsMaxSupply(amount, MAX_SUPPLY);
