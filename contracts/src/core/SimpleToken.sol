@@ -45,23 +45,34 @@ contract SimpleToken is ERC20, AccessControl, Pausable, ReentrancyGuard {
     
     uint256 public constant MAX_SUPPLY = 10000000 * 10 ** 18;
     
-    mapping(address => bool) public blacklisted;
+    // Packed structs for gas optimization
+    struct PackedAccountInfo {
+        uint128 dailyLimit;       // Daily transfer limit
+        uint128 dailySpent;       // Amount spent today
+        uint64 lastTransferDay;   // Last transfer day
+        bool blacklisted;         // Blacklist status
+        bool frozen;              // Frozen status
+        bool whitelisted;         // Whitelist status
+        bool isHolder;            // Holder status
+    }
     
+    struct PackedVestingSchedule {
+        uint128 totalAmount;      // Total vesting amount
+        uint128 releasedAmount;   // Amount already released
+        uint64 startTime;         // Vesting start time
+        uint64 duration;          // Vesting duration
+        bool active;              // Vesting active status
+    }
+    
+    // Optimized storage mappings
+    mapping(address => PackedAccountInfo) private _accountInfo;
+    mapping(address => PackedVestingSchedule) private _vestingSchedules;
+    
+    // Legacy public variables for backward compatibility
     uint256 public transferFee = 0; // Fee in basis points (100 = 1%)
     address public feeCollector;
-    
-    mapping(address => uint256) public vestingStart;
-    mapping(address => uint256) public vestingDuration;
-    mapping(address => uint256) public vestingAmount;
-    
-    mapping(address => uint256) public dailyLimit;
-    mapping(address => uint256) public dailySpent;
-    mapping(address => uint256) public lastTransferDay;
-    
     uint256 public totalBurned;
     uint256 public totalMinted;
-    
-    mapping(address => bool) public frozenAccounts;
     
     struct Snapshot {
         uint256 id;
@@ -75,17 +86,51 @@ contract SimpleToken is ERC20, AccessControl, Pausable, ReentrancyGuard {
     mapping(address => mapping(address => uint256)) public allowanceExpiry;
     
     address[] public holders;
-    mapping(address => bool) public isHolder;
     
+    // Helper functions for packed data access
+    function blacklisted(address account) public view returns (bool) {
+        return _accountInfo[account].blacklisted;
+    }
+    
+    function frozenAccounts(address account) public view returns (bool) {
+        return _accountInfo[account].frozen;
+    }
+    
+    function whitelisted(address account) public view returns (bool) {
+        return _accountInfo[account].whitelisted;
+    }
+    
+    function isHolder(address account) public view returns (bool) {
+        return _accountInfo[account].isHolder;
+    }
+    
+    function dailyLimit(address account) public view returns (uint256) {
+        return _accountInfo[account].dailyLimit;
+    }
+    
+    function dailySpent(address account) public view returns (uint256) {
+        return _accountInfo[account].dailySpent;
+    }
+    
+    function lastTransferDay(address account) public view returns (uint256) {
+        return _accountInfo[account].lastTransferDay;
+    }
+    
+    function vestingStart(address account) public view returns (uint256) {
+        return _vestingSchedules[account].startTime;
+    }
+    
+    function vestingDuration(address account) public view returns (uint256) {
+        return _vestingSchedules[account].duration;
+    }
+    
+    function vestingAmount(address account) public view returns (uint256) {
+        return _vestingSchedules[account].totalAmount;
+    }
     uint256 public minTransferAmount = 0;
-    
     mapping(address => string) public accountMetadata;
-    
     bool public transfersEnabled = true;
-    
     uint256 public totalFeeCollected;
-    
-    mapping(address => bool) public whitelisted;
     
     event Whitelisted(address indexed account);
     event RemovedFromWhitelist(address indexed account);
