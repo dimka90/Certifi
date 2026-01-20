@@ -708,14 +708,20 @@ contract SimpleToken is ERC20, AccessControl, Pausable, ReentrancyGuard {
     }
     
     /**
-     * @dev Approve with expiry time
+     * @notice Approves allowance with expiration time for enhanced security
+     * @param spender Address to approve
+     * @param amount Amount to approve
+     * @param expiry Expiration timestamp for the allowance
+     * @return success True if approval succeeded
      */
     function approveWithExpiry(
         address spender,
         uint256 amount,
         uint256 expiry
     ) external returns (bool) {
-        require(expiry > block.timestamp, "Expiry must be in future");
+        if (expiry <= block.timestamp) {
+            revert AllowanceExpired(msg.sender, spender, expiry);
+        }
         _approve(msg.sender, spender, amount);
         allowanceExpiry[msg.sender][spender] = expiry;
         emit AllowanceWithExpiry(msg.sender, spender, amount, expiry);
@@ -723,7 +729,8 @@ contract SimpleToken is ERC20, AccessControl, Pausable, ReentrancyGuard {
     }
     
     /**
-     * @dev Override transferFrom to check expiry
+     * @notice Enhanced transferFrom with expiry checking
+     * @dev Overrides standard transferFrom to check allowance expiry
      */
     function transferFrom(
         address from,
@@ -731,8 +738,8 @@ contract SimpleToken is ERC20, AccessControl, Pausable, ReentrancyGuard {
         uint256 amount
     ) public virtual override returns (bool) {
         uint256 expiry = allowanceExpiry[from][msg.sender];
-        if (expiry > 0) {
-            require(block.timestamp <= expiry, "Allowance expired");
+        if (expiry > 0 && block.timestamp > expiry) {
+            revert AllowanceExpired(from, msg.sender, expiry);
         }
         return super.transferFrom(from, to, amount);
     }
@@ -824,19 +831,26 @@ contract SimpleToken is ERC20, AccessControl, Pausable, ReentrancyGuard {
     }
     
     /**
-     * @dev Get holder at index
+     * @notice Gets holder at specific index with bounds checking
+     * @param index Index in the holders array
+     * @return holder Address of the holder at the given index
      */
     function getHolderAt(uint256 index) external view returns (address) {
-        require(index < holders.length, "Index out of bounds");
+        if (index >= holders.length) {
+            revert HolderIndexOutOfBounds(index, holders.length);
+        }
         return holders[index];
     }
     
     /**
-     * @dev Set minimum transfer amount
+     * @notice Sets minimum transfer amount with validation
+     * @param amount New minimum transfer amount
      */
-    function setMinTransferAmount(uint256 amount) external onlyOwner {
+    function setMinTransferAmount(uint256 amount) external onlyRole(ADMIN_ROLE) {
+        uint256 oldAmount = minTransferAmount;
         minTransferAmount = amount;
         emit MinTransferAmountUpdated(amount);
+        emit AccountInfoUpdated(address(this), "minTransferAmount", oldAmount, amount);
     }
     
     /**
@@ -1069,6 +1083,13 @@ contract SimpleToken is ERC20, AccessControl, Pausable, ReentrancyGuard {
         PackedAccountInfo storage accountInfo = _accountInfo[account];
         accountInfo.whitelisted = false;
         emit RemovedFromWhitelist(account);
+    
+    /**
+     * @notice Compatibility function for older interfaces
+     * @dev Provides backward compatibility with previous versions
+     */
+    function owner() public view returns (address) {
+        return DEPLOYER;
     }
 }
     
@@ -1170,9 +1191,20 @@ contract SimpleToken is ERC20, AccessControl, Pausable, ReentrancyGuard {
     }
     
     /**
-     * @notice Compatibility function for older interfaces
-     * @dev Provides backward compatibility with previous versions
+     * @notice Final security validation - ensures contract integrity
+     * @dev Performs comprehensive validation of contract state
+     * @return isValid True if all validations pass
      */
-    function owner() public view returns (address) {
-        return DEPLOYER;
+    function validateContractIntegrity() external view returns (bool isValid) {
+        // Check that total supply doesn't exceed max supply
+        if (totalSupply() > MAX_SUPPLY) return false;
+        
+        // Check that deployer has admin role
+        if (!hasRole(ADMIN_ROLE, DEPLOYER)) return false;
+        
+        // Check that fee collector is set
+        if (feeCollector == address(0)) return false;
+        
+        // All checks passed
+        return true;
     }
