@@ -1071,3 +1071,108 @@ contract SimpleToken is ERC20, AccessControl, Pausable, ReentrancyGuard {
         emit RemovedFromWhitelist(account);
     }
 }
+    
+    // ============ INTEGRATION HELPERS ============
+    
+    /**
+     * @notice Checks if address has sufficient balance for operation
+     * @param account Address to check
+     * @param amount Required amount
+     * @return hasBalance True if account has sufficient balance
+     */
+    function hasSufficientBalance(address account, uint256 amount) external view returns (bool hasBalance) {
+        return balanceOf(account) >= amount;
+    }
+    
+    /**
+     * @notice Checks if transfer would succeed (without executing)
+     * @param from Sender address
+     * @param to Recipient address
+     * @param amount Transfer amount
+     * @return canTransfer True if transfer would succeed
+     * @return reason Reason if transfer would fail
+     */
+    function canTransfer(
+        address from,
+        address to,
+        uint256 amount
+    ) external view returns (bool canTransfer, string memory reason) {
+        if (paused()) {
+            return (false, "Contract is paused");
+        }
+        
+        if (!transfersEnabled) {
+            return (false, "Transfers are disabled");
+        }
+        
+        if (balanceOf(from) < amount) {
+            return (false, "Insufficient balance");
+        }
+        
+        PackedAccountInfo storage fromInfo = _accountInfo[from];
+        PackedAccountInfo storage toInfo = _accountInfo[to];
+        
+        if (fromInfo.blacklisted) {
+            return (false, "Sender is blacklisted");
+        }
+        
+        if (toInfo.blacklisted) {
+            return (false, "Recipient is blacklisted");
+        }
+        
+        if (fromInfo.frozen) {
+            return (false, "Sender account is frozen");
+        }
+        
+        if (toInfo.frozen) {
+            return (false, "Recipient account is frozen");
+        }
+        
+        if (amount < minTransferAmount) {
+            return (false, "Amount below minimum");
+        }
+        
+        // Check daily limit
+        if (fromInfo.dailyLimit > 0) {
+            uint256 currentDay = block.timestamp / SECONDS_PER_DAY;
+            uint256 dailySpentAmount = fromInfo.lastTransferDay == currentDay ? fromInfo.dailySpent : 0;
+            
+            if (dailySpentAmount + amount > fromInfo.dailyLimit) {
+                return (false, "Daily limit exceeded");
+            }
+        }
+        
+        return (true, "");
+    }
+    
+    /**
+     * @notice Gets comprehensive token information for external integrations
+     * @return info Struct containing all relevant token information
+     */
+    function getTokenInfo() external view returns (
+        string memory name_,
+        string memory symbol_,
+        uint8 decimals_,
+        uint256 totalSupply_,
+        uint256 maxSupply_,
+        bool transfersEnabled_,
+        bool paused_
+    ) {
+        return (
+            name(),
+            symbol(),
+            decimals(),
+            totalSupply(),
+            MAX_SUPPLY,
+            transfersEnabled,
+            paused()
+        );
+    }
+    
+    /**
+     * @notice Compatibility function for older interfaces
+     * @dev Provides backward compatibility with previous versions
+     */
+    function owner() public view returns (address) {
+        return DEPLOYER;
+    }
