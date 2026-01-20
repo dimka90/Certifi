@@ -174,8 +174,55 @@ contract SimpleToken is ERC20, AccessControl, Pausable, ReentrancyGuard {
     }
     
     /**
-     * @dev Mint new tokens (owner only)
+     * @dev Batch transfer to multiple recipients
      */
+    function batchTransfer(
+        address[] calldata recipients,
+        uint256[] calldata amounts
+    ) external nonReentrant returns (bool) {
+        if (recipients.length != amounts.length) {
+            revert ArrayLengthMismatch(recipients.length, amounts.length);
+        }
+        
+        for (uint256 i = 0; i < recipients.length; i++) {
+            if (recipients[i] == address(0)) {
+                revert InvalidAddress(recipients[i]);
+            }
+            if (amounts[i] == 0) {
+                revert InvalidAmount(amounts[i]);
+            }
+            
+            _transfer(msg.sender, recipients[i], amounts[i]);
+        }
+        
+        return true;
+    }
+    
+    /**
+     * @dev Batch transferFrom for multiple operations
+     */
+    function batchTransferFrom(
+        address[] calldata senders,
+        address[] calldata recipients,
+        uint256[] calldata amounts
+    ) external nonReentrant returns (bool) {
+        if (senders.length != recipients.length || recipients.length != amounts.length) {
+            revert ArrayLengthMismatch(senders.length, recipients.length);
+        }
+        
+        for (uint256 i = 0; i < senders.length; i++) {
+            if (senders[i] == address(0) || recipients[i] == address(0)) {
+                revert InvalidAddress(recipients[i]);
+            }
+            if (amounts[i] == 0) {
+                revert InvalidAmount(amounts[i]);
+            }
+            
+            transferFrom(senders[i], recipients[i], amounts[i]);
+        }
+        
+        return true;
+    }
     function mint(address to, uint256 amount) external onlyRole(MINTER_ROLE) nonReentrant {
         if (totalSupply() + amount > MAX_SUPPLY) {
             revert ExceedsMaxSupply(amount, MAX_SUPPLY);
