@@ -737,9 +737,58 @@ contract SimpleToken is ERC20, AccessControl, Pausable, ReentrancyGuard {
         return super.transferFrom(from, to, amount);
     }
     
+    
+    // ============ VIEW FUNCTIONS FOR TRANSPARENCY ============
+    
     /**
-     * @dev Get holders with pagination support
+     * @notice Gets comprehensive account information in a single call
+     * @param account Address to query
+     * @return info Packed account information including limits, status flags
      */
+    function getAccountInfo(address account) external view returns (PackedAccountInfo memory info) {
+        return _accountInfo[account];
+    }
+    
+    /**
+     * @notice Gets detailed vesting information for an account
+     * @param account Address to query vesting details for
+     * @return schedule Complete vesting schedule information
+     */
+    function getVestingDetails(address account) external view returns (PackedVestingSchedule memory schedule) {
+        return _vestingSchedules[account];
+    }
+    
+    /**
+     * @notice Calculates the circulating supply (total supply minus locked tokens)
+     * @return circulatingSupply Amount of tokens available for trading
+     */
+    function getCirculatingSupply() external view returns (uint256 circulatingSupply) {
+        uint256 totalLocked = balanceOf(address(this)); // Vesting contract balance
+        return totalSupply() - totalLocked;
+    }
+    
+    /**
+     * @notice Gets comprehensive token metrics for analytics
+     * @return metrics Struct containing supply, holder, and fee information
+     */
+    function getTokenMetrics() external view returns (
+        uint256 totalSupply_,
+        uint256 circulatingSupply_,
+        uint256 totalMinted_,
+        uint256 totalBurned_,
+        uint256 holderCount_,
+        uint256 totalFeesCollected_
+    ) {
+        uint256 totalLocked = balanceOf(address(this));
+        return (
+            totalSupply(),
+            totalSupply() - totalLocked,
+            totalMinted,
+            totalBurned,
+            holders.length,
+            totalFeeCollected
+        );
+    }
     function getHolders(uint256 offset, uint256 limit) external view returns (address[] memory) {
         if (offset >= holders.length) {
             return new address[](0);
