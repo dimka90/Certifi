@@ -438,15 +438,27 @@ contract SimpleToken is ERC20, AccessControl, Pausable, ReentrancyGuard {
         address beneficiary,
         uint256 amount,
         uint256 duration
-    ) external onlyOwner {
-        require(beneficiary != address(0), "Invalid beneficiary");
-        require(amount > 0, "Amount must be positive");
-        require(duration > 0, "Duration must be positive");
-        require(vestingAmount[beneficiary] == 0, "Vesting already exists");
+    ) external onlyRole(VESTING_MANAGER_ROLE) {
+        if (beneficiary == address(0)) {
+            revert InvalidAddress(beneficiary);
+        }
+        if (amount == 0) {
+            revert InvalidAmount(amount);
+        }
+        if (duration == 0) {
+            revert InvalidAmount(duration);
+        }
         
-        vestingStart[beneficiary] = block.timestamp;
-        vestingDuration[beneficiary] = duration;
-        vestingAmount[beneficiary] = amount;
+        PackedVestingSchedule storage schedule = _vestingSchedules[beneficiary];
+        if (schedule.active) {
+            revert VestingAlreadyExists(beneficiary);
+        }
+        
+        schedule.totalAmount = uint128(amount);
+        schedule.startTime = uint64(block.timestamp);
+        schedule.duration = uint64(duration);
+        schedule.releasedAmount = 0;
+        schedule.active = true;
         
         _transfer(msg.sender, address(this), amount);
         
@@ -454,28 +466,61 @@ contract SimpleToken is ERC20, AccessControl, Pausable, ReentrancyGuard {
     }
     
     /**
-     * @dev Calculate vested amount for an address
+     * @dev Calculate vested amount for an address with improved precision
      */
     function vestedAmount(address beneficiary) public view returns (uint256) {
-        if (vestingAmount[beneficiary] == 0) return 0;
-        
-        uint256 elapsed = block.timestamp - vestingStart[beneficiary];
-        if (elapsed >= vestingDuration[beneficiary]) {
-            return vestingAmount[beneficiary];
+        PackedVestingSchedule storage schedule = _vestingSchedules[beneficiary];
+        if (!schedule.active || schedule.totalAmount == 0) {
+            return 0;
         }
         
-        return (vestingAmount[beneficiary] * elapsed) / vestingDuration[beneficiary];
+        uint256 elapsed = block.timestamp - schedule.startTime;
+        if (elapsed >= schedule.duration) {
+            return schedule.totalAmount - schedule.releasedAmount;
+        }
+        
+        uint256 totalVested = (uint256(schedule.totalAmount) * elapsed) / schedule.duration;
+        return totalVested > schedule.releasedAmount ? totalVested - schedule.releasedAmount : 0;
     }
     
     /**
-     * @dev Release vested tokens
+     * @dev Get detailed vesting information
+     */
+    function getVestingInfo(address beneficiary) external view returns (
+        uint256 totalAmount,
+        uint256 releasedAmount,
+        uint256 startTime,
+        uint256 duration,
+        bool active
+    ) {
+        PackedVestingSchedule storage schedule = _vestingSchedules[beneficiary];
+        return (
+            schedule.totalAmount,
+            schedule.releasedAmount,
+            schedule.startTime,
+            schedule.duration,
+            schedule.active
+        );
+    }
+    
+    /**
+     * @dev Release vested tokens with improved tracking
      */
     function releaseVested() external nonReentrant {
-        uint256 vested = vestedAmount(msg.sender);
-        require(vested > 0, "No tokens to release");
+        uint256 releasable = vestedAmount(msg.sender);
+        if (releasable == 0) {
+            revert NoVestedTokens(msg.sender);
+        }
         
-        vestingAmount[msg.sender] = 0;
-        _transfer(address(this), msg.sender, vested);
+        PackedVestingSchedule storage schedule = _vestingSchedules[msg.sender];
+        schedule.releasedAmount += uint128(releasable);
+        
+        // If fully vested, deactivate schedule
+        if (schedule.releasedAmount >= schedule.totalAmount) {
+            schedule.active = false;
+        }
+        
+        _transfer(address(this), msg.sender, releasable);
     }
     
     /**
