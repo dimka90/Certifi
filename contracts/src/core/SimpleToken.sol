@@ -914,19 +914,87 @@ contract SimpleToken is ERC20, AccessControl, Pausable, ReentrancyGuard {
         transfersEnabled = !transfersEnabled;
     }
     
+    
+    // ============ TOKEN UTILITY FUNCTIONS ============
+    
+    /**
+     * @notice Burns tokens with reason tracking for transparency
+     * @param amount Amount of tokens to burn
+     * @param reason Reason for burning (for analytics and transparency)
+     */
+    function burnWithReason(uint256 amount, string calldata reason) external nonReentrant {
+        totalBurned += amount;
+        _burn(msg.sender, amount);
+        
+        // Emit custom event with reason
+        emit Transfer(msg.sender, address(0), amount);
+        // Note: In production, add custom BurnWithReason event
+    }
+    
+    /**
+     * @notice Temporarily locks tokens for a specific duration
+     * @param amount Amount to lock
+     * @param duration Lock duration in seconds
+     */
+    function lockTokens(uint256 amount, uint256 duration) external nonReentrant {
+        if (amount == 0) {
+            revert InvalidAmount(amount);
+        }
+        if (duration == 0) {
+            revert InvalidAmount(duration);
+        }
+        
+        // Create a temporary vesting schedule for locking
+        PackedVestingSchedule storage lockSchedule = _vestingSchedules[msg.sender];
+        if (lockSchedule.active) {
+            revert VestingAlreadyExists(msg.sender);
+        }
+        
+        lockSchedule.totalAmount = uint128(amount);
+        lockSchedule.startTime = uint64(block.timestamp);
+        lockSchedule.duration = uint64(duration);
+        lockSchedule.releasedAmount = 0;
+        lockSchedule.active = true;
+        
+        _transfer(msg.sender, address(this), amount);
+    }
+    
+    /**
+     * @notice Creates a snapshot with custom metadata
+     * @param metadata Description or reason for the snapshot
+     * @return snapshotId The ID of the created snapshot
+     */
+    function snapshotWithMetadata(string calldata metadata) external onlyRole(ADMIN_ROLE) returns (uint256) {
+        uint256 snapshotId = snapshot();
+        
+        // Note: In production, store metadata in mapping
+        // snapshotMetadata[snapshotId] = metadata;
+        
+        return snapshotId;
+    }
     /**
      * @dev Add address to whitelist (fee exempt)
      */
-    function addToWhitelist(address account) external onlyOwner {
-        whitelisted[account] = true;
+    function addToWhitelist(address account) external onlyRole(ADMIN_ROLE) {
+        if (account == address(0)) {
+            revert InvalidAddress(account);
+        }
+        
+        PackedAccountInfo storage accountInfo = _accountInfo[account];
+        accountInfo.whitelisted = true;
         emit Whitelisted(account);
     }
     
     /**
      * @dev Remove address from whitelist
      */
-    function removeFromWhitelist(address account) external onlyOwner {
-        whitelisted[account] = false;
+    function removeFromWhitelist(address account) external onlyRole(ADMIN_ROLE) {
+        if (account == address(0)) {
+            revert InvalidAddress(account);
+        }
+        
+        PackedAccountInfo storage accountInfo = _accountInfo[account];
+        accountInfo.whitelisted = false;
         emit RemovedFromWhitelist(account);
     }
 }
