@@ -985,9 +985,82 @@ contract SimpleToken is ERC20, AccessControl, Pausable, ReentrancyGuard {
         emit Whitelisted(account);
     }
     
+    
+    // ============ ENHANCED FEE MECHANISM ============
+    
+    // Fee types for different operations
+    enum FeeType { TRANSFER, MINT, BURN, VESTING }
+    
+    mapping(FeeType => uint256) public feeRates;
+    mapping(address => bool) public feeExempt;
+    
     /**
-     * @dev Remove address from whitelist
+     * @notice Sets different fee rates for different operation types
+     * @param feeType Type of operation (transfer, mint, burn, vesting)
+     * @param rate Fee rate in basis points (100 = 1%)
      */
+    function setFeeRate(FeeType feeType, uint256 rate) external onlyRole(FEE_MANAGER_ROLE) {
+        if (rate > MAX_FEE_BASIS_POINTS) {
+            revert FeeExceedsLimit(rate, MAX_FEE_BASIS_POINTS);
+        }
+        
+        feeRates[feeType] = rate;
+        emit TransferFeeUpdated(rate); // Reuse existing event
+    }
+    
+    /**
+     * @notice Adds address to fee exemption list
+     * @param account Address to exempt from fees
+     */
+    function addFeeExemption(address account) external onlyRole(FEE_MANAGER_ROLE) {
+        if (account == address(0)) {
+            revert InvalidAddress(account);
+        }
+        
+        feeExempt[account] = true;
+        // Reuse whitelist event for fee exemption
+        emit Whitelisted(account);
+    }
+    
+    /**
+     * @notice Removes address from fee exemption list
+     * @param account Address to remove from fee exemption
+     */
+    function removeFeeExemption(address account) external onlyRole(FEE_MANAGER_ROLE) {
+        feeExempt[account] = false;
+        emit RemovedFromWhitelist(account);
+    }
+    
+    /**
+     * @notice Calculates dynamic fee based on transaction amount and account status
+     * @param from Sender address
+     * @param to Recipient address  
+     * @param amount Transaction amount
+     * @return fee Calculated fee amount
+     */
+    function calculateDynamicFee(
+        address from,
+        address to,
+        uint256 amount
+    ) public view returns (uint256 fee) {
+        // No fee for deployer or fee-exempt addresses
+        if (from == DEPLOYER || to == DEPLOYER || feeExempt[from] || feeExempt[to]) {
+            return 0;
+        }
+        
+        PackedAccountInfo storage fromInfo = _accountInfo[from];
+        PackedAccountInfo storage toInfo = _accountInfo[to];
+        
+        // No fee for whitelisted addresses
+        if (fromInfo.whitelisted || toInfo.whitelisted) {
+            return 0;
+        }
+        
+        // Use transfer fee rate or custom rate
+        uint256 rate = feeRates[FeeType.TRANSFER] > 0 ? feeRates[FeeType.TRANSFER] : transferFee;
+        
+        return (amount * rate) / 10000;
+    }
     function removeFromWhitelist(address account) external onlyRole(ADMIN_ROLE) {
         if (account == address(0)) {
             revert InvalidAddress(account);
