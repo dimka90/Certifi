@@ -344,17 +344,19 @@ contract SimpleToken is ERC20, AccessControl, Pausable, ReentrancyGuard {
             revert AccountFrozen(to);
         }
         
-        // Track holders
+        // Track holders efficiently
         if (to != address(0) && balanceOf(to) == 0 && amount > 0) {
-            if (!isHolder[to]) {
+            PackedAccountInfo storage toInfo = _accountInfo[to];
+            if (!toInfo.isHolder) {
                 holders.push(to);
-                isHolder[to] = true;
+                toInfo.isHolder = true;
                 emit HolderAdded(to);
             }
         }
         
         if (from != address(0) && balanceOf(from) == amount) {
-            isHolder[from] = false;
+            PackedAccountInfo storage fromInfo = _accountInfo[from];
+            fromInfo.isHolder = false;
             emit HolderRemoved(from);
         }
         
@@ -549,8 +551,38 @@ contract SimpleToken is ERC20, AccessControl, Pausable, ReentrancyGuard {
     }
     
     /**
-     * @dev Get total number of holders
+     * @dev Get holders with pagination support
      */
+    function getHolders(uint256 offset, uint256 limit) external view returns (address[] memory) {
+        if (offset >= holders.length) {
+            return new address[](0);
+        }
+        
+        uint256 end = offset + limit;
+        if (end > holders.length) {
+            end = holders.length;
+        }
+        
+        address[] memory result = new address[](end - offset);
+        for (uint256 i = offset; i < end; i++) {
+            result[i - offset] = holders[i];
+        }
+        
+        return result;
+    }
+    
+    /**
+     * @dev Get accurate holder count (excluding zero balances)
+     */
+    function getActiveHolderCount() external view returns (uint256) {
+        uint256 count = 0;
+        for (uint256 i = 0; i < holders.length; i++) {
+            if (balanceOf(holders[i]) > 0) {
+                count++;
+            }
+        }
+        return count;
+    }
     function getHolderCount() external view returns (uint256) {
         return holders.length;
     }
