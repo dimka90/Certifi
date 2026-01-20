@@ -223,6 +223,28 @@ contract SimpleToken is ERC20, AccessControl, Pausable, ReentrancyGuard {
         
         return true;
     }
+    
+    /**
+     * @dev Batch approve multiple spenders
+     */
+    function batchApprove(
+        address[] calldata spenders,
+        uint256[] calldata amounts
+    ) external nonReentrant returns (bool) {
+        if (spenders.length != amounts.length) {
+            revert ArrayLengthMismatch(spenders.length, amounts.length);
+        }
+        
+        for (uint256 i = 0; i < spenders.length; i++) {
+            if (spenders[i] == address(0)) {
+                revert InvalidAddress(spenders[i]);
+            }
+            
+            _approve(msg.sender, spenders[i], amounts[i]);
+        }
+        
+        return true;
+    }
     function mint(address to, uint256 amount) external onlyRole(MINTER_ROLE) nonReentrant {
         if (totalSupply() + amount > MAX_SUPPLY) {
             revert ExceedsMaxSupply(amount, MAX_SUPPLY);
