@@ -6,10 +6,15 @@ import "@openzeppelin/contracts/access/AccessControl.sol";
 import "@openzeppelin/contracts/security/Pausable.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 
-/**
- * @title SimpleToken
- * @dev Basic ERC20 token implementation with ownership
- */
+    /**
+     * @title SimpleToken - Enhanced ERC20 Implementation
+     * @dev Advanced ERC20 token with role-based access control, batch operations,
+     *      vesting schedules, transfer fees, and comprehensive security features
+     * @author Certifi Team
+     * @notice This contract implements an enhanced ERC20 token with additional
+     *         features for the Certifi ecosystem including batch operations,
+     *         vesting schedules, and advanced access control
+     */
 
 // Custom errors for gas optimization
 error InsufficientBalance(address account, uint256 requested, uint256 available);
@@ -218,6 +223,11 @@ contract SimpleToken is ERC20, AccessControl, Pausable, ReentrancyGuard {
     event AccountInfoUpdated(address indexed account, string field, uint256 oldValue, uint256 newValue);
     event FeeCollected(uint256 amount, uint256 total);
     
+    /**
+     * @notice Initializes the SimpleToken with enhanced features
+     * @dev Sets up role-based access control, initial supply, and fee collector
+     *      Grants all administrative roles to the deployer for initial setup
+     */
     constructor() ERC20("Simple Token", "SMPL") {
         uint256 initialSupply = 1000000 * 10 ** decimals();
         INITIAL_SUPPLY = initialSupply;
@@ -235,8 +245,16 @@ contract SimpleToken is ERC20, AccessControl, Pausable, ReentrancyGuard {
         _grantRole(VESTING_MANAGER_ROLE, msg.sender);
     }
     
+    // ============ BATCH OPERATIONS ============
+    
     /**
-     * @dev Batch transfer to multiple recipients
+     * @notice Transfers tokens to multiple recipients in a single transaction
+     * @dev Performs batch transfers atomically - all succeed or all fail
+     * @param recipients Array of recipient addresses
+     * @param amounts Array of amounts to transfer to each recipient
+     * @return success True if all transfers succeeded
+     * @custom:security Validates all inputs before executing any transfers
+     * @custom:gas-optimization Uses single loop with early validation
      */
     function batchTransfer(
         address[] calldata recipients,
@@ -350,6 +368,14 @@ contract SimpleToken is ERC20, AccessControl, Pausable, ReentrancyGuard {
         emit BatchMintCompleted(msg.sender, recipients.length, totalAmount);
         return true;
     }
+    /**
+     * @notice Mints new tokens to specified address (requires MINTER_ROLE)
+     * @dev Increases total supply and recipient balance, respects max supply cap
+     * @param to Address to receive the newly minted tokens
+     * @param amount Number of tokens to mint
+     * @custom:access-control Requires MINTER_ROLE
+     * @custom:supply-cap Enforces MAX_SUPPLY limit
+     */
     function mint(address to, uint256 amount) external onlyRole(MINTER_ROLE) nonReentrant {
         if (totalSupply() + amount > MAX_SUPPLY) {
             revert ExceedsMaxSupply(amount, MAX_SUPPLY);
@@ -522,7 +548,13 @@ contract SimpleToken is ERC20, AccessControl, Pausable, ReentrancyGuard {
     }
     
     /**
-     * @dev Create vesting schedule for an address
+     * @notice Creates a vesting schedule for gradual token release
+     * @dev Locks tokens in contract and releases them linearly over duration
+     * @param beneficiary Address that will receive vested tokens
+     * @param amount Total amount of tokens to vest
+     * @param duration Time period over which tokens will be released (in seconds)
+     * @custom:access-control Requires VESTING_MANAGER_ROLE
+     * @custom:validation Prevents duplicate vesting schedules for same beneficiary
      */
     function createVestingSchedule(
         address beneficiary,
