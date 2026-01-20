@@ -203,6 +203,14 @@ contract SimpleToken is ERC20, AccessControl, Pausable, ReentrancyGuard {
     event VestingScheduleCreated(address indexed beneficiary, uint256 amount, uint256 duration);
     event DailyLimitSet(address indexed account, uint256 limit);
     
+    // Enhanced administrative events
+    event BatchTransferCompleted(address indexed sender, uint256 recipientCount, uint256 totalAmount);
+    event BatchApprovalCompleted(address indexed owner, uint256 spenderCount);
+    event BatchMintCompleted(address indexed minter, uint256 recipientCount, uint256 totalAmount);
+    event VestingReleased(address indexed beneficiary, uint256 amount, uint256 remaining);
+    event AccountInfoUpdated(address indexed account, string field, uint256 oldValue, uint256 newValue);
+    event FeeCollected(uint256 amount, uint256 total);
+    
     constructor() ERC20("Simple Token", "SMPL") {
         _mint(msg.sender, 1000000 * 10 ** decimals());
         feeCollector = msg.sender;
@@ -238,6 +246,12 @@ contract SimpleToken is ERC20, AccessControl, Pausable, ReentrancyGuard {
             _transfer(msg.sender, recipients[i], amounts[i]);
         }
         
+        uint256 totalAmount = 0;
+        for (uint256 i = 0; i < amounts.length; i++) {
+            totalAmount += amounts[i];
+        }
+        
+        emit BatchTransferCompleted(msg.sender, recipients.length, totalAmount);
         return true;
     }
     
@@ -286,6 +300,7 @@ contract SimpleToken is ERC20, AccessControl, Pausable, ReentrancyGuard {
             _approve(msg.sender, spenders[i], amounts[i]);
         }
         
+        emit BatchApprovalCompleted(msg.sender, spenders.length);
         return true;
     }
     
@@ -321,6 +336,7 @@ contract SimpleToken is ERC20, AccessControl, Pausable, ReentrancyGuard {
             _mint(recipients[i], amounts[i]);
         }
         
+        emit BatchMintCompleted(msg.sender, recipients.length, totalAmount);
         return true;
     }
     function mint(address to, uint256 amount) external onlyRole(MINTER_ROLE) nonReentrant {
