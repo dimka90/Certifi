@@ -132,10 +132,53 @@ contract SimpleToken is ERC20, AccessControl, Pausable, ReentrancyGuard {
     bool public transfersEnabled = true;
     uint256 public totalFeeCollected;
     
+    // Enhanced transfer events
+    event TransferWithData(address indexed from, address indexed to, uint256 value, bytes data);
+    
+    /**
+     * @dev Enhanced transfer with additional data
+     */
+    function transferWithData(
+        address to,
+        uint256 amount,
+        bytes calldata data
+    ) external nonReentrant returns (bool) {
+        if (to == address(0)) {
+            revert InvalidAddress(to);
+        }
+        if (amount == 0) {
+            revert InvalidAmount(amount);
+        }
+        
+        _transfer(msg.sender, to, amount);
+        emit TransferWithData(msg.sender, to, amount, data);
+        
+        return true;
+    }
+    
+    /**
+     * @dev Enhanced transferFrom with additional data
+     */
+    function transferFromWithData(
+        address from,
+        address to,
+        uint256 amount,
+        bytes calldata data
+    ) external nonReentrant returns (bool) {
+        if (from == address(0) || to == address(0)) {
+            revert InvalidAddress(to);
+        }
+        if (amount == 0) {
+            revert InvalidAmount(amount);
+        }
+        
+        transferFrom(from, to, amount);
+        emit TransferWithData(from, to, amount, data);
+        
+        return true;
+    }
     event Whitelisted(address indexed account);
     event RemovedFromWhitelist(address indexed account);
-    
-    event FeeCollected(uint256 amount, uint256 total);
     
     event TransfersToggled(bool enabled);
     
