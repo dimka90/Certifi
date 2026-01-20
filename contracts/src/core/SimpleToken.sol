@@ -43,7 +43,14 @@ contract SimpleToken is ERC20, AccessControl, Pausable, ReentrancyGuard {
     bytes32 public constant FEE_MANAGER_ROLE = keccak256("FEE_MANAGER_ROLE");
     bytes32 public constant VESTING_MANAGER_ROLE = keccak256("VESTING_MANAGER_ROLE");
     
+    // Gas-optimized constants
     uint256 public constant MAX_SUPPLY = 10000000 * 10 ** 18;
+    uint256 private constant SECONDS_PER_DAY = 86400;
+    uint256 private constant MAX_FEE_BASIS_POINTS = 1000; // 10%
+    
+    // Immutable variables for gas optimization
+    uint256 public immutable INITIAL_SUPPLY;
+    address public immutable DEPLOYER;
     
     // Packed structs for gas optimization
     struct PackedAccountInfo {
@@ -212,7 +219,11 @@ contract SimpleToken is ERC20, AccessControl, Pausable, ReentrancyGuard {
     event FeeCollected(uint256 amount, uint256 total);
     
     constructor() ERC20("Simple Token", "SMPL") {
-        _mint(msg.sender, 1000000 * 10 ** decimals());
+        uint256 initialSupply = 1000000 * 10 ** decimals();
+        INITIAL_SUPPLY = initialSupply;
+        DEPLOYER = msg.sender;
+        
+        _mint(msg.sender, initialSupply);
         feeCollector = msg.sender;
         
         // Grant all roles to deployer
@@ -464,30 +475,46 @@ contract SimpleToken is ERC20, AccessControl, Pausable, ReentrancyGuard {
         address to,
         uint256 amount
     ) internal virtual override {
-        require(transfersEnabled, "Transfers are disabled");
-        require(amount >= minTransferAmount, "Amount below minimum");
+        if (!transfersEnabled) {
+            revert TransfersDisabled();
+        }
+        if (amount < minTransferAmount) {
+            revert BelowMinimumTransfer(amount, minTransferAmount);
+        }
         
-        // Check daily limit
-        if (dailyLimit[from] > 0) {
-            uint256 currentDay = block.timestamp / 1 days;
-            if (lastTransferDay[from] != currentDay) {
-                dailySpent[from] = 0;
-                lastTransferDay[from] = currentDay;
+        // Check daily limit with gas optimization
+        PackedAccountInfo storage fromInfo = _accountInfo[from];
+        if (fromInfo.dailyLimit > 0) {
+            uint256 currentDay = block.timestamp / SECONDS_PER_DAY;
+            if (fromInfo.lastTransferDay != currentDay) {
+                fromInfo.dailySpent = 0;
+                fromInfo.lastTransferDay = uint64(currentDay);
             }
-            require(dailySpent[from] + amount <= dailyLimit[from], "Daily limit exceeded");
-            dailySpent[from] += amount;
+            
+            uint256 newDailySpent = fromInfo.dailySpent + amount;
+            if (newDailySpent > fromInfo.dailyLimit) {
+                revert ExceedsDailyLimit(from, amount, fromInfo.dailyLimit);
+            }
+            fromInfo.dailySpent = uint128(newDailySpent);
         }
         
-        if (transferFee > 0 && from != owner() && to != owner() && !whitelisted[from] && !whitelisted[to]) {
-            uint256 fee = (amount * transferFee) / 10000;
-            uint256 amountAfterFee = amount - fee;
-            totalFeeCollected += fee;
-            super._transfer(from, feeCollector, fee);
-            super._transfer(from, to, amountAfterFee);
-            emit FeeCollected(fee, totalFeeCollected);
-        } else {
-            super._transfer(from, to, amount);
+        // Gas-optimized fee calculation
+        if (transferFee > 0 && from != DEPLOYER && to != DEPLOYER) {
+            PackedAccountInfo storage fromAccountInfo = _accountInfo[from];
+            PackedAccountInfo storage toAccountInfo = _accountInfo[to];
+            
+            if (!fromAccountInfo.whitelisted && !toAccountInfo.whitelisted) {
+                uint256 fee = (amount * transferFee) / 10000;
+                uint256 amountAfterFee = amount - fee;
+                totalFeeCollected += fee;
+                super._transfer(from, feeCollector, fee);
+                super._transfer(from, to, amountAfterFee);
+                emit FeeCollected(fee, totalFeeCollected);
+                return;
+            }
         }
+        
+        super._transfer(from, to, amount);
     }
     
     /**
