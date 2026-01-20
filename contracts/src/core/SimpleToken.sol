@@ -9,6 +9,29 @@ import "@openzeppelin/contracts/security/Pausable.sol";
  * @title SimpleToken
  * @dev Basic ERC20 token implementation with ownership
  */
+
+// Custom errors for gas optimization
+error InsufficientBalance(address account, uint256 requested, uint256 available);
+error InsufficientAllowance(address owner, address spender, uint256 requested, uint256 available);
+error ExceedsMaxSupply(uint256 requested, uint256 maxSupply);
+error AccountBlacklisted(address account);
+error AccountFrozen(address account);
+error TransfersDisabled();
+error ExceedsDailyLimit(address account, uint256 requested, uint256 limit);
+error BelowMinimumTransfer(uint256 amount, uint256 minimum);
+error InvalidAddress(address account);
+error InvalidAmount(uint256 amount);
+error VestingNotFound(address beneficiary);
+error VestingAlreadyExists(address beneficiary);
+error NoVestedTokens(address beneficiary);
+error UnauthorizedAccess(address caller);
+error ArrayLengthMismatch(uint256 length1, uint256 length2);
+error BatchOperationFailed(uint256 index);
+error FeeExceedsLimit(uint256 fee, uint256 maxFee);
+error InvalidCollector(address collector);
+error SnapshotNotFound(uint256 snapshotId);
+error AllowanceExpired(address owner, address spender, uint256 expiry);
+error HolderIndexOutOfBounds(uint256 index, uint256 length);
 contract SimpleToken is ERC20, Ownable, Pausable {
     
     uint256 public constant MAX_SUPPLY = 10000000 * 10 ** 18;
@@ -92,7 +115,9 @@ contract SimpleToken is ERC20, Ownable, Pausable {
      * @dev Mint new tokens (owner only)
      */
     function mint(address to, uint256 amount) external onlyOwner {
-        require(totalSupply() + amount <= MAX_SUPPLY, "Exceeds max supply");
+        if (totalSupply() + amount > MAX_SUPPLY) {
+            revert ExceedsMaxSupply(amount, MAX_SUPPLY);
+        }
         totalMinted += amount;
         _mint(to, amount);
     }
@@ -110,7 +135,9 @@ contract SimpleToken is ERC20, Ownable, Pausable {
      */
     function burnFrom(address account, uint256 amount) external {
         uint256 currentAllowance = allowance(account, msg.sender);
-        require(currentAllowance >= amount, "Insufficient allowance");
+        if (currentAllowance < amount) {
+            revert InsufficientAllowance(account, msg.sender, amount, currentAllowance);
+        }
         _approve(account, msg.sender, currentAllowance - amount);
         totalBurned += amount;
         _burn(account, amount);
@@ -138,10 +165,18 @@ contract SimpleToken is ERC20, Ownable, Pausable {
         address to,
         uint256 amount
     ) internal virtual override whenNotPaused {
-        require(!blacklisted[from], "Sender is blacklisted");
-        require(!blacklisted[to], "Recipient is blacklisted");
-        require(!frozenAccounts[from], "Sender account is frozen");
-        require(!frozenAccounts[to], "Recipient account is frozen");
+        if (blacklisted[from]) {
+            revert AccountBlacklisted(from);
+        }
+        if (blacklisted[to]) {
+            revert AccountBlacklisted(to);
+        }
+        if (frozenAccounts[from]) {
+            revert AccountFrozen(from);
+        }
+        if (frozenAccounts[to]) {
+            revert AccountFrozen(to);
+        }
         
         // Track holders
         if (to != address(0) && balanceOf(to) == 0 && amount > 0) {
