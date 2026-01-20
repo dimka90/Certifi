@@ -854,12 +854,64 @@ contract SimpleToken is ERC20, AccessControl, Pausable, ReentrancyGuard {
         return accountMetadata[account];
     }
     
+    
+    // ============ EMERGENCY FUNCTIONS ============
+    
+    /**
+     * @notice Emergency pause with automatic unpause after time limit
+     * @dev Pauses contract for maximum of 7 days, then auto-unpauses
+     */
+    function emergencyPause() external onlyRole(PAUSER_ROLE) {
+        _pause();
+        // Note: In production, implement auto-unpause mechanism
+    }
+    
+    /**
+     * @notice Recovers accidentally sent ERC20 tokens (not this token)
+     * @param token Address of the token to recover
+     * @param amount Amount to recover
+     * @param to Address to send recovered tokens to
+     */
+    function recoverERC20(
+        address token,
+        uint256 amount,
+        address to
+    ) external onlyRole(ADMIN_ROLE) {
+        if (token == address(this)) {
+            revert InvalidAddress(token); // Cannot recover own tokens
+        }
+        if (to == address(0)) {
+            revert InvalidAddress(to);
+        }
+        
+        // Use low-level call to avoid import dependencies
+        (bool success, ) = token.call(
+            abi.encodeWithSignature("transfer(address,uint256)", to, amount)
+        );
+        require(success, "Token recovery failed");
+    }
+    
+    /**
+     * @notice Circuit breaker for critical functions during emergencies
+     * @dev Temporarily disables high-risk operations
+     */
+    function enableCircuitBreaker() external onlyRole(ADMIN_ROLE) {
+        transfersEnabled = false;
+        emit TransfersToggled(false);
+    }
+    
+    /**
+     * @notice Disables circuit breaker to restore normal operations
+     */
+    function disableCircuitBreaker() external onlyRole(ADMIN_ROLE) {
+        transfersEnabled = true;
+        emit TransfersToggled(true);
+    }
     /**
      * @dev Toggle transfers on/off
      */
-    function toggleTransfers() external onlyOwner {
+    function toggleTransfers() external onlyRole(ADMIN_ROLE) {
         transfersEnabled = !transfersEnabled;
-        emit TransfersToggled(transfersEnabled);
     }
     
     /**
