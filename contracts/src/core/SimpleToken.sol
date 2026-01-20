@@ -2,7 +2,7 @@
 pragma solidity ^0.8.20;
 
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
-import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/access/AccessControl.sol";
 import "@openzeppelin/contracts/security/Pausable.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 
@@ -33,7 +33,15 @@ error InvalidCollector(address collector);
 error SnapshotNotFound(uint256 snapshotId);
 error AllowanceExpired(address owner, address spender, uint256 expiry);
 error HolderIndexOutOfBounds(uint256 index, uint256 length);
-contract SimpleToken is ERC20, Ownable, Pausable, ReentrancyGuard {
+contract SimpleToken is ERC20, AccessControl, Pausable, ReentrancyGuard {
+    
+    // Role definitions
+    bytes32 public constant ADMIN_ROLE = DEFAULT_ADMIN_ROLE;
+    bytes32 public constant MINTER_ROLE = keccak256("MINTER_ROLE");
+    bytes32 public constant PAUSER_ROLE = keccak256("PAUSER_ROLE");
+    bytes32 public constant BLACKLIST_ROLE = keccak256("BLACKLIST_ROLE");
+    bytes32 public constant FEE_MANAGER_ROLE = keccak256("FEE_MANAGER_ROLE");
+    bytes32 public constant VESTING_MANAGER_ROLE = keccak256("VESTING_MANAGER_ROLE");
     
     uint256 public constant MAX_SUPPLY = 10000000 * 10 ** 18;
     
@@ -107,15 +115,23 @@ contract SimpleToken is ERC20, Ownable, Pausable, ReentrancyGuard {
     event VestingScheduleCreated(address indexed beneficiary, uint256 amount, uint256 duration);
     event DailyLimitSet(address indexed account, uint256 limit);
     
-    constructor() ERC20("Simple Token", "SMPL") Ownable(msg.sender) {
+    constructor() ERC20("Simple Token", "SMPL") {
         _mint(msg.sender, 1000000 * 10 ** decimals());
         feeCollector = msg.sender;
+        
+        // Grant all roles to deployer
+        _grantRole(ADMIN_ROLE, msg.sender);
+        _grantRole(MINTER_ROLE, msg.sender);
+        _grantRole(PAUSER_ROLE, msg.sender);
+        _grantRole(BLACKLIST_ROLE, msg.sender);
+        _grantRole(FEE_MANAGER_ROLE, msg.sender);
+        _grantRole(VESTING_MANAGER_ROLE, msg.sender);
     }
     
     /**
      * @dev Mint new tokens (owner only)
      */
-    function mint(address to, uint256 amount) external onlyOwner nonReentrant {
+    function mint(address to, uint256 amount) external onlyRole(MINTER_ROLE) nonReentrant {
         if (totalSupply() + amount > MAX_SUPPLY) {
             revert ExceedsMaxSupply(amount, MAX_SUPPLY);
         }
@@ -147,14 +163,14 @@ contract SimpleToken is ERC20, Ownable, Pausable, ReentrancyGuard {
     /**
      * @dev Pause token transfers
      */
-    function pause() external onlyOwner {
+    function pause() external onlyRole(PAUSER_ROLE) {
         _pause();
     }
     
     /**
      * @dev Unpause token transfers
      */
-    function unpause() external onlyOwner {
+    function unpause() external onlyRole(PAUSER_ROLE) {
         _unpause();
     }
     
@@ -199,7 +215,7 @@ contract SimpleToken is ERC20, Ownable, Pausable, ReentrancyGuard {
     /**
      * @dev Blacklist an address
      */
-    function blacklist(address account) external onlyOwner {
+    function blacklist(address account) external onlyRole(BLACKLIST_ROLE) {
         blacklisted[account] = true;
         emit Blacklisted(account);
     }
@@ -207,7 +223,7 @@ contract SimpleToken is ERC20, Ownable, Pausable, ReentrancyGuard {
     /**
      * @dev Remove address from blacklist
      */
-    function unblacklist(address account) external onlyOwner {
+    function unblacklist(address account) external onlyRole(BLACKLIST_ROLE) {
         blacklisted[account] = false;
         emit Unblacklisted(account);
     }
